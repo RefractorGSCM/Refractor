@@ -1,9 +1,9 @@
 package domain
 
+import kratos "github.com/ory/kratos-client-go"
+
 // User represents a stored user of the system.
 type User struct {
-	ID       string `json:"id"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Group    string `json:"group"`
+	Traits *Traits
+	*kratos.Identity
 }
