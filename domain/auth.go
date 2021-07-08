@@ -16,9 +16,11 @@ type AuthUser struct {
 
 func (au *AuthUser) User() *User {
 	return &User{
-		ID:       au.Id,
-		Email:    au.Traits.Email,
-		Username: au.Traits.Username,
+		Traits: &Traits{
+			Email:    au.Traits.Email,
+			Username: au.Traits.Username,
+		},
+		Identity: &au.Identity,
 	}
 }
 

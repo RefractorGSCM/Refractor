@@ -10,6 +10,7 @@ type Config struct {
 	APIBind      string `mapstructure:"API_BIND"`
 	KratosPublic string `mapstructure:"KRATOS_PUBLIC_ROOT"`
 	KratosAdmin  string `mapstructure:"KRATOS_ADMIN_ROOT"`
+	Mode         string `mapstructure:"MODE"`
 }
 
 // LoadConfig reads configuration from a file or environment variables.
@@ -17,6 +18,7 @@ func LoadConfig(path string) (*Config, error) {
 	viper.AddConfigPath(path)
 	viper.SetConfigName("app")
 	viper.SetConfigType("env")
+	viper.SetDefault("MODE", "production")
 
 	// Tells viper to automatically override values read from a config file with values in env variables if they exist.
 	viper.AutomaticEnv()
