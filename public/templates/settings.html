@@ -1,0 +1,28 @@
+{{ define "settings" }}
+{{ template "head" . }}
+<div class="auth">
+    <div class="container" id="settings">
+        <h1>Settings</h1>
+
+        {{ range $message := .Messages }}
+        <div class="{{ $message.Type }}">{{ $message.Text }}</div>
+        {{ end }}
+
+        <form method="{{ .Method }}" action="{{ .Action }}">
+            {{ range $node := .UiNodes }}
+            {{ if eq $node.Type "submit" }}
+            <button type="submit" name="{{ $node.Name }}" value="{{ $node.Value }}">{{ $node.Label }}</button>
+            {{ else }}
+            <label>
+                {{ if $node.Label }}
+                {{ $node.Label }}
+                {{ end }}
+                <input type="{{ $node.Type }}" name="{{ $node.Name }}" value="{{ $node.Value }}" />
+            </label>
+            {{ end }}
+            {{ end }}
+        </form>
+    </div>
+</div>
+{{ template "foot" . }}
+{{ end }}
