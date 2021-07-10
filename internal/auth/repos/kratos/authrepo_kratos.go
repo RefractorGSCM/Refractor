@@ -18,7 +18,7 @@ type authRepo struct {
 	config *conf.Config
 }
 
-func NewAuthRepo(config *conf.Config) domain.AuthRepository {
+func NewAuthRepo(config *conf.Config) domain.AuthRepo {
 	return &authRepo{
 		config: config,
 	}
