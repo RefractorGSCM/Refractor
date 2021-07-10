@@ -24,6 +24,6 @@ func (au *AuthUser) User() *User {
 	}
 }
 
-type AuthRepository interface {
+type AuthRepo interface {
 	GetUserByID(id string) (*AuthUser, error)
 }

@@ -19,8 +19,8 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	_ "github.com/jackc/pgx/v4"
 	"github.com/labstack/echo/v4"
-	_ "github.com/lib/pq"
 	kratos "github.com/ory/kratos-client-go"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -65,6 +65,9 @@ func main() {
 	gameService := _gameService.NewGameService()
 	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
 
+	//serverRepo := _postgresServerRepo.NewServerRepo(db, logger)
+
+	// Setup complete. Begin serving requests.
 	logger.Info("Setup complete!")
 	enforcer.Enforce()
 
