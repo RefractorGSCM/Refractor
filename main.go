@@ -4,6 +4,9 @@ import (
 	"Refractor/auth"
 	"Refractor/games/mordhau"
 	_gameService "Refractor/internal/game/service"
+	_serverHandler "Refractor/internal/server/delivery/http"
+	_postgresServerRepo "Refractor/internal/server/repos/postgres"
+	_serverService "Refractor/internal/server/service"
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/conf"
@@ -26,6 +29,7 @@ import (
 	"go.uber.org/zap"
 	"log"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -53,6 +57,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not set up API webserver. Error: %v", err)
 	}
+	apiGroup := apiServer.Group("/api/v1")
 
 	kratosClient := setupKratos()
 
@@ -62,10 +67,14 @@ func main() {
 	}
 
 	// Set up application components
+	protectMiddleware := middleware.NewAPIProtectMiddleware(config)
+
 	gameService := _gameService.NewGameService()
 	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
 
-	//serverRepo := _postgresServerRepo.NewServerRepo(db, logger)
+	serverRepo := _postgresServerRepo.NewServerRepo(db, logger)
+	serverService := _serverService.NewServerService(serverRepo, time.Second*2)
+	_serverHandler.ApplyServerHandler(apiGroup, serverService, protectMiddleware)
 
 	// Setup complete. Begin serving requests.
 	logger.Info("Setup complete!")
@@ -75,7 +84,7 @@ func main() {
 		log.Fatal(authServer.Start(":4455"))
 	}()
 
-	log.Fatal(apiServer.Start(":5000"))
+	log.Fatal(apiServer.Start(":4000"))
 }
 
 func setupLogger(mode string) (*zap.Logger, error) {
@@ -191,7 +200,7 @@ func setupEchoPages(logger *zap.Logger, client *kratos.APIClient, config *conf.C
 	// Set up rendering of server side pages
 	e.Renderer = tmpl.NewRenderer("./auth/templates/*.html", true)
 
-	protect := middleware.NewProtectMiddleware(config)
+	protect := middleware.NewBrowserProtectMiddleware(config)
 
 	pagesHandler := auth.NewPublicHandlers(client, config)
 
