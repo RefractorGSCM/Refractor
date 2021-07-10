@@ -1,4 +1,4 @@
-package public
+package auth
 
 import (
 	"encoding/json"
@@ -8,33 +8,31 @@ import (
 	"net/http"
 )
 
-func (h *publicHandlers) LoginHandler(c echo.Context) error {
+func (h *publicHandlers) RecoveryHandler(c echo.Context) error {
 	flowID := c.QueryParam("flow")
-
 	if flowID == "" {
 		return c.Redirect(http.StatusTemporaryRedirect,
-			fmt.Sprintf("%s/self-service/login/browser", h.config.KratosPublic))
+			fmt.Sprintf("%s/self-service/recovery/browser", h.config.KratosPublic))
 	}
 
-	_, res, err := h.client.PublicApi.GetSelfServiceLoginFlow(c.Request().Context()).Id(flowID).Execute()
+	_, res, err := h.client.PublicApi.GetSelfServiceRecoveryFlow(c.Request().Context()).Id(flowID).Execute()
 	if err != nil {
 		if res != nil && (res.StatusCode == http.StatusGone || res.StatusCode == http.StatusNotFound) {
 			// the flow is invalid or is no longer valid
 			return c.Redirect(http.StatusTemporaryRedirect,
-				fmt.Sprintf("%s/self-service/login/browser", h.config.KratosPublic))
+				fmt.Sprintf("%s/self-service/recovery/browser", h.config.KratosPublic))
 		}
 
 		return err
 	}
 
-	flow := kratos.LoginFlow{}
+	flow := kratos.RecoveryFlow{}
 	if err := json.NewDecoder(res.Body).Decode(&flow); err != nil {
 		return err
 	}
 
 	//data, err := json.MarshalIndent(flow, "", "  ")
 	//if err != nil {
-	//	fmt.Println("flow marshal", err)
 	//	return err
 	//}
 	//
@@ -65,6 +63,10 @@ func (h *publicHandlers) LoginHandler(c echo.Context) error {
 			newNode.Required = attributes.UiNodeInputAttributes.GetRequired()
 			newNode.Type = attributes.UiNodeInputAttributes.Type
 
+			if newNode.Name == "email" {
+				newNode.Label = "Email"
+			}
+
 			attrVal := attributes.UiNodeInputAttributes.GetValue()
 			if attrVal.String != nil {
 				newNode.Value = *attrVal.String
@@ -86,5 +88,5 @@ func (h *publicHandlers) LoginHandler(c echo.Context) error {
 		rData.Messages = append(rData.Messages, newMessage)
 	}
 
-	return c.Render(http.StatusOK, "login", rData)
+	return c.Render(http.StatusOK, "recovery", rData)
 }

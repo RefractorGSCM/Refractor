@@ -1,11 +1,14 @@
 package main
 
 import (
+	"Refractor/auth"
+	"Refractor/games/mordhau"
+	_gameService "Refractor/internal/game/service"
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/conf"
 	"Refractor/pkg/tmpl"
-	"Refractor/public"
+	"Refractor/platforms/playfab"
 	"database/sql"
 	"embed"
 	"fmt"
@@ -53,16 +56,20 @@ func main() {
 
 	kratosClient := setupKratos()
 
-	pagesServer, err := setupEchoPages(logger, kratosClient, config)
+	authServer, err := setupEchoPages(logger, kratosClient, config)
 	if err != nil {
-		log.Fatalf("Could not set up pages webserver. Error: %v", err)
+		log.Fatalf("Could not set up auth webserver. Error: %v", err)
 	}
+
+	// Set up application components
+	gameService := _gameService.NewGameService()
+	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
 
 	logger.Info("Setup complete!")
 	enforcer.Enforce()
 
 	go func() {
-		log.Fatal(pagesServer.Start(":4455"))
+		log.Fatal(authServer.Start(":4455"))
 	}()
 
 	log.Fatal(apiServer.Start(":5000"))
@@ -179,11 +186,11 @@ func setupEchoPages(logger *zap.Logger, client *kratos.APIClient, config *conf.C
 	e.HTTPErrorHandler = api.GetEchoErrorHandler(logger)
 
 	// Set up rendering of server side pages
-	e.Renderer = tmpl.NewRenderer("./public/templates/*.html", true)
+	e.Renderer = tmpl.NewRenderer("./auth/templates/*.html", true)
 
 	protect := middleware.NewProtectMiddleware(config)
 
-	pagesHandler := public.NewPublicHandlers(client, config)
+	pagesHandler := auth.NewPublicHandlers(client, config)
 
 	echo.NotFoundHandler = pagesHandler.RootHandler
 	kratosGroup := e.Group("/k")
