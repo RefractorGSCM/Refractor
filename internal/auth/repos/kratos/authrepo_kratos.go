@@ -2,7 +2,6 @@ package kratos
 
 import (
 	"Refractor/domain"
-	"Refractor/params"
 	"Refractor/pkg/conf"
 	"bytes"
 	"encoding/json"
@@ -24,12 +23,22 @@ func NewAuthRepo(config *conf.Config) domain.AuthRepo {
 	}
 }
 
-func (r *authRepo) CreateUser(body *params.CreateUserParams) (*domain.User, error) {
+type createIdentityPayload struct {
+	Schema string `json:"schema_id"`
+	Traits *domain.Traits
+}
+
+func (r *authRepo) CreateUser(userTraits *domain.Traits) (*domain.User, error) {
 	const op = opTag + "CreateUser"
 
 	url := fmt.Sprintf("%s/identities", r.config.KratosAdmin)
 
-	marshalled, err := json.Marshal(body)
+	payload := createIdentityPayload{
+		Schema: "default",
+		Traits: userTraits,
+	}
+
+	marshalled, err := json.Marshal(payload)
 	if err != nil {
 		return nil, errors.Wrap(err, op)
 	}
@@ -65,12 +74,12 @@ func (r *authRepo) CreateUser(body *params.CreateUserParams) (*domain.User, erro
 	}
 
 	// Create user struct
-	user := &domain.User{
+	newUser := &domain.User{
 		Traits:   traits,
 		Identity: identity,
 	}
 
-	return user, nil
+	return newUser, nil
 }
 
 func (r *authRepo) GetUserByID(id string) (*domain.AuthUser, error) {
@@ -113,4 +122,50 @@ func (r *authRepo) GetUserByID(id string) (*domain.AuthUser, error) {
 	}
 
 	return user, nil
+}
+
+func (r *authRepo) GetAllUsers() ([]*domain.AuthUser, error) {
+	const op = opTag + "GetAllUsers"
+
+	url := fmt.Sprintf("%s/identities", r.config.KratosAdmin)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.Wrap(fmt.Errorf("response status was %d and not %d", res.StatusCode, http.StatusOK), op)
+	}
+
+	var sessions []kratos.Session
+	if err := json.NewDecoder(res.Body).Decode(&sessions); err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	var users []*domain.AuthUser
+
+	for _, session := range sessions {
+		traitBytes, err := json.Marshal(session.Identity.Traits)
+		if err != nil {
+			return nil, errors.Wrap(err, op)
+		}
+
+		traits := &domain.Traits{}
+		if err := json.Unmarshal(traitBytes, traits); err != nil {
+			return nil, errors.Wrap(err, op)
+		}
+
+		users = append(users, &domain.AuthUser{
+			Traits:  traits,
+			Session: &session,
+		})
+	}
+
+	return users, nil
 }
