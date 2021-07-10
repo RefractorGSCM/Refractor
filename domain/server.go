@@ -23,5 +23,5 @@ type ServerRepo interface {
 
 type ServerService interface {
 	Store(c context.Context, server *Server) error
-	GetByID(c context.Context, id int64) error
+	GetByID(c context.Context, id int64) (*Server, error)
 }
