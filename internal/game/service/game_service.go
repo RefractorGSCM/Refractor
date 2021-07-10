@@ -30,6 +30,10 @@ func (s *gameService) GameExists(name string) bool {
 	return s.games[name] != nil
 }
 
-func (s *gameService) GetGame(name string) domain.Game {
-	return s.games[name]
+func (s *gameService) GetGame(name string) (domain.Game, error) {
+	if !s.GameExists(name) {
+		return nil, domain.ErrNotFound
+	}
+
+	return s.games[name], nil
 }
