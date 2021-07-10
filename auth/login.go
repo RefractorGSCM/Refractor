@@ -1,4 +1,4 @@
-package public
+package auth
 
 import (
 	"encoding/json"
@@ -8,43 +8,33 @@ import (
 	"net/http"
 )
 
-func (h *publicHandlers) SettingsHandler(c echo.Context) error {
+func (h *publicHandlers) LoginHandler(c echo.Context) error {
 	flowID := c.QueryParam("flow")
 
 	if flowID == "" {
 		return c.Redirect(http.StatusTemporaryRedirect,
-			fmt.Sprintf("%s/self-service/settings/browser", h.config.KratosPublic))
+			fmt.Sprintf("%s/self-service/login/browser", h.config.KratosPublic))
 	}
 
-	settingsURL := fmt.Sprintf("%s/self-service/settings/flows?id=%s", h.config.KratosPublic, flowID)
-
-	req, err := http.NewRequest("GET", settingsURL, nil)
-	if err != nil {
-		return err
-	}
-
-	for _, cookie := range c.Cookies() {
-		req.AddCookie(cookie)
-	}
-
-	res, err := http.DefaultClient.Do(req)
+	_, res, err := h.client.PublicApi.GetSelfServiceLoginFlow(c.Request().Context()).Id(flowID).Execute()
 	if err != nil {
 		if res != nil && (res.StatusCode == http.StatusGone || res.StatusCode == http.StatusNotFound) {
 			// the flow is invalid or is no longer valid
 			return c.Redirect(http.StatusTemporaryRedirect,
-				fmt.Sprintf("%s/self-service/settings/browser", h.config.KratosPublic))
+				fmt.Sprintf("%s/self-service/login/browser", h.config.KratosPublic))
 		}
 
 		return err
 	}
 
-	flow := kratos.SettingsFlow{}
+	flow := kratos.LoginFlow{}
 	if err := json.NewDecoder(res.Body).Decode(&flow); err != nil {
 		return err
 	}
 
 	//data, err := json.MarshalIndent(flow, "", "  ")
 	//if err != nil {
+	//	fmt.Println("flow marshal", err)
 	//	return err
 	//}
 	//
@@ -55,6 +45,7 @@ func (h *publicHandlers) SettingsHandler(c echo.Context) error {
 	rData := RenderData{
 		Action:   flow.Ui.GetAction(),
 		Method:   flow.Ui.GetMethod(),
+		FlowID:   flow.Id,
 		UiNodes:  []Node{},
 		Messages: []Message{},
 	}
@@ -95,5 +86,5 @@ func (h *publicHandlers) SettingsHandler(c echo.Context) error {
 		rData.Messages = append(rData.Messages, newMessage)
 	}
 
-	return c.Render(http.StatusOK, "settings", rData)
+	return c.Render(http.StatusOK, "login", rData)
 }

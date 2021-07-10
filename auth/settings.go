@@ -1,4 +1,4 @@
-package public
+package auth
 
 import (
 	"encoding/json"
@@ -8,25 +8,37 @@ import (
 	"net/http"
 )
 
-func (h *publicHandlers) RecoveryHandler(c echo.Context) error {
+func (h *publicHandlers) SettingsHandler(c echo.Context) error {
 	flowID := c.QueryParam("flow")
+
 	if flowID == "" {
 		return c.Redirect(http.StatusTemporaryRedirect,
-			fmt.Sprintf("%s/self-service/recovery/browser", h.config.KratosPublic))
+			fmt.Sprintf("%s/self-service/settings/browser", h.config.KratosPublic))
 	}
 
-	_, res, err := h.client.PublicApi.GetSelfServiceRecoveryFlow(c.Request().Context()).Id(flowID).Execute()
+	settingsURL := fmt.Sprintf("%s/self-service/settings/flows?id=%s", h.config.KratosPublic, flowID)
+
+	req, err := http.NewRequest("GET", settingsURL, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, cookie := range c.Cookies() {
+		req.AddCookie(cookie)
+	}
+
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		if res != nil && (res.StatusCode == http.StatusGone || res.StatusCode == http.StatusNotFound) {
 			// the flow is invalid or is no longer valid
 			return c.Redirect(http.StatusTemporaryRedirect,
-				fmt.Sprintf("%s/self-service/recovery/browser", h.config.KratosPublic))
+				fmt.Sprintf("%s/self-service/settings/browser", h.config.KratosPublic))
 		}
 
 		return err
 	}
 
-	flow := kratos.RecoveryFlow{}
+	flow := kratos.SettingsFlow{}
 	if err := json.NewDecoder(res.Body).Decode(&flow); err != nil {
 		return err
 	}
@@ -43,7 +55,6 @@ func (h *publicHandlers) RecoveryHandler(c echo.Context) error {
 	rData := RenderData{
 		Action:   flow.Ui.GetAction(),
 		Method:   flow.Ui.GetMethod(),
-		FlowID:   flow.Id,
 		UiNodes:  []Node{},
 		Messages: []Message{},
 	}
@@ -62,10 +73,6 @@ func (h *publicHandlers) RecoveryHandler(c echo.Context) error {
 			newNode.Name = attributes.UiNodeInputAttributes.Name
 			newNode.Required = attributes.UiNodeInputAttributes.GetRequired()
 			newNode.Type = attributes.UiNodeInputAttributes.Type
-
-			if newNode.Name == "email" {
-				newNode.Label = "Email"
-			}
 
 			attrVal := attributes.UiNodeInputAttributes.GetValue()
 			if attrVal.String != nil {
@@ -88,5 +95,5 @@ func (h *publicHandlers) RecoveryHandler(c echo.Context) error {
 		rData.Messages = append(rData.Messages, newMessage)
 	}
 
-	return c.Render(http.StatusOK, "recovery", rData)
+	return c.Render(http.StatusOK, "settings", rData)
 }

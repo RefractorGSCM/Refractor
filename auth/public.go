@@ -1,4 +1,4 @@
-package public
+package auth
 
 import (
 	"Refractor/pkg/conf"
