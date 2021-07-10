@@ -42,5 +42,5 @@ type GameService interface {
 	AddGame(game Game)
 	GetAllGames() []Game
 	GameExists(name string) bool
-	GetGame(name string) Game
+	GetGame(name string) (Game, error)
 }

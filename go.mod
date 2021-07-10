@@ -18,6 +18,7 @@ require (
 	github.com/sniddunc/mordhau-rcon v0.1.5 // indirect
 	github.com/snowflakedb/glog v0.0.0-20180824191149-f5055e6f21ce // indirect
 	github.com/spf13/viper v1.8.1 // indirect
+	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/vektra/mockery/v2 v2.9.0 // indirect
 	go.uber.org/zap v1.18.1 // indirect
 )
