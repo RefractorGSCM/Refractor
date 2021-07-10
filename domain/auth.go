@@ -27,3 +27,7 @@ func (au *AuthUser) User() *User {
 type AuthRepo interface {
 	GetUserByID(id string) (*AuthUser, error)
 }
+
+type Authorizer interface {
+	HasPermission(userID, domain, object, action string) (bool, error)
+}
