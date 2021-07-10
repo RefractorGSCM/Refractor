@@ -25,7 +25,9 @@ func (au *AuthUser) User() *User {
 }
 
 type AuthRepo interface {
+	CreateUser(userTraits *Traits) (*User, error)
 	GetUserByID(id string) (*AuthUser, error)
+	GetAllUsers() ([]*AuthUser, error)
 }
 
 type Authorizer interface {

@@ -2,7 +2,9 @@ package main
 
 import (
 	"Refractor/auth"
+	"Refractor/domain"
 	"Refractor/games/mordhau"
+	_authRepo "Refractor/internal/auth/repos/kratos"
 	_gameService "Refractor/internal/game/service"
 	_serverHandler "Refractor/internal/server/delivery/http"
 	_postgresServerRepo "Refractor/internal/server/repos/postgres"
@@ -67,6 +69,21 @@ func main() {
 	}
 
 	// Set up application components
+	authRepo := _authRepo.NewAuthRepo(config)
+
+	users, err := authRepo.GetAllUsers()
+	if err != nil {
+		log.Fatalf("Could not check if a user currently exists. Error: %v", err)
+	}
+
+	if len(users) < 1 {
+		if err := SetupInitialUser(authRepo, config); err != nil {
+			log.Fatalf("Could not create initial user. Error: %v", err)
+		}
+
+		log.Printf("Initial superadmin user (%s) has been created!", config.InitialUserUsername)
+	}
+
 	protectMiddleware := middleware.NewAPIProtectMiddleware(config)
 
 	gameService := _gameService.NewGameService()
@@ -211,4 +228,15 @@ func setupEchoPages(logger *zap.Logger, client *kratos.APIClient, config *conf.C
 	kratosGroup.GET("/settings", pagesHandler.SettingsHandler, protect)
 
 	return e, nil
+}
+
+func SetupInitialUser(authRepo domain.AuthRepo, config *conf.Config) error {
+	if _, err := authRepo.CreateUser(&domain.Traits{
+		Email:    config.InitialUserEmail,
+		Username: config.InitialUserUsername,
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
