@@ -41,7 +41,6 @@ func (r *serverRepo) fetch(ctx context.Context, query string, args ...interface{
 
 	results := make([]*domain.Server, 0)
 	for rows.Next() {
-
 		server := &domain.Server{}
 
 		if err := r.scanRows(rows, server); err != nil {
@@ -58,6 +57,8 @@ func (r *serverRepo) fetch(ctx context.Context, query string, args ...interface{
 	return results, nil
 }
 
+// Store stores a new server in the database. The following fields must be set on the passed in server:
+// Game, Name, Address, RCONPort, RCONPassword.
 func (r *serverRepo) Store(ctx context.Context, server *domain.Server) error {
 	const op = opTag + "Store"
 

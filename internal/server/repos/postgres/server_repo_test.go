@@ -31,7 +31,7 @@ func Test(t *testing.T) {
 
 			db, mock, err = sqlmock.New()
 			if err != nil {
-				t.Fatalf("Could not create new sqlmocker. Error: %v", err)
+				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
 			}
 
 			repo = NewServerRepo(db, zap.NewNop())
@@ -41,7 +41,7 @@ func Test(t *testing.T) {
 			_ = db.Close()
 		})
 
-		g.Describe("Success()", func() {
+		g.Describe("Success", func() {
 			g.BeforeEach(func() {
 				// All tests will call Prepare so we can set this here to avoid duplication
 				mock.ExpectPrepare("INSERT INTO Servers")
@@ -87,7 +87,7 @@ func Test(t *testing.T) {
 				mock.ExpectPrepare("INSERT INTO Servers")
 			})
 
-			g.It("Should return an error", func() {
+			g.It("Should return an error on SQL error", func() {
 				mock.ExpectExec("INSERT INTO Servers").WillReturnError(fmt.Errorf(""))
 
 				server := &domain.Server{Name: "Test"}
@@ -119,7 +119,7 @@ func Test(t *testing.T) {
 			_ = db.Close()
 		})
 
-		g.Describe("Success", func() {
+		g.Describe("A result was found", func() {
 			var mockServer *domain.Server
 			var mockRows *sqlmock.Rows
 
@@ -160,7 +160,7 @@ func Test(t *testing.T) {
 			})
 		})
 
-		g.Describe("Fail", func() {
+		g.Describe("No result found", func() {
 			g.It("Should return domain.ErrNotFound if no results were found", func() {
 				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers")).WillReturnRows(sqlmock.NewRows(
 					[]string{"ServerID", "Game", "Name", "Address", "RCONPort", "RCONPassword", "CreatedAt", "ModifiedAt"}))
