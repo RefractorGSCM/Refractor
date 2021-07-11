@@ -18,9 +18,6 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
-	sqladapter "github.com/Blank-Xu/sql-adapter"
-	"github.com/casbin/casbin/v2"
-	"github.com/casbin/casbin/v2/model"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -46,14 +43,9 @@ func main() {
 		log.Fatalf("Could not set up logger. Error: %v", err)
 	}
 
-	db, driverName, err := setupDatabase(config.DBDriver, config.DBSource)
+	db, _, err := setupDatabase(config.DBDriver, config.DBSource)
 	if err != nil {
 		log.Fatalf("Could not set up database. Error: %v", err)
-	}
-
-	enforcer, err := setupCasbin(db, driverName)
-	if err != nil {
-		log.Fatalf("Could not set up casbin. Error: %v", err)
 	}
 
 	apiServer, err := setupEchoAPI(logger, config)
@@ -78,7 +70,7 @@ func main() {
 	}
 
 	if len(users) < 1 {
-		if err := SetupInitialUser(authRepo, enforcer, config); err != nil {
+		if err := SetupInitialUser(authRepo, config); err != nil {
 			log.Fatalf("Could not create initial user. Error: %v", err)
 		}
 
@@ -86,7 +78,7 @@ func main() {
 	}
 
 	protectMiddleware := middleware.NewAPIProtectMiddleware(config)
-	authorizer := _authorizer.NewAuthorizer(enforcer)
+	authorizer := _authorizer.NewAuthorizer(nil)
 
 	gameService := _gameService.NewGameService()
 	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
@@ -97,7 +89,6 @@ func main() {
 
 	// Setup complete. Begin serving requests.
 	logger.Info("Setup complete!")
-	enforcer.Enforce()
 
 	go func() {
 		log.Fatal(authServer.Start(":4455"))
@@ -133,9 +124,6 @@ func setupDatabase(dbDriver, dbSource string) (*sql.DB, string, error) {
 // Embed migration files into compiled binary for portability
 //go:embed migrations/*.sql
 var migrationFS embed.FS
-
-//go:embed rbac_model.conf
-var rbacModel string
 
 func setupPostgres(dbURI string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", dbURI)
@@ -175,26 +163,6 @@ func setupPostgres(dbURI string) (*sql.DB, error) {
 	return db, nil
 }
 
-func setupCasbin(db *sql.DB, dbType string) (*casbin.Enforcer, error) {
-	// Init casbin adapter
-	adapter, err := sqladapter.NewAdapter(db, dbType, "Casbin")
-	if err != nil {
-		return nil, errors.Wrap(err, "Could not create casbin sql adapter")
-	}
-
-	casbinModel, err := model.NewModelFromString(rbacModel)
-	if err != nil {
-		return nil, errors.Wrap(err, "Could not get casbin model")
-	}
-
-	enforcer, err := casbin.NewEnforcer(casbinModel, adapter)
-	if err != nil {
-		return nil, errors.Wrap(err, "Could not create casbin enforcer")
-	}
-
-	return enforcer, nil
-}
-
 func setupKratos() *kratos.APIClient {
 	kratosConf := kratos.NewConfiguration()
 	kratosConf.Scheme = "http"
@@ -232,8 +200,8 @@ func setupEchoPages(logger *zap.Logger, client *kratos.APIClient, config *conf.C
 	return e, nil
 }
 
-func SetupInitialUser(authRepo domain.AuthRepo, enforcer *casbin.Enforcer, config *conf.Config) error {
-	user, err := authRepo.CreateUser(&domain.Traits{
+func SetupInitialUser(authRepo domain.AuthRepo, config *conf.Config) error {
+	_, err := authRepo.CreateUser(&domain.Traits{
 		Email:    config.InitialUserEmail,
 		Username: config.InitialUserUsername,
 	})
@@ -241,11 +209,7 @@ func SetupInitialUser(authRepo domain.AuthRepo, enforcer *casbin.Enforcer, confi
 		return err
 	}
 
-	// Grant superadmin
-	_, err = enforcer.AddGroupingPolicy(user.Identity.Id, "superadmin", "refractor")
-	if err != nil {
-		return err
-	}
+	// TODO: Grant permissions
 
 	return nil
 }
