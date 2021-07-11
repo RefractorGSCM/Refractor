@@ -5,12 +5,14 @@ import "github.com/spf13/viper"
 // Config stores all configuration of Refractor.
 // The values are read in by Viper from a config file or from environment variables.
 type Config struct {
-	DBDriver     string `mapstructure:"DB_DRIVER"`
-	DBSource     string `mapstructure:"DB_SOURCE"`
-	APIBind      string `mapstructure:"API_BIND"`
-	KratosPublic string `mapstructure:"KRATOS_PUBLIC_ROOT"`
-	KratosAdmin  string `mapstructure:"KRATOS_ADMIN_ROOT"`
-	Mode         string `mapstructure:"MODE"`
+	DBDriver            string `mapstructure:"DB_DRIVER"`
+	DBSource            string `mapstructure:"DB_SOURCE"`
+	APIBind             string `mapstructure:"API_BIND"`
+	KratosPublic        string `mapstructure:"KRATOS_PUBLIC_ROOT"`
+	KratosAdmin         string `mapstructure:"KRATOS_ADMIN_ROOT"`
+	Mode                string `mapstructure:"MODE"`
+	InitialUserEmail    string `mapstructure:"INITIAL_USER_EMAIL"`
+	InitialUserUsername string `mapstructure:"INITIAL_USER_USERNAME"`
 }
 
 // LoadConfig reads configuration from a file or environment variables.
