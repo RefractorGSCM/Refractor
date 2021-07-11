@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS Groups(
+    GroupID SERIAL PRIMARY KEY,
+    Name VARCHAR(20) NOT NULL,
+    Color INT NOT NULL DEFAULT CAST(x'e0e0e0' AS INT),
+    Position INT NOT NULL,
+    Permissions VARCHAR(20) NOT NULL,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ModifiedAt TIMESTAMP
+);
+
+CREATE TRIGGER update_groups_modat BEFORE UPDATE ON Groups
+    FOR EACH ROW EXECUTE PROCEDURE update_modified_at_column();
