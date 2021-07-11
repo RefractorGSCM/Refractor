@@ -7,6 +7,9 @@ import (
 	_authRepo "Refractor/internal/auth/repos/kratos"
 	_authorizer "Refractor/internal/authorizer"
 	_gameService "Refractor/internal/game/service"
+	_groupHandler "Refractor/internal/group/delivery/http"
+	_groupRepo "Refractor/internal/group/repos/postgres"
+	_groupService "Refractor/internal/group/service"
 	_serverHandler "Refractor/internal/server/delivery/http"
 	_postgresServerRepo "Refractor/internal/server/repos/postgres"
 	_serverService "Refractor/internal/server/service"
@@ -24,6 +27,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/jackc/pgx/v4"
 	"github.com/labstack/echo/v4"
+	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	kratos "github.com/ory/kratos-client-go"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -79,6 +83,10 @@ func main() {
 
 	protectMiddleware := middleware.NewAPIProtectMiddleware(config)
 	authorizer := _authorizer.NewAuthorizer(nil)
+
+	groupRepo := _groupRepo.NewGroupRepo(db, logger)
+	groupService := _groupService.NewGroupService(groupRepo, time.Second*2)
+	_groupHandler.ApplyGroupHandler(apiGroup, groupService, authorizer, protectMiddleware)
 
 	gameService := _gameService.NewGameService()
 	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
@@ -177,6 +185,13 @@ func setupEchoAPI(logger *zap.Logger, config *conf.Config) (*echo.Echo, error) {
 	e := echo.New()
 	e.HTTPErrorHandler = api.GetEchoErrorHandler(logger)
 
+	e.Use(echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
+		AllowOrigins:     []string{"*"},
+		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
+		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
+		AllowCredentials: true,
+	}))
+
 	return e, nil
 }
 
@@ -191,7 +206,7 @@ func setupEchoPages(logger *zap.Logger, client *kratos.APIClient, config *conf.C
 
 	pagesHandler := auth.NewPublicHandlers(client, config)
 
-	echo.NotFoundHandler = pagesHandler.RootHandler
+	//echo.NotFoundHandler = pagesHandler.RootHandler
 	kratosGroup := e.Group("/k")
 	kratosGroup.GET("/login", pagesHandler.LoginHandler)
 	kratosGroup.GET("/recovery", pagesHandler.RecoveryHandler)

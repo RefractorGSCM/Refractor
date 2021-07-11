@@ -2,7 +2,6 @@ package http
 
 import (
 	"Refractor/domain"
-	"Refractor/pkg/api/middleware"
 	"github.com/labstack/echo/v4"
 )
 
@@ -18,9 +17,7 @@ func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, authorizer
 	// Create the server routing group
 	serverGroup := apiGroup.Group("/servers")
 
-	enforcer := middleware.NewEnforcer(authorizer, "refractor", "servers")
-
-	serverGroup.GET("/", handler.GetServers, protect, enforcer.Enforce("access"))
+	serverGroup.GET("/", handler.GetServers, protect)
 }
 
 // GetServers is the route handler for /api/v1/servers
