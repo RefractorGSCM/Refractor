@@ -5,6 +5,7 @@ import (
 	"Refractor/domain"
 	"Refractor/games/mordhau"
 	_authRepo "Refractor/internal/auth/repos/kratos"
+	_authorizer "Refractor/internal/authorizer"
 	_gameService "Refractor/internal/game/service"
 	_serverHandler "Refractor/internal/server/delivery/http"
 	_postgresServerRepo "Refractor/internal/server/repos/postgres"
@@ -77,7 +78,7 @@ func main() {
 	}
 
 	if len(users) < 1 {
-		if err := SetupInitialUser(authRepo, config); err != nil {
+		if err := SetupInitialUser(authRepo, enforcer, config); err != nil {
 			log.Fatalf("Could not create initial user. Error: %v", err)
 		}
 
@@ -85,13 +86,14 @@ func main() {
 	}
 
 	protectMiddleware := middleware.NewAPIProtectMiddleware(config)
+	authorizer := _authorizer.NewAuthorizer(enforcer)
 
 	gameService := _gameService.NewGameService()
 	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
 
 	serverRepo := _postgresServerRepo.NewServerRepo(db, logger)
 	serverService := _serverService.NewServerService(serverRepo, time.Second*2)
-	_serverHandler.ApplyServerHandler(apiGroup, serverService, protectMiddleware)
+	_serverHandler.ApplyServerHandler(apiGroup, serverService, authorizer, protectMiddleware)
 
 	// Setup complete. Begin serving requests.
 	logger.Info("Setup complete!")
@@ -230,11 +232,18 @@ func setupEchoPages(logger *zap.Logger, client *kratos.APIClient, config *conf.C
 	return e, nil
 }
 
-func SetupInitialUser(authRepo domain.AuthRepo, config *conf.Config) error {
-	if _, err := authRepo.CreateUser(&domain.Traits{
+func SetupInitialUser(authRepo domain.AuthRepo, enforcer *casbin.Enforcer, config *conf.Config) error {
+	user, err := authRepo.CreateUser(&domain.Traits{
 		Email:    config.InitialUserEmail,
 		Username: config.InitialUserUsername,
-	}); err != nil {
+	})
+	if err != nil {
+		return err
+	}
+
+	// Grant superadmin
+	_, err = enforcer.AddGroupingPolicy(user.Identity.Id, "superadmin", "refractor")
+	if err != nil {
 		return err
 	}
 
