@@ -6,7 +6,6 @@ require (
 	github.com/Blank-Xu/sql-adapter v0.0.0-20201228072413-5276c89fa383 // indirect
 	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
-	github.com/casbin/casbin/v2 v2.31.9 // indirect
 	github.com/franela/goblin v0.0.0-20210519012713-85d372ac71e2 // indirect
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible // indirect
 	github.com/golang-migrate/migrate/v4 v4.14.2-0.20210521165626-8a1a8534dc64 // indirect
