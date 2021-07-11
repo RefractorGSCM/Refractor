@@ -76,8 +76,20 @@ func NewBrowserProtectMiddleware(config *conf.Config) echo.MiddlewareFunc {
 func NewAPIProtectMiddleware(config *conf.Config) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			cookiePresent := false
+			bearerPresent := false
+
 			authHeader := c.Request().Header.Get("Authorization")
-			if authHeader == "" {
+			if authHeader != "" {
+				bearerPresent = true
+			}
+
+			sessionCookie, err := c.Cookie("ory_kratos_session")
+			if err == nil && sessionCookie != nil {
+				cookiePresent = true
+			}
+
+			if !cookiePresent && !bearerPresent {
 				return c.JSON(http.StatusUnauthorized, unauthorized)
 			}
 
@@ -88,7 +100,14 @@ func NewAPIProtectMiddleware(config *conf.Config) echo.MiddlewareFunc {
 				return err
 			}
 
-			req.Header.Set("Authorization", authHeader)
+			// Set auth proof. Cookie takes priority, bearer token is used as fallback.
+			if cookiePresent {
+				for _, cookie := range c.Cookies() {
+					req.AddCookie(cookie)
+				}
+			} else if bearerPresent {
+				req.Header.Set("Authorization", authHeader)
+			}
 
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
