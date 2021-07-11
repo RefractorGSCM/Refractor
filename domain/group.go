@@ -24,5 +24,5 @@ type GroupRepo interface {
 type GroupService interface {
 	Store(c context.Context, group *Group) error
 	GetAll(c context.Context) ([]*Group, error)
-	GetByID(c context.Context) (*Group, error)
+	GetByID(c context.Context, id int64) (*Group, error)
 }

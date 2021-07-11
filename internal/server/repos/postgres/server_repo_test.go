@@ -51,7 +51,7 @@ func Test(t *testing.T) {
 				mock.ExpectExec("INSERT INTO Servers").WillReturnResult(sqlmock.NewResult(1, 1))
 
 				server := &domain.Server{Name: "Test"}
-				err := repo.Store(context.Background(), server)
+				err := repo.Store(context.TODO(), server)
 
 				Expect(err).To(BeNil())
 				Expect(mock.ExpectationsWereMet()).To(BeNil())
@@ -61,7 +61,7 @@ func Test(t *testing.T) {
 				mock.ExpectExec("INSERT INTO Servers").WillReturnResult(sqlmock.NewResult(1, 1))
 
 				server := &domain.Server{Name: "Test"}
-				_ = repo.Store(context.Background(), server)
+				_ = repo.Store(context.TODO(), server)
 
 				Expect(server.ID).To(Equal(int64(1)))
 				Expect(mock.ExpectationsWereMet()).To(BeNil())
@@ -91,7 +91,7 @@ func Test(t *testing.T) {
 				mock.ExpectExec("INSERT INTO Servers").WillReturnError(fmt.Errorf(""))
 
 				server := &domain.Server{Name: "Test"}
-				err := repo.Store(context.Background(), server)
+				err := repo.Store(context.TODO(), server)
 
 				Expect(err).ToNot(BeNil())
 				Expect(mock.ExpectationsWereMet()).To(BeNil())
@@ -144,7 +144,7 @@ func Test(t *testing.T) {
 			g.It("Should not return an error", func() {
 				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers")).WillReturnRows(mockRows)
 
-				_, err := repo.GetByID(context.Background(), 1)
+				_, err := repo.GetByID(context.TODO(), 1)
 
 				Expect(err).To(BeNil())
 			})
@@ -152,7 +152,7 @@ func Test(t *testing.T) {
 			g.It("Should return the correct rows scanned to a server object", func() {
 				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers")).WillReturnRows(mockRows)
 
-				server, _ := repo.GetByID(context.Background(), mockServer.ID)
+				server, _ := repo.GetByID(context.TODO(), mockServer.ID)
 
 				Expect(server).ToNot(BeNil())
 				Expect(server).To(Equal(mockServer))
@@ -165,7 +165,7 @@ func Test(t *testing.T) {
 				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers")).WillReturnRows(sqlmock.NewRows(
 					[]string{"ServerID", "Game", "Name", "Address", "RCONPort", "RCONPassword", "CreatedAt", "ModifiedAt"}))
 
-				_, err := repo.GetByID(context.Background(), 1)
+				_, err := repo.GetByID(context.TODO(), 1)
 
 				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
 				Expect(mock.ExpectationsWereMet()).To(BeNil())
