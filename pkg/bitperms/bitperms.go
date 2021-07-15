@@ -52,8 +52,8 @@ func (p *Permissions) CheckFlags(flags ...*big.Int) bool {
 }
 
 // ComputeAllowOverrides computes the ALLOW overrides which are stored in a string.
-// If the base permissions value has a flag set to a value which differs from the allow override, it gets set to 1.
-// The overridden values are returned as a new *Permissions instance.
+// If the base permissions value has a flag UNSET and there is a present override for it, it will be SET.
+// The computed overrides are returned as a new *Permissions instance.
 func (p *Permissions) ComputeAllowOverrides(overrideStr string) (*Permissions, error) {
 	base := p.value
 
@@ -65,6 +65,25 @@ func (p *Permissions) ComputeAllowOverrides(overrideStr string) (*Permissions, e
 	overrides := overridesP.value
 
 	output := new(big.Int).Or(base, overrides)
+
+	return newPermission(output), nil
+}
+
+// ComputeDenyOverrides computes the DENY overrides which are stored in a string.
+// If the base permissions value has a flag SET and there is a corresponding override for it, it will be UNSET.
+// The computed overrides are returned as a new *Permissions instance.
+func (p *Permissions) ComputeDenyOverrides(overrideStr string) (*Permissions, error) {
+	base := p.value
+
+	overridesP, err := FromString(overrideStr)
+	if err != nil {
+		return nil, err
+	}
+
+	overrides := overridesP.value
+
+	notOverrides := new(big.Int).Not(overrides)
+	output := new(big.Int).And(base, notOverrides)
 
 	return newPermission(output), nil
 }

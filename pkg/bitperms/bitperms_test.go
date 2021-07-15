@@ -313,5 +313,59 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("ComputeDenyOverrides()", func() {
+			var base *Permissions
+			var overridePerm *Permissions
+			var overrideStr string
+
+			g.BeforeEach(func() {
+				// Create base permission value
+				flag1 := big.NewInt(0).Lsh(big.NewInt(1), 0) // 1 << 0
+				flag2 := big.NewInt(0).Lsh(big.NewInt(1), 1) // 1 << 1
+				flag3 := big.NewInt(0).Lsh(big.NewInt(1), 2) // 1 << 2
+				flag4 := big.NewInt(0).Lsh(big.NewInt(1), 3) // 1 << 3
+
+				basePermVal := new(big.Int).Or(flag1, flag2)
+				basePermVal = basePermVal.Or(basePermVal, flag3)
+				basePermVal = basePermVal.Or(basePermVal, flag4)
+
+				base = newPermission(basePermVal)
+
+				// Create override permission string value
+				oFlag1 := big.NewInt(0).Lsh(big.NewInt(1), 0) // 1 << 0
+				oFlag2 := big.NewInt(0).Lsh(big.NewInt(1), 3) // 1 << 3
+
+				overrideVal := new(big.Int).Or(oFlag1, oFlag2)
+				overridePerm = newPermission(overrideVal)
+				overrideStr = overrideVal.String()
+			})
+
+			g.Describe("Valid overrides string provided", func() {
+				g.It("Should not return an error", func() {
+					_, err := base.ComputeDenyOverrides(overrideStr)
+
+					Expect(err).To(BeNil())
+				})
+
+				g.It("Should return the correct computed permissions value", func() {
+					computed, err := base.ComputeDenyOverrides(overrideStr)
+
+					notOverrides := new(big.Int).Not(overridePerm.value)
+					expected := new(big.Int).And(base.value, notOverrides)
+
+					Expect(err).To(BeNil())
+					Expect(computed.value.Cmp(expected) == 0).To(BeTrue())
+				})
+			})
+
+			g.Describe("An invalid overrides string was provided", func() {
+				g.It("Should return an error", func() {
+					_, err := base.ComputeAllowOverrides("invalidstr")
+
+					Expect(err).ToNot(BeNil())
+				})
+			})
+		})
 	})
 }
