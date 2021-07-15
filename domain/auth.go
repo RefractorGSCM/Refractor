@@ -2,6 +2,7 @@ package domain
 
 import (
 	kratos "github.com/ory/kratos-client-go"
+	"math/big"
 )
 
 type Traits struct {
@@ -30,6 +31,22 @@ type AuthRepo interface {
 	GetAllUsers() ([]*AuthUser, error)
 }
 
+type AuthObject string
+
+const (
+	AuthObjRefractor = AuthObject("REFRACTOR")
+	AuthObjServer    = AuthObject("SERVER")
+)
+
+type AuthScope struct {
+	// Type represents the object type being authenticated against. e.g SERVER
+	Type AuthObject
+
+	// ID represents an object identifier. e.g 1 (Server ID)
+	ID interface{}
+}
+
+// Authorizer represents an entity which can be used to determine if a user has access to perform an action or not.
 type Authorizer interface {
-	HasPermission(userID, domain, object, action string) (bool, error)
+	HasPermission(scope AuthScope, userID string, requiredFlags []*big.Int) (bool, error)
 }
