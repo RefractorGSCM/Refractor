@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="Refractor Copyright" pattern="!file[Refractor]:.idea//*&amp;&amp;!file:.gitignore&amp;&amp;!file:go.mod&amp;&amp;!file:go.sum&amp;&amp;!file:Makefile&amp;&amp;!file:compose-postgres.yml&amp;&amp;!file:docker-compose.dev.yml&amp;&amp;!file:LICENSE&amp;&amp;!file:README.md" />
+</component>
