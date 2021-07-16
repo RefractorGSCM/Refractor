@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"Refractor/domain"
+	"Refractor/pkg/perms"
 	"context"
 	"database/sql"
 	"github.com/pkg/errors"
@@ -15,11 +16,54 @@ type groupRepo struct {
 	logger *zap.Logger
 }
 
-func NewGroupRepo(db *sql.DB, logger *zap.Logger) domain.GroupRepo {
-	return &groupRepo{
+func NewGroupRepo(db *sql.DB, logger *zap.Logger) (domain.GroupRepo, error) {
+	repo := &groupRepo{
 		db:     db,
 		logger: logger,
 	}
+
+	// Check if a group with ID 1 (everyone) exists. If it does not, we create it.
+	if _, err := repo.GetByID(context.TODO(), 1); errors.Cause(err) == domain.ErrNotFound {
+		if err := repo.createDefaultGroup(); err != nil {
+			return nil, err
+		}
+	}
+
+	return repo, nil
+}
+
+func (r *groupRepo) createDefaultGroup() error {
+	const op = opTag + "createDefaultGroup"
+
+	newGroup := &domain.Group{
+		ID:          1,
+		Name:        "Everyone",
+		Color:       0xb0b0b0,
+		Position:    1,
+		Permissions: perms.GetDefaultPermissions().String(),
+	}
+
+	query := "SELECT MAX(Position) FROM Groups;"
+
+	row := r.db.QueryRow(query)
+
+	var highestPosition *int = new(int)
+	if err := row.Scan(&highestPosition); err != nil && err != sql.ErrNoRows {
+		return errors.Wrap(err, op)
+	}
+
+	defaultPos := 0
+	if highestPosition == nil {
+		highestPosition = &defaultPos
+	}
+
+	query = "INSERT INTO Groups (GroupID, Name, Color, Position, Permissions) VALUES ($1, $2, $3, $4, $5);"
+
+	if _, err := r.db.Exec(query, 1, newGroup.Name, newGroup.Color, *highestPosition+1, newGroup.Permissions); err != nil {
+		return errors.Wrap(err, op)
+	}
+
+	return nil
 }
 
 func (r *groupRepo) fetch(ctx context.Context, query string, args ...interface{}) ([]*domain.Group, error) {

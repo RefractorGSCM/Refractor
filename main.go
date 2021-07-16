@@ -74,6 +74,7 @@ func main() {
 		log.Fatalf("Could not check if a user currently exists. Error: %v", err)
 	}
 
+	// If no users exist, we create one from the initial user config variables.
 	if len(users) < 1 {
 		if err := SetupInitialUser(authRepo, config); err != nil {
 			log.Fatalf("Could not create initial user. Error: %v", err)
@@ -87,7 +88,10 @@ func main() {
 
 	perms.GetFlag("Test")
 
-	groupRepo := _groupRepo.NewGroupRepo(db, logger)
+	groupRepo, err := _groupRepo.NewGroupRepo(db, logger)
+	if err != nil {
+		log.Fatalf("Could not set up group repository. Error: %v", err)
+	}
 	groupService := _groupService.NewGroupService(groupRepo, time.Second*2)
 	_groupHandler.ApplyGroupHandler(apiGroup, groupService, authorizer, protectMiddleware)
 

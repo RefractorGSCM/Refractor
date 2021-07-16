@@ -27,7 +27,7 @@ func FromString(str string) (*Permissions, error) {
 	return newPermission(p), nil
 }
 
-func (p *Permissions) ToString() string {
+func (p *Permissions) String() string {
 	return p.value.String()
 }
 

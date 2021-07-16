@@ -79,3 +79,7 @@ func GetDescription(flag FlagName) string {
 
 	return desc
 }
+
+func GetDefaultPermissions() *bitperms.Permissions {
+	return defaultPermissions
+}

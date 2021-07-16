@@ -53,7 +53,7 @@ func Test(t *testing.T) {
 			})
 		})
 
-		g.Describe("ToString()", func() {
+		g.Describe("String()", func() {
 			var perm *Permissions
 
 			g.Before(func() {
@@ -66,7 +66,7 @@ func Test(t *testing.T) {
 			})
 
 			g.It("Should return the correct string value", func() {
-				Expect(perm.ToString()).To(Equal(iString))
+				Expect(perm.String()).To(Equal(iString))
 			})
 		})
 
