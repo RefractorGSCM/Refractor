@@ -12,7 +12,7 @@ import (
 
 const (
 	FlagAdministrator = FlagName("FLAG_ADMINISTRATOR")
-	FlagViewServer    = FlagName("FLAG_VIEW_SERVER")
+	FlagViewServers   = FlagName("FLAG_VIEW_SERVERS")
 )
 
 type FlagName string
@@ -42,7 +42,7 @@ func init() {
 						  absolutely need it.`,
 		},
 		{
-			name:        FlagViewServer,
+			name:        FlagViewServers,
 			description: "Allows viewing of servers",
 		},
 		// ADD NEW FLAGS HERE. Do not touch any of the above flags!
@@ -50,7 +50,7 @@ func init() {
 
 	// Create default permissions value
 	defaultPermissions = bitperms.NewPermissionBuilder().
-		AddFlag(GetFlag(FlagViewServer)).
+		AddFlag(GetFlag(FlagViewServers)).
 		GetPermission()
 }
 

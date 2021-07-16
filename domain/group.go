@@ -19,6 +19,7 @@ type GroupRepo interface {
 	Store(ctx context.Context, group *Group) error
 	GetAll(ctx context.Context) ([]*Group, error)
 	GetByID(ctx context.Context, id int64) (*Group, error)
+	GetUserGroups(ctx context.Context, userID string) ([]*Group, error)
 }
 
 type GroupService interface {
