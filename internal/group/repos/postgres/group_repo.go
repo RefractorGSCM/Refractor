@@ -117,6 +117,12 @@ func (r *groupRepo) GetByID(ctx context.Context, id int64) (*domain.Group, error
 	return nil, errors.Wrap(domain.ErrNotFound, op)
 }
 
+func (r *groupRepo) GetUserGroups(ctx context.Context, userID string) ([]*domain.Group, error) {
+	const op = opTag + "GetUserGroups"
+
+	return nil, nil
+}
+
 // Scan helpers
 func (r *groupRepo) scanRow(row *sql.Row, group *domain.Group) error {
 	return row.Scan(&group.ID, &group.Name, &group.Color, &group.Position, &group.Permissions, &group.CreatedAt, &group.ModifiedAt)
