@@ -270,6 +270,92 @@ func Test(t *testing.T) {
 		})
 	})
 
+	g.Describe("GetUserGroups()", func() {
+		var repo domain.GroupRepo
+		var mock sqlmock.Sqlmock
+		var db *sql.DB
+		var cols []string
+
+		g.BeforeEach(func() {
+			var err error
+
+			db, mock, err = sqlmock.New()
+			if err != nil {
+				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
+			}
+
+			repo, _ = NewGroupRepo(db, zap.NewNop())
+
+			cols = []string{"GroupID", "Name", "Color", "Position", "Permissions", "CreatedAt", "ModifiedAt"}
+		})
+
+		g.Describe("User groups were found", func() {
+			var groups []*domain.Group
+
+			g.Before(func() {
+				groups = append(groups, &domain.Group{
+					ID:          1,
+					Name:        "Group 1",
+					Color:       1234,
+					Position:    1,
+					Permissions: "2657643576",
+					CreatedAt:   time.Time{},
+					ModifiedAt:  time.Time{},
+				})
+
+				groups = append(groups, &domain.Group{
+					ID:          2,
+					Name:        "Group 2",
+					Color:       54533,
+					Position:    2,
+					Permissions: "763456333",
+					CreatedAt:   time.Time{},
+					ModifiedAt:  time.Time{},
+				})
+			})
+
+			g.BeforeEach(func() {
+				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM UserGroups")).WillReturnRows(sqlmock.NewRows(cols).
+					AddRow(groups[0].ID, groups[0].Name, groups[0].Color, groups[0].Position, groups[0].Permissions, groups[0].CreatedAt, groups[0].ModifiedAt).
+					AddRow(groups[1].ID, groups[1].Name, groups[1].Color, groups[1].Position, groups[1].Permissions, groups[1].CreatedAt, groups[1].ModifiedAt))
+			})
+
+			g.It("Should not return an error", func() {
+				_, err := repo.GetUserGroups(context.TODO(), "userid")
+
+				Expect(err).To(BeNil())
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+
+			g.It("Should scan and return user groups", func() {
+				foundGroups, _ := repo.GetUserGroups(context.TODO(), "userid")
+
+				Expect(foundGroups).To(Equal(groups))
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+		})
+
+		g.Describe("No user groups were found", func() {
+			g.BeforeEach(func() {
+				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM UserGroups")).WillReturnRows(sqlmock.NewRows(cols))
+			})
+
+			g.It("Should return domain.ErrNotFound error", func() {
+				_, err := repo.GetUserGroups(context.TODO(), "userid")
+
+				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+
+			g.It("Should return nil", func() {
+				foundGroups, _ := repo.GetUserGroups(context.TODO(), "userid")
+
+				Expect(foundGroups).To(BeNil())
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+		})
+	})
+
 	g.Describe("GetUserOverrides()", func() {
 		var repo domain.GroupRepo
 		var mock sqlmock.Sqlmock
@@ -287,8 +373,6 @@ func Test(t *testing.T) {
 			repo, _ = NewGroupRepo(db, zap.NewNop())
 
 			cols = []string{"AllowOverrides", "DenyOverrides"}
-
-			mock.ExpectPrepare("SELECT AllowOverrides, DenyOverrides FROM UserOverrides")
 		})
 
 		g.Describe("User overrides were found", func() {
