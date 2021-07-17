@@ -100,12 +100,14 @@ func main() {
 	}
 
 	protectMiddleware := middleware.NewAPIProtectMiddleware(config)
-	authorizer := _authorizer.NewAuthorizer()
 
 	groupRepo, err := _groupRepo.NewGroupRepo(db, logger)
 	if err != nil {
 		log.Fatalf("Could not set up group repository. Error: %v", err)
 	}
+
+	authorizer := _authorizer.NewAuthorizer(groupRepo)
+
 	groupService := _groupService.NewGroupService(groupRepo, time.Second*2)
 	_groupHandler.ApplyGroupHandler(apiGroup, groupService, authorizer, protectMiddleware)
 

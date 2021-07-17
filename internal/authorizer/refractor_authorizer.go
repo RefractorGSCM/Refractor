@@ -17,8 +17,78 @@
 
 package authorizer
 
-import "math/big"
+import (
+	"Refractor/domain"
+	"Refractor/pkg/bitperms"
+	"context"
+	"github.com/pkg/errors"
+)
 
-func (a *authorizer) hasPermissionRefractor(userID string, requiredFlags []*big.Int) (bool, error) {
-	return false, nil
+func (a *authorizer) hasPermissionRefractor(ctx context.Context, userID string, checkAuth domain.AuthChecker) (bool, error) {
+	const op = opTag + "hasPermissionRefractor"
+
+	computedPerms, err := a.computePermissionsRefractor(ctx, userID)
+	if err != nil {
+		return false, errors.Wrap(err, op)
+	}
+
+	return checkAuth(computedPerms)
+}
+
+func (a *authorizer) computePermissionsRefractor(ctx context.Context, userID string) (*bitperms.Permissions, error) {
+	const op = opTag + "computePermissionsRefractor"
+
+	// Permissions are computed in the following order:
+	// 1. Base permissions given to everyone (default group) at the application level
+	// 2. Permissions allowed to a user by their groups at the application level
+	// 3. User-specific overrides that deny permissions at the application level
+	// 4. User-specific overrides that allow permissions at the application level
+	// The final calculated result is the user's fully computed permissions.
+
+	// 1. Compute base permissions
+	groupEveryone, err := a.groupRepo.GetByID(ctx, domain.BaseGroupID)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	basePermissions, err := bitperms.FromString(groupEveryone.Permissions)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	// 2. Compute permissions granted by the user's groups
+	userGroups, err := a.groupRepo.GetUserGroups(ctx, userID)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	for _, group := range userGroups {
+		groupPerms, err := bitperms.FromString(group.Permissions)
+		if err != nil {
+			return nil, errors.Wrap(err, op)
+		}
+
+		// Or together the base perms and the group's perms to get the combined value
+		basePermissions = basePermissions.Or(groupPerms)
+	}
+
+	// 3a Get user overrides
+	userOverrides, err := a.groupRepo.GetUserOverrides(ctx, userID)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	// 3. Compute user deny overrides
+	basePermissions, err = basePermissions.ComputeDenyOverrides(userOverrides.DenyOverrides)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	// 4. Compute user allow overrides
+	basePermissions, err = basePermissions.ComputeAllowOverrides(userOverrides.AllowOverrides)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	return basePermissions, nil
 }

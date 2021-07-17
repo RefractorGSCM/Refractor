@@ -17,8 +17,11 @@
 
 package authorizer
 
-import "math/big"
+import (
+	"Refractor/domain"
+	"context"
+)
 
-func (a *authorizer) hasPermissionServer(userID string, serverID int64, requiredFlags []*big.Int) (bool, error) {
+func (a *authorizer) hasPermissionServer(ctx context.Context, userID string, serverID int64, comparator domain.AuthChecker) (bool, error) {
 	return false, nil
 }

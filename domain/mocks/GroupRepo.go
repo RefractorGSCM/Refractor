@@ -60,6 +60,66 @@ func (_m *GroupRepo) GetByID(ctx context.Context, id int64) (*domain.Group, erro
 	return r0, r1
 }
 
+// GetUserGroups provides a mock function with given fields: ctx, userID
+func (_m *GroupRepo) GetUserGroups(ctx context.Context, userID string) ([]*domain.Group, error) {
+	ret := _m.Called(ctx, userID)
+
+	var r0 []*domain.Group
+	if rf, ok := ret.Get(0).(func(context.Context, string) []*domain.Group); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*domain.Group)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetUserOverrides provides a mock function with given fields: ctx, userID
+func (_m *GroupRepo) GetUserOverrides(ctx context.Context, userID string) (*domain.Overrides, error) {
+	ret := _m.Called(ctx, userID)
+
+	var r0 *domain.Overrides
+	if rf, ok := ret.Get(0).(func(context.Context, string) *domain.Overrides); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Overrides)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SetUserOverrides provides a mock function with given fields: ctx, userID, overrides
+func (_m *GroupRepo) SetUserOverrides(ctx context.Context, userID string, overrides *domain.Overrides) error {
+	ret := _m.Called(ctx, userID, overrides)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, *domain.Overrides) error); ok {
+		r0 = rf(ctx, userID, overrides)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Store provides a mock function with given fields: ctx, group
 func (_m *GroupRepo) Store(ctx context.Context, group *domain.Group) error {
 	ret := _m.Called(ctx, group)

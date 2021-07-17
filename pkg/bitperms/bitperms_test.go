@@ -384,5 +384,20 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("Or()", func() {
+			g.It("Should return a Permissions struct containing the correct output", func() {
+				flag1 := big.NewInt(0).Lsh(big.NewInt(1), 0) // 1 << 0
+				flag2 := big.NewInt(0).Lsh(big.NewInt(1), 1) // 1 << 1
+				flag3 := big.NewInt(0).Lsh(big.NewInt(1), 2) // 1 << 2
+
+				perm1 := newPermission(new(big.Int).Or(flag1, flag2))                         // flag1 and flag2
+				perm2 := newPermission(new(big.Int).Or(new(big.Int).Or(flag1, flag2), flag3)) // all three flags
+
+				expectedVal := new(big.Int).Or(new(big.Int).Or(flag1, flag2), flag3)
+
+				Expect(perm1.Or(perm2).value).To(Equal(expectedVal))
+			})
+		})
 	})
 }
