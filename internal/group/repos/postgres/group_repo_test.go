@@ -53,7 +53,7 @@ func Test(t *testing.T) {
 				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
 			}
 
-			repo = NewGroupRepo(db, zap.NewNop())
+			repo, _ = NewGroupRepo(db, zap.NewNop())
 
 			mock.ExpectPrepare("INSERT INTO Groups")
 		})
@@ -110,7 +110,7 @@ func Test(t *testing.T) {
 				t.Fatalf("Could not create new sqlmocker. Error: %v", err)
 			}
 
-			repo = NewGroupRepo(db, zap.NewNop())
+			repo, _ = NewGroupRepo(db, zap.NewNop())
 		})
 
 		g.After(func() {
@@ -180,7 +180,7 @@ func Test(t *testing.T) {
 				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
 			}
 
-			repo = NewGroupRepo(db, zap.NewNop())
+			repo, _ = NewGroupRepo(db, zap.NewNop())
 		})
 
 		g.After(func() {
@@ -265,6 +265,75 @@ func Test(t *testing.T) {
 				res, _ := repo.GetAll(context.TODO())
 
 				Expect(res).To(Equal([]*domain.Group{}))
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+		})
+	})
+
+	g.Describe("GetUserOverrides()", func() {
+		var repo domain.GroupRepo
+		var mock sqlmock.Sqlmock
+		var db *sql.DB
+		var cols []string
+
+		g.BeforeEach(func() {
+			var err error
+
+			db, mock, err = sqlmock.New()
+			if err != nil {
+				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
+			}
+
+			repo, _ = NewGroupRepo(db, zap.NewNop())
+
+			cols = []string{"AllowOverrides", "DenyOverrides"}
+
+			mock.ExpectPrepare("SELECT AllowOverrides, DenyOverrides FROM UserOverrides")
+		})
+
+		g.Describe("User overrides were found", func() {
+			g.BeforeEach(func() {
+				mock.ExpectQuery("SELECT AllowOverrides, DenyOverrides FROM UserOverrides").WillReturnRows(
+					sqlmock.NewRows(cols).AddRow("1234", "12345"))
+			})
+
+			g.It("Should not return an error", func() {
+				_, err := repo.GetUserOverrides(context.TODO(), "testuserid")
+
+				Expect(err).To(BeNil())
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+
+			g.It("Should return an Overrides struct with the scanned values", func() {
+				expected := &domain.Overrides{
+					AllowOverrides: "1234",
+					DenyOverrides:  "12345",
+				}
+
+				overrides, _ := repo.GetUserOverrides(context.TODO(), "testuserid")
+
+				Expect(overrides).To(Equal(expected))
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+		})
+
+		g.Describe("No overrides were found", func() {
+			g.BeforeEach(func() {
+				mock.ExpectQuery("SELECT AllowOverrides, DenyOverrides FROM UserOverrides").WillReturnRows(
+					sqlmock.NewRows(cols))
+			})
+
+			g.It("Should return domain.ErrNotFound", func() {
+				_, err := repo.GetUserOverrides(context.TODO(), "testuserid")
+
+				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+
+			g.It("Should return nil", func() {
+				overrides, _ := repo.GetUserOverrides(context.TODO(), "testuserid")
+
+				Expect(overrides).To(BeNil())
 				Expect(mock.ExpectationsWereMet()).To(BeNil())
 			})
 		})
