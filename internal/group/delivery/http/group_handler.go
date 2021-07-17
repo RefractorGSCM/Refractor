@@ -19,26 +19,29 @@ package http
 
 import (
 	"Refractor/domain"
+	"Refractor/params"
+	"Refractor/pkg/api"
 	"Refractor/pkg/perms"
 	"fmt"
 	"github.com/labstack/echo/v4"
-	"math"
 	"net/http"
-	"time"
 )
 
 type groupHandler struct {
-	service domain.GroupService
+	service    domain.GroupService
+	authorizer domain.Authorizer
 }
 
 func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, authorizer domain.Authorizer, protect echo.MiddlewareFunc) {
 	handler := &groupHandler{
-		service: s,
+		service:    s,
+		authorizer: authorizer,
 	}
 
 	// Create the server routing group
 	groupGroup := apiGroup.Group("/groups", protect)
 
+	groupGroup.POST("/", handler.CreateGroup)
 	groupGroup.GET("/", handler.GetGroups)
 	groupGroup.GET("/permissions", handler.GetPermissions)
 }
@@ -71,44 +74,45 @@ func (h *groupHandler) GetPermissions(c echo.Context) error {
 	})
 }
 
+func (h *groupHandler) CreateGroup(c echo.Context) error {
+	var body params.CreateGroupParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	newGroup := &domain.Group{
+		Name:        body.Name,
+		Color:       body.Color,
+		Position:    body.Position,
+		Permissions: body.Permissions,
+	}
+
+	user := c.Get("user").(*domain.AuthUser)
+
+	// Check if the user has permission to create this groups
+	if hasPermission, err := checkCreateGroupPermissions(user, newGroup); !hasPermission {
+		return err
+	}
+
+	if err := h.service.Store(c.Request().Context(), newGroup); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusCreated, &domain.Response{
+		Success: true,
+		Message: "group created",
+		Payload: newGroup,
+	})
+}
+
 func (h *groupHandler) GetGroups(c echo.Context) error {
-	groups := []*domain.Group{
-		{
-			ID:          2,
-			Name:        "Super Admin",
-			Color:       0xff0000,
-			Position:    1,
-			Permissions: "4",
-			CreatedAt:   time.Now(),
-			ModifiedAt:  time.Now(),
-		},
-		{
-			ID:          3,
-			Name:        "Admin",
-			Color:       0xff4d00,
-			Position:    2,
-			Permissions: "4",
-			CreatedAt:   time.Now(),
-			ModifiedAt:  time.Now(),
-		},
-		{
-			ID:          4,
-			Name:        "Moderator",
-			Color:       0x1ceb23,
-			Position:    3,
-			Permissions: "4",
-			CreatedAt:   time.Now(),
-			ModifiedAt:  time.Now(),
-		},
-		{
-			ID:          1,
-			Name:        "Everyone",
-			Color:       0xe3e3e3,
-			Position:    math.MaxInt32,
-			Permissions: "2",
-			CreatedAt:   time.Now(),
-			ModifiedAt:  time.Now(),
-		},
+	groups, err := h.service.GetAll(c.Request().Context())
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(http.StatusOK, &domain.Response{
@@ -116,4 +120,8 @@ func (h *groupHandler) GetGroups(c echo.Context) error {
 		Message: fmt.Sprintf("fetched %d groups", len(groups)),
 		Payload: groups,
 	})
+}
+
+func checkCreateGroupPermissions(user *domain.AuthUser, newGroup *domain.Group) (bool, error) {
+	return false, nil
 }
