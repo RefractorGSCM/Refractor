@@ -68,6 +68,19 @@ func (p *Permissions) CheckFlags(flags ...*big.Int) bool {
 	return true
 }
 
+func (p *Permissions) Value() *big.Int {
+	return p.value
+}
+
+// Or runs a bitwise OR comparison between the struct's permissions value and the passed in permissions value.
+// The result of this comparison is returned as a new *Permissions instance.
+func (p *Permissions) Or(permissions *Permissions) *Permissions {
+	baseVal := p.value
+	cmpVal := permissions.value
+
+	return newPermission(new(big.Int).Or(baseVal, cmpVal))
+}
+
 // ComputeAllowOverrides computes the ALLOW overrides which are stored in a string.
 // If the base permissions value has a flag UNSET and there is a present override for it, it will be SET.
 // The computed overrides are returned as a new *Permissions instance.

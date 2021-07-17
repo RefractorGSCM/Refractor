@@ -19,21 +19,26 @@ package authorizer
 
 import (
 	"Refractor/domain"
+	"context"
 	"fmt"
-	"math/big"
 )
 
+const opTag = "Authorizer."
+
 type authorizer struct {
+	groupRepo domain.GroupRepo
 }
 
-func NewAuthorizer() domain.Authorizer {
-	return &authorizer{}
+func NewAuthorizer(gr domain.GroupRepo) domain.Authorizer {
+	return &authorizer{
+		groupRepo: gr,
+	}
 }
 
-func (a *authorizer) HasPermission(scope domain.AuthScope, userID string, requiredFlags []*big.Int) (bool, error) {
+func (a *authorizer) HasPermission(ctx context.Context, scope domain.AuthScope, userID string, comparator domain.AuthChecker) (bool, error) {
 	switch scope.Type {
 	case domain.AuthObjRefractor:
-		return a.hasPermissionRefractor(userID, requiredFlags)
+		return a.hasPermissionRefractor(ctx, userID, comparator)
 
 	case domain.AuthObjServer:
 		serverID, ok := scope.ID.(int64)
@@ -41,7 +46,7 @@ func (a *authorizer) HasPermission(scope domain.AuthScope, userID string, requir
 			return false, fmt.Errorf("an invalid server id was provided")
 		}
 
-		return a.hasPermissionServer(userID, serverID, requiredFlags)
+		return a.hasPermissionServer(ctx, userID, serverID, comparator)
 	}
 
 	return false, fmt.Errorf("an invalid AuthScope.type was provided")

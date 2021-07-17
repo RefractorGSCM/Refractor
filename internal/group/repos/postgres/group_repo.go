@@ -195,6 +195,20 @@ func (r *groupRepo) GetUserGroups(ctx context.Context, userID string) ([]*domain
 	return nil, domain.ErrNotFound
 }
 
+func (r *groupRepo) SetUserOverrides(ctx context.Context, userID string, overrides *domain.Overrides) error {
+	const op = opTag + "SetUserOverrides"
+
+	query := "UPDATE UserOverrides SET AllowOverrides = $1, DenyOverrides = $2 WHERE UserID = $3;"
+
+	_, err := r.db.ExecContext(ctx, overrides.AllowOverrides, overrides.DenyOverrides, userID)
+	if err != nil {
+		r.logger.Error("Could not execute query", zap.String("query", query), zap.Error(err))
+		return errors.Wrap(err, op)
+	}
+
+	return nil
+}
+
 func (r *groupRepo) GetUserOverrides(ctx context.Context, userID string) (*domain.Overrides, error) {
 	const op = opTag + "GetUserOverrides"
 

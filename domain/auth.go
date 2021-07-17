@@ -18,8 +18,9 @@
 package domain
 
 import (
+	"Refractor/pkg/bitperms"
+	"context"
 	kratos "github.com/ory/kratos-client-go"
-	"math/big"
 )
 
 type Traits struct {
@@ -63,7 +64,9 @@ type AuthScope struct {
 	ID interface{}
 }
 
+type AuthChecker func(permissions *bitperms.Permissions) (bool, error)
+
 // Authorizer represents an entity which can be used to determine if a user has access to perform an action or not.
 type Authorizer interface {
-	HasPermission(scope AuthScope, userID string, requiredFlags []*big.Int) (bool, error)
+	HasPermission(ctx context.Context, scope AuthScope, userID string, authChecker AuthChecker) (bool, error)
 }

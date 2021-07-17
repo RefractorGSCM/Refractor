@@ -22,6 +22,8 @@ import (
 	"time"
 )
 
+const BaseGroupID = 1
+
 type Group struct {
 	ID          int64     `json:"id"`
 	Name        string    `json:"name"`
@@ -32,11 +34,19 @@ type Group struct {
 	ModifiedAt  time.Time `json:"modified_at"`
 }
 
+type Overrides struct {
+	AllowOverrides string `json:"allow_overrides"`
+	DenyOverrides  string `json:"deny_overrides"`
+}
+
+// GroupRepo is an interface defining the behaviour required to manage permissions.
 type GroupRepo interface {
 	Store(ctx context.Context, group *Group) error
 	GetAll(ctx context.Context) ([]*Group, error)
 	GetByID(ctx context.Context, id int64) (*Group, error)
 	GetUserGroups(ctx context.Context, userID string) ([]*Group, error)
+	GetUserOverrides(ctx context.Context, userID string) (*Overrides, error)
+	SetUserOverrides(ctx context.Context, userID string, overrides *Overrides) error
 }
 
 type GroupService interface {
