@@ -184,6 +184,33 @@ func (r *groupRepo) GetUserGroups(ctx context.Context, userID string) ([]*domain
 	return nil, nil
 }
 
+func (r *groupRepo) GetUserOverrides(ctx context.Context, userID string) (*domain.Overrides, error) {
+	const op = opTag + "GetUserOverrides"
+
+	query := "SELECT AllowOverrides, DenyOverrides FROM UserOverrides WHERE UserID = $1 LIMIT 1;"
+
+	stmt, err := r.db.PrepareContext(ctx, query)
+	if err != nil {
+		r.logger.Error("Could not prepare statement", zap.String("query", query), zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	row := stmt.QueryRow()
+
+	overrides := &domain.Overrides{}
+
+	if err := row.Scan(&overrides.AllowOverrides, &overrides.DenyOverrides); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Wrap(domain.ErrNotFound, op)
+		}
+
+		r.logger.Error("Could not scan user overrides", zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	return overrides, nil
+}
+
 // Scan helpers
 func (r *groupRepo) scanRow(row *sql.Row, group *domain.Group) error {
 	return row.Scan(&group.ID, &group.Name, &group.Color, &group.Position, &group.Permissions, &group.CreatedAt, &group.ModifiedAt)
