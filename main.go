@@ -16,7 +16,6 @@ import (
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/conf"
-	"Refractor/pkg/perms"
 	"Refractor/pkg/tmpl"
 	"Refractor/platforms/playfab"
 	"database/sql"
@@ -85,8 +84,6 @@ func main() {
 
 	protectMiddleware := middleware.NewAPIProtectMiddleware(config)
 	authorizer := _authorizer.NewAuthorizer()
-
-	perms.GetFlag("Test")
 
 	groupRepo, err := _groupRepo.NewGroupRepo(db, logger)
 	if err != nil {
