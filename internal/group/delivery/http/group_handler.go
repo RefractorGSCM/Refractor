@@ -44,6 +44,7 @@ func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, authorizer d
 }
 
 type resPermission struct {
+	ID          int            `json:"id"`
 	Name        perms.FlagName `json:"name"`
 	Description string         `json:"description"`
 	Flag        string         `json:"flag"`
@@ -56,6 +57,7 @@ func (h *groupHandler) GetPermissions(c echo.Context) error {
 
 	for _, perm := range permissions {
 		resPerms = append(resPerms, &resPermission{
+			ID:          perm.ID,
 			Name:        perm.Name,
 			Description: perms.GetDescription(perm.Name),
 			Flag:        perm.Flag.String(),

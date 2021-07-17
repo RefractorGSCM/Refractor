@@ -36,12 +36,14 @@ const (
 type FlagName string
 
 type Permission struct {
+	ID          int
 	Name        FlagName
 	Description string
 	Flag        *big.Int
 }
 
 var permissions = map[FlagName]*Permission{}
+var permissionsArr []*Permission
 var defaultPermissions *bitperms.Permissions
 
 func init() {
@@ -85,11 +87,15 @@ func registerPermissions(newPerms []Permission) {
 		next := bitperms.GetFlag(i)
 		i++
 
-		permissions[perm.Name] = &Permission{
+		newPermission := &Permission{
+			ID:          int(i),
 			Name:        perm.Name,
 			Description: perm.Description,
 			Flag:        next,
 		}
+
+		permissions[perm.Name] = newPermission
+		permissionsArr = append(permissionsArr, newPermission)
 	}
 }
 
@@ -99,13 +105,7 @@ func GetFlag(flag FlagName) *big.Int {
 }
 
 func GetAll() []*Permission {
-	var all []*Permission
-
-	for _, val := range permissions {
-		all = append(all, val)
-	}
-
-	return all
+	return permissionsArr
 }
 
 var whitespacePattern = regexp.MustCompile("\\s+")
