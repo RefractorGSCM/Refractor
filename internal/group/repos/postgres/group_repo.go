@@ -181,7 +181,18 @@ func (r *groupRepo) GetByID(ctx context.Context, id int64) (*domain.Group, error
 func (r *groupRepo) GetUserGroups(ctx context.Context, userID string) ([]*domain.Group, error) {
 	const op = opTag + "GetUserGroups"
 
-	return nil, nil
+	query := "SELECT * FROM UserGroups WHERE UserID = $1;"
+
+	results, err := r.fetch(ctx, query, userID)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	if len(results) > 0 {
+		return results, nil
+	}
+
+	return nil, domain.ErrNotFound
 }
 
 func (r *groupRepo) GetUserOverrides(ctx context.Context, userID string) (*domain.Overrides, error) {
@@ -189,13 +200,7 @@ func (r *groupRepo) GetUserOverrides(ctx context.Context, userID string) (*domai
 
 	query := "SELECT AllowOverrides, DenyOverrides FROM UserOverrides WHERE UserID = $1 LIMIT 1;"
 
-	stmt, err := r.db.PrepareContext(ctx, query)
-	if err != nil {
-		r.logger.Error("Could not prepare statement", zap.String("query", query), zap.Error(err))
-		return nil, errors.Wrap(err, op)
-	}
-
-	row := stmt.QueryRow()
+	row := r.db.QueryRowContext(ctx, query, userID)
 
 	overrides := &domain.Overrides{}
 
