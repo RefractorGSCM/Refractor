@@ -422,4 +422,45 @@ func Test(t *testing.T) {
 			})
 		})
 	})
+
+	g.Describe("Delete()", func() {
+		var repo domain.GroupRepo
+		var mock sqlmock.Sqlmock
+		var db *sql.DB
+
+		g.BeforeEach(func() {
+			var err error
+
+			db, mock, err = sqlmock.New()
+			if err != nil {
+				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
+			}
+
+			repo, _ = NewGroupRepo(db, zap.NewNop())
+		})
+
+		g.Describe("Target group exists", func() {
+			g.BeforeEach(func() {
+				mock.ExpectExec("DELETE FROM Groups").WillReturnResult(sqlmock.NewResult(0, 1))
+			})
+
+			g.It("Should not return an error", func() {
+				err := repo.Delete(context.TODO(), 1)
+
+				Expect(err).To(BeNil())
+			})
+		})
+
+		g.Describe("Target group does not exist", func() {
+			g.BeforeEach(func() {
+				mock.ExpectExec("DELETE FROM Groups").WillReturnResult(sqlmock.NewResult(0, 0))
+			})
+
+			g.It("Should return the error domain.ErrNotFound", func() {
+				err := repo.Delete(context.TODO(), 1)
+
+				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+			})
+		})
+	})
 }

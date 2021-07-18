@@ -91,10 +91,12 @@ type GroupRepo interface {
 	SetUserOverrides(ctx context.Context, userID string, overrides *Overrides) error
 	GetBaseGroup(ctx context.Context) (*Group, error)
 	SetBaseGroup(ctx context.Context, group *Group) error
+	Delete(ctx context.Context, id int64) error
 }
 
 type GroupService interface {
 	Store(c context.Context, group *Group) error
 	GetAll(c context.Context) ([]*Group, error)
 	GetByID(c context.Context, id int64) (*Group, error)
+	Delete(c context.Context, id int64) error
 }
