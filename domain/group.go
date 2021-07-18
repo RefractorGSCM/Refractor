@@ -20,10 +20,9 @@ package domain
 import (
 	"context"
 	"database/sql"
+	"sort"
 	"time"
 )
-
-const BaseGroupID = 1
 
 type Group struct {
 	ID          int64     `json:"id"`
@@ -43,6 +42,18 @@ type DBGroup struct {
 	Permissions string
 	CreatedAt   sql.NullTime
 	ModifiedAt  sql.NullTime
+}
+
+// GroupSlice is an alias for []*Group. It exists so that we can attach helper functions to it such as sorters.
+type GroupSlice []*Group
+
+// SortByPosition sorts the GroupSlice by the position field in ascending order.
+func (gs GroupSlice) SortByPosition() []*Group {
+	sort.Slice(gs, func(i, j int) bool {
+		return gs[i].Position < gs[j].Position
+	})
+
+	return gs
 }
 
 func (dbg DBGroup) Group() *Group {
@@ -78,6 +89,8 @@ type GroupRepo interface {
 	GetUserGroups(ctx context.Context, userID string) ([]*Group, error)
 	GetUserOverrides(ctx context.Context, userID string) (*Overrides, error)
 	SetUserOverrides(ctx context.Context, userID string, overrides *Overrides) error
+	GetBaseGroup(ctx context.Context) (*Group, error)
+	SetBaseGroup(ctx context.Context, group *Group) error
 }
 
 type GroupService interface {

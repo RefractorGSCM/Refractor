@@ -22,9 +22,11 @@ import (
 	"Refractor/pkg/perms"
 	"context"
 	"database/sql"
+	"encoding/gob"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"math"
+	"os"
 )
 
 const opTag = "GroupRepo.Postgres."
@@ -40,33 +42,7 @@ func NewGroupRepo(db *sql.DB, logger *zap.Logger) (domain.GroupRepo, error) {
 		logger: logger,
 	}
 
-	// Check if a group with ID 1 (everyone) exists. If it does not, we create it.
-	if groups, err := repo.GetAll(context.TODO()); len(groups) == 0 || errors.Cause(err) == domain.ErrNotFound {
-		if err := repo.createDefaultGroup(); err != nil {
-			return nil, err
-		}
-	}
-
 	return repo, nil
-}
-
-func (r *groupRepo) createDefaultGroup() error {
-	const op = opTag + "createDefaultGroup"
-
-	newGroup := &domain.Group{
-		Name:        "Everyone",
-		Color:       0xb0b0b0,
-		Position:    math.MaxInt32,
-		Permissions: perms.GetDefaultPermissions().String(),
-	}
-
-	query := "INSERT INTO Groups (Name, Color, Position, Permissions) VALUES ($1, $2, $3, $4);"
-
-	if _, err := r.db.Exec(query, newGroup.Name, newGroup.Color, newGroup.Position, newGroup.Permissions); err != nil {
-		return errors.Wrap(err, op)
-	}
-
-	return nil
 }
 
 func (r *groupRepo) fetch(ctx context.Context, query string, args ...interface{}) ([]*domain.Group, error) {
@@ -213,6 +189,75 @@ func (r *groupRepo) GetUserOverrides(ctx context.Context, userID string) (*domai
 	}
 
 	return overrides, nil
+}
+
+var defaultDefaultGroup = &domain.Group{
+	ID:          -1,
+	Name:        "Everyone",
+	Color:       0xb5b5b5,
+	Position:    math.MaxInt32,
+	Permissions: perms.GetDefaultPermissions().String(),
+}
+
+func (r *groupRepo) GetBaseGroup(ctx context.Context) (*domain.Group, error) {
+	const op = opTag + "GetBaseGroup"
+
+	// Check if data file exists
+	if _, err := os.Stat("./data/default_group.gob"); os.IsNotExist(err) {
+		// If it doesn't, use SetBaseGroup to create it
+		if err := r.SetBaseGroup(ctx, defaultDefaultGroup); err != nil {
+			return nil, errors.Wrap(err, op)
+		}
+	}
+
+	// Open data file and decode the data within
+	file, err := os.Open("./data/default_group.gob")
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	defer func() {
+		_ = file.Close()
+	}()
+
+	decoder := gob.NewDecoder(file)
+
+	defaultGroup := &domain.Group{}
+	if err := decoder.Decode(defaultGroup); err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	return defaultGroup, nil
+}
+
+func (r *groupRepo) SetBaseGroup(ctx context.Context, group *domain.Group) error {
+	const op = opTag + "SetBaseGroup"
+
+	// Check if data directory exists
+	if _, err := os.Stat("./data"); os.IsNotExist(err) {
+		if err := os.Mkdir("./data", os.ModePerm); err != nil {
+			return errors.Wrap(err, op)
+		}
+	}
+
+	// Create data file
+	file, err := os.Create("./data/default_group.gob")
+	if err != nil {
+		return errors.Wrap(err, op)
+	}
+
+	defer func() {
+		_ = file.Close()
+	}()
+
+	// Gob encode the group struct
+	encoder := gob.NewEncoder(file)
+
+	if err := encoder.Encode(group); err != nil {
+		return errors.Wrap(err, op)
+	}
+
+	return nil
 }
 
 // Scan helpers

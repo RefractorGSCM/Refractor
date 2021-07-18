@@ -64,7 +64,7 @@ func Test(t *testing.T) {
 
 		g.Describe("Success", func() {
 			g.It("Should not return an error", func() {
-				mock.ExpectExec("INSERT INTO Groups").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectQuery("INSERT INTO Groups").WillReturnRows(sqlmock.NewRows([]string{"ID"}).AddRow(1))
 
 				group := &domain.Group{Name: "Test"}
 				err := repo.Store(context.TODO(), group)
@@ -74,7 +74,7 @@ func Test(t *testing.T) {
 			})
 
 			g.It("Should update the group to have the new ID", func() {
-				mock.ExpectExec("INSERT INTO Groups").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectQuery("INSERT INTO Groups").WillReturnRows(sqlmock.NewRows([]string{"ID"}).AddRow(1))
 
 				group := &domain.Group{Name: "Test"}
 				_ = repo.Store(context.TODO(), group)
@@ -86,7 +86,7 @@ func Test(t *testing.T) {
 
 		g.Describe("Fail", func() {
 			g.It("Should return an error on SQL error", func() {
-				mock.ExpectExec("INSERT INTO Groups").WillReturnError(fmt.Errorf("err"))
+				mock.ExpectQuery("INSERT INTO Groups").WillReturnError(fmt.Errorf("err"))
 
 				group := &domain.Group{Name: "Test"}
 				err := repo.Store(context.TODO(), group)
@@ -259,7 +259,7 @@ func Test(t *testing.T) {
 				Expect(mock.ExpectationsWereMet()).To(BeNil())
 			})
 
-			g.It("Should return an empty array", func() {
+			g.It("Should return just the base group", func() {
 				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Groups")).WillReturnRows(sqlmock.NewRows(cols))
 
 				res, _ := repo.GetAll(context.TODO())

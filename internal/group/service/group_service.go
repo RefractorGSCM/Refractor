@@ -46,7 +46,19 @@ func (s *groupService) GetAll(c context.Context) ([]*domain.Group, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.GetAll(ctx)
+	groups, err := s.repo.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add base group to the results
+	baseGroup, err := s.repo.GetBaseGroup(ctx)
+	if err != nil {
+		return nil, err
+	}
+	groups = append(groups, baseGroup)
+
+	return domain.GroupSlice(groups).SortByPosition(), nil
 }
 
 func (s *groupService) GetByID(c context.Context, id int64) (*domain.Group, error) {

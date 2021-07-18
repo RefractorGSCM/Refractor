@@ -119,7 +119,7 @@ func TestAuthorizer(t *testing.T) {
 					groupRepo: repo,
 				}
 
-				repo.On("GetByID", mock.Anything, mock.AnythingOfType("int64")).Return(_baseGroup, nil)
+				repo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
 				repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
 				repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
 			})
@@ -190,7 +190,7 @@ func TestAuthorizer(t *testing.T) {
 						Permissions: baseGroupPerms.String(),
 					}
 
-					repo.On("GetByID", mock.Anything, mock.AnythingOfType("int64")).Return(baseGroup, nil)
+					repo.On("GetBaseGroup", mock.Anything).Return(baseGroup, nil)
 
 					// extra groups setup
 					groupPerms := bitperms.NewPermissionBuilder().
@@ -289,7 +289,7 @@ func TestAuthorizer(t *testing.T) {
 
 			g.Describe("No user groups are set", func() {
 				g.BeforeEach(func() {
-					repo.On("GetByID", mock.Anything, mock.AnythingOfType("int64")).Return(_baseGroup, nil)
+					repo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
 					repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(nil, domain.ErrNotFound)
 					repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
 				})
@@ -318,7 +318,7 @@ func TestAuthorizer(t *testing.T) {
 
 			g.Describe("No user overrides are set", func() {
 				g.BeforeEach(func() {
-					repo.On("GetByID", mock.Anything, mock.AnythingOfType("int64")).Return(_baseGroup, nil)
+					repo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
 					repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
 					repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(nil, domain.ErrNotFound)
 				})
@@ -362,7 +362,7 @@ func TestAuthorizer(t *testing.T) {
 
 			g.Describe("User has permission", func() {
 				g.BeforeEach(func() {
-					repo.On("GetByID", mock.Anything, mock.AnythingOfType("int64")).Return(_baseGroup, nil)
+					repo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
 					repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
 					repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
 				})
@@ -424,7 +424,7 @@ func TestAuthorizer(t *testing.T) {
 							GetPermission().String(),
 					}
 
-					repo.On("GetByID", mock.Anything, mock.AnythingOfType("int64")).Return(_baseGroup, nil)
+					repo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
 					repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
 					repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
 				})
