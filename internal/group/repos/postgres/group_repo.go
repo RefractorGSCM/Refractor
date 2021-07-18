@@ -23,10 +23,12 @@ import (
 	"context"
 	"database/sql"
 	"encoding/gob"
+	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"math"
 	"os"
+	"time"
 )
 
 const opTag = "GroupRepo.Postgres."
@@ -34,12 +36,16 @@ const opTag = "GroupRepo.Postgres."
 type groupRepo struct {
 	db     *sql.DB
 	logger *zap.Logger
+	cache  *gocache.Cache
 }
+
+const cacheKeyBaseGroup = "base_group"
 
 func NewGroupRepo(db *sql.DB, logger *zap.Logger) (domain.GroupRepo, error) {
 	repo := &groupRepo{
 		db:     db,
 		logger: logger,
+		cache:  gocache.New(30*time.Minute, 1*time.Hour),
 	}
 
 	return repo, nil
@@ -202,6 +208,13 @@ var defaultDefaultGroup = &domain.Group{
 func (r *groupRepo) GetBaseGroup(ctx context.Context) (*domain.Group, error) {
 	const op = opTag + "GetBaseGroup"
 
+	// Check if base group exists in cache. If it does, return it and skip the IO.
+	if bg, found := r.cache.Get(cacheKeyBaseGroup); found {
+		baseGroup := bg.(*domain.Group)
+
+		return baseGroup, nil
+	}
+
 	// Check if data file exists
 	if _, err := os.Stat("./data/default_group.gob"); os.IsNotExist(err) {
 		// If it doesn't, use SetBaseGroup to create it
@@ -222,12 +235,15 @@ func (r *groupRepo) GetBaseGroup(ctx context.Context) (*domain.Group, error) {
 
 	decoder := gob.NewDecoder(file)
 
-	defaultGroup := &domain.Group{}
-	if err := decoder.Decode(defaultGroup); err != nil {
+	baseGroup := &domain.Group{}
+	if err := decoder.Decode(baseGroup); err != nil {
 		return nil, errors.Wrap(err, op)
 	}
 
-	return defaultGroup, nil
+	// Set base group in cache
+	r.cache.Set(cacheKeyBaseGroup, baseGroup, 1*time.Hour)
+
+	return baseGroup, nil
 }
 
 func (r *groupRepo) SetBaseGroup(ctx context.Context, group *domain.Group) error {
@@ -256,6 +272,9 @@ func (r *groupRepo) SetBaseGroup(ctx context.Context, group *domain.Group) error
 	if err := encoder.Encode(group); err != nil {
 		return errors.Wrap(err, op)
 	}
+
+	// Update cache
+	r.cache.Set(cacheKeyBaseGroup, group, 1*time.Hour)
 
 	return nil
 }
