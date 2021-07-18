@@ -286,6 +286,66 @@ func TestAuthorizer(t *testing.T) {
 					Expect(computed.Value()).To(Equal(expected))
 				})
 			})
+
+			g.Describe("No user groups are set", func() {
+				g.BeforeEach(func() {
+					repo.On("GetByID", mock.Anything, mock.AnythingOfType("int64")).Return(_baseGroup, nil)
+					repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(nil, domain.ErrNotFound)
+					repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
+				})
+
+				g.It("Should skip checking group permissions", func() {
+					bgp, _ := bitperms.FromString(_baseGroup.Permissions)
+					bgp, _ = bgp.ComputeDenyOverrides(_userOverrides.DenyOverrides)
+					bgp, _ = bgp.ComputeAllowOverrides(_userOverrides.AllowOverrides)
+
+					computed, _ := a.computePermissionsRefractor(context.TODO(), "userid")
+
+					//fmt.Printf("Expected1:    %.10b\n", bgp.Value())
+					//fmt.Printf("Computed1:    %.10b\n", computed.Value())
+
+					Expect(computed.Value()).To(Equal(bgp.Value()))
+					mock.AssertExpectationsForObjects(t)
+				})
+
+				g.It("Should not throw an error", func() {
+					_, err := a.computePermissionsRefractor(context.TODO(), "userid")
+
+					Expect(err).To(BeNil())
+					mock.AssertExpectationsForObjects(t)
+				})
+			})
+
+			g.Describe("No user overrides are set", func() {
+				g.BeforeEach(func() {
+					repo.On("GetByID", mock.Anything, mock.AnythingOfType("int64")).Return(_baseGroup, nil)
+					repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
+					repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(nil, domain.ErrNotFound)
+				})
+
+				g.It("Should skip checking override permissions", func() {
+					bgp, _ := bitperms.FromString(_baseGroup.Permissions)
+					for _, group := range _userGroups {
+						perms, _ := bitperms.FromString(group.Permissions)
+						bgp = bgp.Or(perms)
+					}
+
+					computed, _ := a.computePermissionsRefractor(context.TODO(), "userid")
+
+					//fmt.Printf("Expected1:    %.10b\n", bgp.Value())
+					//fmt.Printf("Computed1:    %.10b\n", computed.Value())
+
+					Expect(computed.Value()).To(Equal(bgp.Value()))
+					mock.AssertExpectationsForObjects(t)
+				})
+
+				g.It("Should not throw an error", func() {
+					_, err := a.computePermissionsRefractor(context.TODO(), "userid")
+
+					Expect(err).To(BeNil())
+					mock.AssertExpectationsForObjects(t)
+				})
+			})
 		})
 
 		g.Describe("hasPermissionRefractor()", func() {
@@ -311,12 +371,14 @@ func TestAuthorizer(t *testing.T) {
 					_, err := a.hasPermissionRefractor(context.TODO(), "userid", testAuthChecker)
 
 					Expect(err).To(BeNil())
+					mock.AssertExpectationsForObjects(t)
 				})
 
 				g.It("Returns true", func() {
 					hasPermission, _ := a.hasPermissionRefractor(context.TODO(), "userid", testAuthChecker)
 
 					Expect(hasPermission).To(BeTrue())
+					mock.AssertExpectationsForObjects(t)
 				})
 			})
 
@@ -380,6 +442,7 @@ func TestAuthorizer(t *testing.T) {
 					hasPermission, _ := a.hasPermissionRefractor(context.TODO(), "userid", authChecker)
 
 					Expect(hasPermission).To(BeFalse())
+					mock.AssertExpectationsForObjects(t)
 				})
 			})
 		})
