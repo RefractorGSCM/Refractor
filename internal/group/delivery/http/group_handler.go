@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"net/http"
+	"strconv"
 )
 
 type groupHandler struct {
@@ -45,6 +46,7 @@ func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, authorizer d
 	groupGroup.POST("/", handler.CreateGroup)
 	groupGroup.GET("/", handler.GetGroups)
 	groupGroup.GET("/permissions", handler.GetPermissions)
+	groupGroup.DELETE("/:id", handler.DeleteGroup)
 }
 
 type resPermission struct {
@@ -70,18 +72,18 @@ func (h *groupHandler) GetPermissions(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
-		Message: "permissions fetched",
+		Message: "Permissions fetched",
 		Payload: resPerms,
 	})
 }
 
 func (h *groupHandler) CreateGroup(c echo.Context) error {
-	// Check if the user has permission to create this groups
+	// Check if the user has permission to create groups
 	ctx := c.Request().Context()
 	user := c.Get("user").(*domain.AuthUser)
 
 	authScope := domain.AuthScope{Type: domain.AuthObjRefractor}
-	hasPermission, err := api.CheckPermissions(ctx, h.authorizer, authScope, user.Identity.Id, createGroupAuthChecker)
+	hasPermission, err := api.CheckPermissions(ctx, h.authorizer, authScope, user.Identity.Id, superAdminAuthChecker)
 	if err != nil {
 		return err
 	}
@@ -114,7 +116,7 @@ func (h *groupHandler) CreateGroup(c echo.Context) error {
 
 	return c.JSON(http.StatusCreated, &domain.Response{
 		Success: true,
-		Message: "group created",
+		Message: "Group created",
 		Payload: newGroup,
 	})
 }
@@ -132,7 +134,41 @@ func (h *groupHandler) GetGroups(c echo.Context) error {
 	})
 }
 
-func createGroupAuthChecker(permissions *bitperms.Permissions) (bool, error) {
+func (h *groupHandler) DeleteGroup(c echo.Context) error {
+	// Check if the user has permission to delete a group
+	ctx := c.Request().Context()
+	user := c.Get("user").(*domain.AuthUser)
+
+	authScope := domain.AuthScope{Type: domain.AuthObjRefractor}
+	hasPermission, err := api.CheckPermissions(ctx, h.authorizer, authScope, user.Identity.Id, superAdminAuthChecker)
+	if err != nil {
+		return err
+	}
+
+	if !hasPermission {
+		return c.JSON(http.StatusUnauthorized, domain.ResponseUnauthorized)
+	}
+
+	groupIDString := c.Param("id")
+
+	groupID, err := strconv.ParseInt(groupIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid group id"), http.StatusBadRequest, "")
+	}
+
+	if err := h.service.Delete(ctx, groupID); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Group deleted",
+	})
+}
+
+// superAdminAuthChecker is technically redundant since the api.CheckPermissions function already checks but we keep
+// it here incase we need to have more precise permission checking later on.
+func superAdminAuthChecker(permissions *bitperms.Permissions) (bool, error) {
 	if permissions.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {
 		return true, nil
 	}

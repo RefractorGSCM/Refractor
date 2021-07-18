@@ -20,6 +20,7 @@ package api
 import (
 	"Refractor/domain"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"net/http"
 )
@@ -46,6 +47,17 @@ func GetEchoErrorHandler(logger *zap.Logger) echo.HTTPErrorHandler {
 			err := c.JSON(echoErr.Code, domain.Response{
 				Success: false,
 				Message: echoErr.Message.(string),
+			})
+			if err != nil {
+				c.Logger().Error(err)
+				return
+			}
+			return
+		} else if errors.Cause(err) == domain.ErrNotFound {
+			// If this error is domain.ErrNotFound, send back a generic 404 Not Found response message
+			err := c.JSON(http.StatusNotFound, domain.Response{
+				Success: false,
+				Message: "Not found",
 			})
 			if err != nil {
 				c.Logger().Error(err)
