@@ -21,6 +21,7 @@ import (
 	"Refractor/domain"
 	"Refractor/params"
 	"Refractor/pkg/api"
+	"Refractor/pkg/bitperms"
 	"Refractor/pkg/perms"
 	"fmt"
 	"github.com/labstack/echo/v4"
@@ -75,6 +76,21 @@ func (h *groupHandler) GetPermissions(c echo.Context) error {
 }
 
 func (h *groupHandler) CreateGroup(c echo.Context) error {
+	// Check if the user has permission to create this groups
+	ctx := c.Request().Context()
+	user := c.Get("user").(*domain.AuthUser)
+
+	authScope := domain.AuthScope{Type: domain.AuthObjRefractor}
+	hasPermission, err := api.CheckPermissions(ctx, h.authorizer, authScope, user.Identity.Id, createGroupAuthChecker)
+	if err != nil {
+		return err
+	}
+
+	if !hasPermission {
+		return c.JSON(http.StatusUnauthorized, domain.ResponseUnauthorized)
+	}
+
+	// Validate request body
 	var body params.CreateGroupParams
 	if err := c.Bind(&body); err != nil {
 		return err
@@ -84,18 +100,12 @@ func (h *groupHandler) CreateGroup(c echo.Context) error {
 		return err
 	}
 
+	// Create the new group
 	newGroup := &domain.Group{
 		Name:        body.Name,
 		Color:       body.Color,
 		Position:    body.Position,
 		Permissions: body.Permissions,
-	}
-
-	user := c.Get("user").(*domain.AuthUser)
-
-	// Check if the user has permission to create this groups
-	if hasPermission, err := checkCreateGroupPermissions(user, newGroup); !hasPermission {
-		return err
 	}
 
 	if err := h.service.Store(c.Request().Context(), newGroup); err != nil {
@@ -122,6 +132,10 @@ func (h *groupHandler) GetGroups(c echo.Context) error {
 	})
 }
 
-func checkCreateGroupPermissions(user *domain.AuthUser, newGroup *domain.Group) (bool, error) {
+func createGroupAuthChecker(permissions *bitperms.Permissions) (bool, error) {
+	if permissions.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {
+		return true, nil
+	}
+
 	return false, nil
 }

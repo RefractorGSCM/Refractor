@@ -15,16 +15,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package domain
+package api
 
-type Response struct {
-	Success bool              `json:"success"`
-	Message string            `json:"message,omitempty"`
-	Errors  map[string]string `json:"errors,omitempty"`
-	Payload interface{}       `json:"payload,omitempty"`
-}
+import (
+	"Refractor/domain"
+	"Refractor/pkg/bitperms"
+	"Refractor/pkg/perms"
+	"context"
+)
 
-var ResponseUnauthorized = &Response{
-	Success: false,
-	Message: "You do not have permission to perform this action",
+// CheckPermissions is a wrapper function which provides automatic checking of if a user is a superadmin.
+func CheckPermissions(ctx context.Context, a domain.Authorizer, scope domain.AuthScope, userID string, authChecker domain.AuthChecker) (bool, error) {
+	hasPermission, err := a.HasPermission(ctx, scope, userID, func(permissions *bitperms.Permissions) (bool, error) {
+		if permissions.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {
+			return true, nil
+		}
+
+		return authChecker(permissions)
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return hasPermission, nil
 }

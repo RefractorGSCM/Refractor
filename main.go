@@ -33,8 +33,10 @@ import (
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/conf"
+	"Refractor/pkg/perms"
 	"Refractor/pkg/tmpl"
 	"Refractor/platforms/playfab"
+	"context"
 	"database/sql"
 	"embed"
 	"fmt"
@@ -85,6 +87,11 @@ func main() {
 	// Set up application components
 	authRepo := _authRepo.NewAuthRepo(config)
 
+	groupRepo, err := _groupRepo.NewGroupRepo(db, logger)
+	if err != nil {
+		log.Fatalf("Could not set up group repository. Error: %v", err)
+	}
+
 	users, err := authRepo.GetAllUsers()
 	if err != nil {
 		log.Fatalf("Could not check if a user currently exists. Error: %v", err)
@@ -92,7 +99,7 @@ func main() {
 
 	// If no users exist, we create one from the initial user config variables.
 	if len(users) < 1 {
-		if err := SetupInitialUser(authRepo, config); err != nil {
+		if err := SetupInitialUser(authRepo, groupRepo, config); err != nil {
 			log.Fatalf("Could not create initial user. Error: %v", err)
 		}
 
@@ -100,11 +107,6 @@ func main() {
 	}
 
 	protectMiddleware := middleware.NewAPIProtectMiddleware(config)
-
-	groupRepo, err := _groupRepo.NewGroupRepo(db, logger)
-	if err != nil {
-		log.Fatalf("Could not set up group repository. Error: %v", err)
-	}
 
 	authorizer := _authorizer.NewAuthorizer(groupRepo, logger)
 
@@ -238,8 +240,8 @@ func setupEchoPages(logger *zap.Logger, client *kratos.APIClient, config *conf.C
 	return e, nil
 }
 
-func SetupInitialUser(authRepo domain.AuthRepo, config *conf.Config) error {
-	_, err := authRepo.CreateUser(&domain.Traits{
+func SetupInitialUser(authRepo domain.AuthRepo, groupRepo domain.GroupRepo, config *conf.Config) error {
+	user, err := authRepo.CreateUser(&domain.Traits{
 		Email:    config.InitialUserEmail,
 		Username: config.InitialUserUsername,
 	})
@@ -247,7 +249,13 @@ func SetupInitialUser(authRepo domain.AuthRepo, config *conf.Config) error {
 		return err
 	}
 
-	// TODO: Grant permissions
+	// Set super admin flag on the user override
+	if err := groupRepo.SetUserOverrides(context.TODO(), user.Identity.Id, &domain.Overrides{
+		AllowOverrides: perms.GetFlag(perms.FlagSuperAdmin).String(),
+		DenyOverrides:  "0",
+	}); err != nil {
+		return err
+	}
 
 	return nil
 }
