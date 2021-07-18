@@ -23,6 +23,7 @@ import (
 	"context"
 	"github.com/franela/goblin"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	"math"
 	"testing"
@@ -178,6 +179,37 @@ func Test(t *testing.T) {
 
 				Expect(err).To(BeNil())
 				Expect(foundGroups).To(Equal(expected))
+			})
+		})
+	})
+
+	g.Describe("Delete()", func() {
+		g.BeforeEach(func() {
+			mockRepo = new(mocks.GroupRepo)
+			service = NewGroupService(mockRepo, time.Second*2)
+		})
+
+		g.Describe("Target group found", func() {
+			g.BeforeEach(func() {
+				mockRepo.On("Delete", mock.Anything, mock.AnythingOfType("int64")).Return(nil)
+			})
+
+			g.It("Should not return an error", func() {
+				err := service.Delete(context.TODO(), 1)
+
+				Expect(err).To(BeNil())
+				mockRepo.AssertExpectations(t)
+			})
+		})
+
+		g.Describe("Target group was not found", func() {
+			g.It("Should return the domain.ErrNotFound error", func() {
+				mockRepo.On("Delete", mock.Anything, mock.AnythingOfType("int64")).Return(domain.ErrNotFound)
+
+				err := service.Delete(context.TODO(), 1)
+
+				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+				mockRepo.AssertExpectations(t)
 			})
 		})
 	})
