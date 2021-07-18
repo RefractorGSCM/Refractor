@@ -19,6 +19,7 @@ package domain
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -32,6 +33,36 @@ type Group struct {
 	Permissions string    `json:"permissions"`
 	CreatedAt   time.Time `json:"created_at"`
 	ModifiedAt  time.Time `json:"modified_at"`
+}
+
+type DBGroup struct {
+	ID          int64
+	Name        string
+	Color       int
+	Position    int
+	Permissions string
+	CreatedAt   sql.NullTime
+	ModifiedAt  sql.NullTime
+}
+
+func (dbg DBGroup) Group() *Group {
+	g := &Group{
+		ID:          dbg.ID,
+		Name:        dbg.Name,
+		Color:       dbg.Color,
+		Position:    dbg.Position,
+		Permissions: dbg.Permissions,
+	}
+
+	if dbg.CreatedAt.Valid {
+		g.CreatedAt = dbg.CreatedAt.Time
+	}
+
+	if dbg.ModifiedAt.Valid {
+		g.ModifiedAt = dbg.ModifiedAt.Time
+	}
+
+	return g
 }
 
 type Overrides struct {

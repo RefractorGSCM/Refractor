@@ -24,6 +24,7 @@ import (
 	"database/sql"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"math"
 )
 
 const opTag = "GroupRepo.Postgres."
@@ -40,7 +41,7 @@ func NewGroupRepo(db *sql.DB, logger *zap.Logger) (domain.GroupRepo, error) {
 	}
 
 	// Check if a group with ID 1 (everyone) exists. If it does not, we create it.
-	if _, err := repo.GetByID(context.TODO(), 1); errors.Cause(err) == domain.ErrNotFound {
+	if groups, err := repo.GetAll(context.TODO()); len(groups) == 0 || errors.Cause(err) == domain.ErrNotFound {
 		if err := repo.createDefaultGroup(); err != nil {
 			return nil, err
 		}
@@ -53,30 +54,15 @@ func (r *groupRepo) createDefaultGroup() error {
 	const op = opTag + "createDefaultGroup"
 
 	newGroup := &domain.Group{
-		ID:          1,
 		Name:        "Everyone",
 		Color:       0xb0b0b0,
-		Position:    1,
+		Position:    math.MaxInt32,
 		Permissions: perms.GetDefaultPermissions().String(),
 	}
 
-	query := "SELECT MAX(Position) FROM Groups;"
+	query := "INSERT INTO Groups (Name, Color, Position, Permissions) VALUES ($1, $2, $3, $4);"
 
-	row := r.db.QueryRow(query)
-
-	var highestPosition *int = new(int)
-	if err := row.Scan(&highestPosition); err != nil && err != sql.ErrNoRows {
-		return errors.Wrap(err, op)
-	}
-
-	defaultPos := 0
-	if highestPosition == nil {
-		highestPosition = &defaultPos
-	}
-
-	query = "INSERT INTO Groups (GroupID, Name, Color, Position, Permissions) VALUES ($1, $2, $3, $4, $5);"
-
-	if _, err := r.db.Exec(query, 1, newGroup.Name, newGroup.Color, *highestPosition+1, newGroup.Permissions); err != nil {
+	if _, err := r.db.Exec(query, newGroup.Name, newGroup.Color, newGroup.Position, newGroup.Permissions); err != nil {
 		return errors.Wrap(err, op)
 	}
 
@@ -102,7 +88,7 @@ func (r *groupRepo) fetch(ctx context.Context, query string, args ...interface{}
 
 	results := make([]*domain.Group, 0)
 	for rows.Next() {
-		group := &domain.Group{}
+		group := &domain.DBGroup{}
 
 		if err := r.scanRows(rows, group); err != nil {
 			if err == sql.ErrNoRows {
@@ -112,7 +98,7 @@ func (r *groupRepo) fetch(ctx context.Context, query string, args ...interface{}
 			return nil, errors.Wrap(err, op)
 		}
 
-		results = append(results, group)
+		results = append(results, group.Group())
 	}
 
 	return results, nil
@@ -123,7 +109,7 @@ func (r *groupRepo) fetch(ctx context.Context, query string, args ...interface{}
 func (r *groupRepo) Store(ctx context.Context, group *domain.Group) error {
 	const op = opTag + "Store"
 
-	query := "INSERT INTO Groups (Name, Color, Position, Permissions) VALUES ($1, $2, $3, $4);"
+	query := "INSERT INTO Groups (Name, Color, Position, Permissions) VALUES ($1, $2, $3, $4) RETURNING GroupID;"
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
@@ -131,15 +117,12 @@ func (r *groupRepo) Store(ctx context.Context, group *domain.Group) error {
 		return errors.Wrap(err, op)
 	}
 
-	res, err := stmt.ExecContext(ctx, group.Name, group.Color, group.Position, group.Permissions)
-	if err != nil {
-		r.logger.Error("Could not execute prepared statement", zap.String("query", query), zap.Error(err))
-		return errors.Wrap(err, op)
-	}
+	row := stmt.QueryRowContext(ctx, group.Name, group.Color, group.Position, group.Permissions)
 
-	id, err := res.LastInsertId()
-	if err != nil {
-		r.logger.Error("Could not get ID of newly inserted community", zap.Error(err))
+	var id int64
+
+	if err := row.Scan(&id); err != nil {
+		r.logger.Error("Could not execute prepared statement", zap.String("query", query), zap.Error(err))
 		return errors.Wrap(err, op)
 	}
 
@@ -198,9 +181,11 @@ func (r *groupRepo) GetUserGroups(ctx context.Context, userID string) ([]*domain
 func (r *groupRepo) SetUserOverrides(ctx context.Context, userID string, overrides *domain.Overrides) error {
 	const op = opTag + "SetUserOverrides"
 
-	query := "UPDATE UserOverrides SET AllowOverrides = $1, DenyOverrides = $2 WHERE UserID = $3;"
+	query := `INSERT INTO UserOverrides (UserID, AllowOverrides, DenyOverrides) VALUES ($1, $2, $3)
+				ON CONFLICT (UserID) DO UPDATE SET AllowOverrides = $4, DenyOverrides = $5;`
 
-	_, err := r.db.ExecContext(ctx, overrides.AllowOverrides, overrides.DenyOverrides, userID)
+	_, err := r.db.ExecContext(ctx, query, userID, overrides.AllowOverrides, overrides.DenyOverrides,
+		overrides.AllowOverrides, overrides.DenyOverrides)
 	if err != nil {
 		r.logger.Error("Could not execute query", zap.String("query", query), zap.Error(err))
 		return errors.Wrap(err, op)
@@ -231,10 +216,10 @@ func (r *groupRepo) GetUserOverrides(ctx context.Context, userID string) (*domai
 }
 
 // Scan helpers
-func (r *groupRepo) scanRow(row *sql.Row, group *domain.Group) error {
+func (r *groupRepo) scanRow(row *sql.Row, group *domain.DBGroup) error {
 	return row.Scan(&group.ID, &group.Name, &group.Color, &group.Position, &group.Permissions, &group.CreatedAt, &group.ModifiedAt)
 }
 
-func (r *groupRepo) scanRows(rows *sql.Rows, group *domain.Group) error {
+func (r *groupRepo) scanRows(rows *sql.Rows, group *domain.DBGroup) error {
 	return rows.Scan(&group.ID, &group.Name, &group.Color, &group.Position, &group.Permissions, &group.CreatedAt, &group.ModifiedAt)
 }
