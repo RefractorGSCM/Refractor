@@ -67,3 +67,10 @@ func (s *groupService) GetByID(c context.Context, id int64) (*domain.Group, erro
 
 	return s.repo.GetByID(ctx, id)
 }
+
+func (s *groupService) Delete(c context.Context, id int64) error {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.Delete(ctx, id)
+}
