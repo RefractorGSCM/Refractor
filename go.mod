@@ -15,6 +15,7 @@ require (
 	github.com/labstack/echo/v4 v4.3.0 // indirect
 	github.com/onsi/gomega v1.14.0 // indirect
 	github.com/ory/kratos-client-go v0.6.3-alpha.1 // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sniddunc/mordhau-rcon v0.1.5 // indirect
 	github.com/snowflakedb/glog v0.0.0-20180824191149-f5055e6f21ce // indirect

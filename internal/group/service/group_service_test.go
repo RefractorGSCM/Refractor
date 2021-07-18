@@ -24,6 +24,7 @@ import (
 	"github.com/franela/goblin"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	"math"
 	"testing"
 	"time"
 )
@@ -98,6 +99,7 @@ func Test(t *testing.T) {
 		g.BeforeEach(func() {
 			mockRepo = new(mocks.GroupRepo)
 			service = NewGroupService(mockRepo, time.Second*2)
+			mockGroups = []*domain.Group{}
 
 			mockGroups = append(mockGroups, &domain.Group{
 				ID:          1,
@@ -131,6 +133,20 @@ func Test(t *testing.T) {
 		})
 
 		g.Describe("Results fetched successfully", func() {
+			var baseGroup *domain.Group
+
+			g.BeforeEach(func() {
+				baseGroup = &domain.Group{
+					ID:          -1,
+					Name:        "Everyone",
+					Color:       0xcecece,
+					Position:    math.MaxInt32,
+					Permissions: "2738628437",
+				}
+
+				mockRepo.On("GetBaseGroup", mock.Anything).Return(baseGroup, nil)
+			})
+
 			g.It("Should not return an error", func() {
 				mockRepo.On("GetAll", mock.Anything).Return([]*domain.Group{}, nil)
 
@@ -144,8 +160,24 @@ func Test(t *testing.T) {
 
 				foundGroups, err := service.GetAll(ctx)
 
+				expected := mockGroups
+				expected = append(expected, baseGroup)
+
 				Expect(err).To(BeNil())
-				Expect(foundGroups).To(Equal(mockGroups))
+				Expect(foundGroups).To(Equal(expected))
+			})
+
+			g.It("Should return the groups sorted ascendingly by position", func() {
+				mockRepo.On("GetAll", mock.Anything).Return(mockGroups, nil)
+
+				expected := mockGroups
+				expected = append(mockGroups, baseGroup)
+				expected = domain.GroupSlice(expected).SortByPosition()
+
+				foundGroups, err := service.GetAll(ctx)
+
+				Expect(err).To(BeNil())
+				Expect(foundGroups).To(Equal(expected))
 			})
 		})
 	})

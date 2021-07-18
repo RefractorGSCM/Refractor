@@ -47,9 +47,9 @@ func (a *authorizer) computePermissionsRefractor(ctx context.Context, userID str
 	// The final calculated result is the user's fully computed permissions.
 
 	// 1. Compute base permissions
-	groupEveryone, err := a.groupRepo.GetByID(ctx, domain.BaseGroupID)
+	groupEveryone, err := a.groupRepo.GetBaseGroup(ctx)
 	if err != nil {
-		a.logger.Error("Could not get base group of ID 1", zap.Error(err))
+		a.logger.Error("Could not get base group", zap.Error(err))
 		return nil, errors.Wrap(err, op)
 	}
 
@@ -67,11 +67,6 @@ func (a *authorizer) computePermissionsRefractor(ctx context.Context, userID str
 	}
 
 	for _, group := range userGroups {
-		if group.ID == 1 {
-			// If the base group (everyone) get pulled in for some reason, skip it
-			continue
-		}
-
 		groupPerms, err := bitperms.FromString(group.Permissions)
 		if err != nil {
 			a.logger.Error("Could not parse permissions", zap.Int64("GroupID", group.ID), zap.Error(err))
