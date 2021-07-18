@@ -106,7 +106,7 @@ func main() {
 		log.Fatalf("Could not set up group repository. Error: %v", err)
 	}
 
-	authorizer := _authorizer.NewAuthorizer(groupRepo)
+	authorizer := _authorizer.NewAuthorizer(groupRepo, logger)
 
 	groupService := _groupService.NewGroupService(groupRepo, time.Second*2)
 	_groupHandler.ApplyGroupHandler(apiGroup, groupService, authorizer, protectMiddleware)

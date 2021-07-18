@@ -22,6 +22,7 @@ import (
 	"Refractor/pkg/bitperms"
 	"context"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 func (a *authorizer) hasPermissionRefractor(ctx context.Context, userID string, checkAuth domain.AuthChecker) (bool, error) {
@@ -48,23 +49,32 @@ func (a *authorizer) computePermissionsRefractor(ctx context.Context, userID str
 	// 1. Compute base permissions
 	groupEveryone, err := a.groupRepo.GetByID(ctx, domain.BaseGroupID)
 	if err != nil {
+		a.logger.Error("Could not get base group of ID 1", zap.Error(err))
 		return nil, errors.Wrap(err, op)
 	}
 
 	basePermissions, err := bitperms.FromString(groupEveryone.Permissions)
 	if err != nil {
+		a.logger.Error("Could not parse base group permissions", zap.Error(err))
 		return nil, errors.Wrap(err, op)
 	}
 
 	// 2. Compute permissions granted by the user's groups
 	userGroups, err := a.groupRepo.GetUserGroups(ctx, userID)
-	if err != nil {
+	if err != nil && errors.Cause(err) != domain.ErrNotFound {
+		a.logger.Error("Could not get user groups", zap.String("UserID", userID), zap.Error(err))
 		return nil, errors.Wrap(err, op)
 	}
 
 	for _, group := range userGroups {
+		if group.ID == 1 {
+			// If the base group (everyone) get pulled in for some reason, skip it
+			continue
+		}
+
 		groupPerms, err := bitperms.FromString(group.Permissions)
 		if err != nil {
+			a.logger.Error("Could not parse permissions", zap.Int64("GroupID", group.ID), zap.Error(err))
 			return nil, errors.Wrap(err, op)
 		}
 
@@ -74,20 +84,26 @@ func (a *authorizer) computePermissionsRefractor(ctx context.Context, userID str
 
 	// 3a Get user overrides
 	userOverrides, err := a.groupRepo.GetUserOverrides(ctx, userID)
-	if err != nil {
+	if err != nil && errors.Cause(err) != domain.ErrNotFound {
+		a.logger.Error("Could not get user overrides", zap.String("UserID", userID), zap.Error(err))
 		return nil, errors.Wrap(err, op)
 	}
 
-	// 3. Compute user deny overrides
-	basePermissions, err = basePermissions.ComputeDenyOverrides(userOverrides.DenyOverrides)
-	if err != nil {
-		return nil, errors.Wrap(err, op)
-	}
+	// If the user has overrides set, then compute them
+	if userOverrides != nil {
+		// 3. Compute user deny overrides
+		basePermissions, err = basePermissions.ComputeDenyOverrides(userOverrides.DenyOverrides)
+		if err != nil {
+			a.logger.Error("Could not compute user deny overrides", zap.Error(err))
+			return nil, errors.Wrap(err, op)
+		}
 
-	// 4. Compute user allow overrides
-	basePermissions, err = basePermissions.ComputeAllowOverrides(userOverrides.AllowOverrides)
-	if err != nil {
-		return nil, errors.Wrap(err, op)
+		// 4. Compute user allow overrides
+		basePermissions, err = basePermissions.ComputeAllowOverrides(userOverrides.AllowOverrides)
+		if err != nil {
+			a.logger.Error("Could not compute user allow overrides", zap.Error(err))
+			return nil, errors.Wrap(err, op)
+		}
 	}
 
 	return basePermissions, nil

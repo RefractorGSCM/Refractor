@@ -21,17 +21,20 @@ import (
 	"Refractor/domain"
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 )
 
 const opTag = "Authorizer."
 
 type authorizer struct {
 	groupRepo domain.GroupRepo
+	logger    *zap.Logger
 }
 
-func NewAuthorizer(gr domain.GroupRepo) domain.Authorizer {
+func NewAuthorizer(gr domain.GroupRepo, log *zap.Logger) domain.Authorizer {
 	return &authorizer{
 		groupRepo: gr,
+		logger:    log,
 	}
 }
 
