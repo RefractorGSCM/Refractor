@@ -92,6 +92,7 @@ type GroupRepo interface {
 	GetBaseGroup(ctx context.Context) (*Group, error)
 	SetBaseGroup(ctx context.Context, group *Group) error
 	Delete(ctx context.Context, id int64) error
+	Update(ctx context.Context, id int64, args UpdateArgs) (*Group, error)
 }
 
 type GroupService interface {
@@ -99,4 +100,5 @@ type GroupService interface {
 	GetAll(c context.Context) ([]*Group, error)
 	GetByID(c context.Context, id int64) (*Group, error)
 	Delete(c context.Context, id int64) error
+	Update(c context.Context, id int64, args UpdateArgs) (*Group, error)
 }

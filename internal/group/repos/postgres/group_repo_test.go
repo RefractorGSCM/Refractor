@@ -315,7 +315,7 @@ func Test(t *testing.T) {
 			})
 
 			g.BeforeEach(func() {
-				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM UserGroups")).WillReturnRows(sqlmock.NewRows(cols).
+				mock.ExpectQuery(regexp.QuoteMeta("SELECT g.* FROM UserGroups")).WillReturnRows(sqlmock.NewRows(cols).
 					AddRow(groups[0].ID, groups[0].Name, groups[0].Color, groups[0].Position, groups[0].Permissions, groups[0].CreatedAt, groups[0].ModifiedAt).
 					AddRow(groups[1].ID, groups[1].Name, groups[1].Color, groups[1].Position, groups[1].Permissions, groups[1].CreatedAt, groups[1].ModifiedAt))
 			})
@@ -337,7 +337,7 @@ func Test(t *testing.T) {
 
 		g.Describe("No user groups were found", func() {
 			g.BeforeEach(func() {
-				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM UserGroups")).WillReturnRows(sqlmock.NewRows(cols))
+				mock.ExpectQuery(regexp.QuoteMeta("SELECT g.* FROM UserGroups")).WillReturnRows(sqlmock.NewRows(cols))
 			})
 
 			g.It("Should return domain.ErrNotFound error", func() {
@@ -460,6 +460,92 @@ func Test(t *testing.T) {
 				err := repo.Delete(context.TODO(), 1)
 
 				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+			})
+		})
+	})
+
+	g.Describe("Update()", func() {
+		var repo domain.GroupRepo
+		var mock sqlmock.Sqlmock
+		var db *sql.DB
+
+		g.BeforeEach(func() {
+			var err error
+
+			db, mock, err = sqlmock.New()
+			if err != nil {
+				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
+			}
+
+			repo, _ = NewGroupRepo(db, zap.NewNop())
+
+			mock.ExpectPrepare("UPDATE Groups SET")
+		})
+
+		g.Describe("Target row found", func() {
+			var updatedGroup *domain.Group
+			var updateArgs domain.UpdateArgs
+
+			g.BeforeEach(func() {
+				ug := &domain.Group{
+					ID:          2,
+					Name:        "Updated Group",
+					Color:       0xcecece,
+					Position:    5,
+					Permissions: "482736",
+					CreatedAt:   time.Time{},
+					ModifiedAt:  time.Time{},
+				}
+
+				updateArgs = domain.UpdateArgs{
+					"Permissions": ug.Permissions,
+				}
+
+				updatedGroup = ug
+
+				mock.ExpectQuery("UPDATE Groups SET").WillReturnRows(sqlmock.NewRows(cols).
+					AddRow(ug.ID, ug.Name, ug.Color, ug.Position, ug.Permissions, ug.CreatedAt, ug.ModifiedAt))
+			})
+
+			g.It("Should not return an error", func() {
+				_, err := repo.Update(context.TODO(), updatedGroup.ID, updateArgs)
+
+				Expect(err).To(BeNil())
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+
+			g.It("Should scan and return the correct group", func() {
+				updated, err := repo.Update(context.TODO(), updatedGroup.ID, updateArgs)
+
+				Expect(err).To(BeNil())
+				Expect(updated).To(Equal(updatedGroup))
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+		})
+
+		g.Describe("Target row not found", func() {
+			var updateArgs domain.UpdateArgs
+
+			g.BeforeEach(func() {
+				updateArgs = domain.UpdateArgs{
+					"Permissions": "6732636748",
+				}
+
+				mock.ExpectQuery("UPDATE Groups SET").WillReturnError(sql.ErrNoRows)
+			})
+
+			g.It("Should return a domain.ErrNotFound error", func() {
+				_, err := repo.Update(context.TODO(), 5, updateArgs)
+
+				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+
+			g.It("Should return a nil group", func() {
+				g, _ := repo.Update(context.TODO(), 5, updateArgs)
+
+				Expect(g).To(BeNil())
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
 			})
 		})
 	})
