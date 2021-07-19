@@ -213,4 +213,66 @@ func Test(t *testing.T) {
 			})
 		})
 	})
+
+	g.Describe("Update()", func() {
+		var updatedGroup *domain.Group
+
+		g.BeforeEach(func() {
+			mockRepo = new(mocks.GroupRepo)
+			service = NewGroupService(mockRepo, time.Second*2)
+
+			updatedGroup = &domain.Group{
+				ID:          1,
+				Name:        "Updated Group",
+				Color:       0xcecece,
+				Position:    6,
+				Permissions: "7456223",
+				CreatedAt:   time.Time{},
+				ModifiedAt:  time.Time{},
+			}
+		})
+
+		g.Describe("Target group found", func() {
+			g.BeforeEach(func() {
+				mockRepo.On("Update", mock.Anything, mock.AnythingOfType("int64"),
+					mock.AnythingOfType("domain.UpdateArgs")).Return(updatedGroup, nil)
+			})
+
+			g.It("Should not return an error", func() {
+				_, err := service.Update(context.TODO(), 1, domain.UpdateArgs{})
+
+				Expect(err).To(BeNil())
+				mockRepo.AssertExpectations(t)
+			})
+
+			g.It("Should return the updated group", func() {
+				updated, err := service.Update(context.TODO(), 1, domain.UpdateArgs{})
+
+				Expect(err).To(BeNil())
+				Expect(updated).To(Equal(updatedGroup))
+				mockRepo.AssertExpectations(t)
+			})
+		})
+
+		g.Describe("Target group was not found", func() {
+			g.BeforeEach(func() {
+				mockRepo.On("Update", mock.Anything, mock.AnythingOfType("int64"),
+					mock.AnythingOfType("domain.UpdateArgs")).Return(nil, domain.ErrNotFound)
+			})
+
+			g.It("Should return the domain.ErrNotFound error", func() {
+				_, err := service.Update(context.TODO(), 1, domain.UpdateArgs{})
+
+				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+				mockRepo.AssertExpectations(t)
+			})
+
+			g.It("Should return nil as the group", func() {
+				g, _ := service.Update(context.TODO(), 1, domain.UpdateArgs{})
+
+				Expect(g).To(BeNil())
+				mockRepo.AssertExpectations(t)
+			})
+		})
+	})
 }

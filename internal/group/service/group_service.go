@@ -74,3 +74,10 @@ func (s *groupService) Delete(c context.Context, id int64) error {
 
 	return s.repo.Delete(ctx, id)
 }
+
+func (s *groupService) Update(c context.Context, id int64, args domain.UpdateArgs) (*domain.Group, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.Update(ctx, id, args)
+}
