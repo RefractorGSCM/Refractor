@@ -20,6 +20,7 @@ package postgres
 import (
 	"Refractor/domain"
 	"Refractor/pkg/perms"
+	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
 	"encoding/gob"
@@ -37,6 +38,7 @@ type groupRepo struct {
 	db     *sql.DB
 	logger *zap.Logger
 	cache  *gocache.Cache
+	qb     domain.QueryBuilder
 }
 
 const cacheKeyBaseGroup = "base_group"
@@ -46,6 +48,7 @@ func NewGroupRepo(db *sql.DB, logger *zap.Logger) (domain.GroupRepo, error) {
 		db:     db,
 		logger: logger,
 		cache:  gocache.New(30*time.Minute, 1*time.Hour),
+		qb:     psqlqb.NewPostgresQueryBuilder(),
 	}
 
 	return repo, nil
@@ -305,6 +308,32 @@ func (r *groupRepo) Delete(ctx context.Context, id int64) error {
 	}
 
 	return nil
+}
+
+func (r *groupRepo) Update(ctx context.Context, id int64, args domain.UpdateArgs) (*domain.Group, error) {
+	const op = opTag + "Update"
+
+	query, values := r.qb.BuildUpdateQuery("Groups", id, "GroupID", args)
+
+	stmt, err := r.db.PrepareContext(ctx, query)
+	if err != nil {
+		r.logger.Error("Could not prepare statement", zap.String("query", query), zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	row := stmt.QueryRowContext(ctx, values...)
+
+	updatedGroup := &domain.DBGroup{}
+	if err := r.scanRow(row, updatedGroup); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Wrap(domain.ErrNotFound, op)
+		}
+
+		r.logger.Error("Could not scan updated group", zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	return updatedGroup.Group(), nil
 }
 
 // Scan helpers
