@@ -56,6 +56,7 @@ func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Aut
 	groupGroup.GET("/", handler.GetGroups)
 	groupGroup.GET("/permissions", handler.GetPermissions)
 	groupGroup.DELETE("/:id", handler.DeleteGroup, enforcer.CheckAuth(authcheckers.DenyAll))
+	groupGroup.PUT("/:id", handler.UpdateGroup, enforcer.CheckAuth(authcheckers.DenyAll))
 }
 
 type resPermission struct {
@@ -88,7 +89,7 @@ func (h *groupHandler) GetPermissions(c echo.Context) error {
 
 func (h *groupHandler) CreateGroup(c echo.Context) error {
 	// Validate request body
-	var body params.GroupParams
+	var body params.CreateGroupParams
 	if err := c.Bind(&body); err != nil {
 		return err
 	}
@@ -144,5 +145,64 @@ func (h *groupHandler) DeleteGroup(c echo.Context) error {
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
 		Message: "Group deleted",
+	})
+}
+
+func (h *groupHandler) UpdateGroup(c echo.Context) error {
+	// Parse targte group ID
+	groupIDString := c.Param("id")
+
+	groupID, err := strconv.ParseInt(groupIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid group id"), http.StatusBadRequest, "")
+	}
+
+	// Validate request body
+	var body params.UpdateGroupParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	// Build update args
+	args := domain.UpdateArgs{}
+
+	if body.Name != "" {
+		args["Name"] = body.Name
+	}
+
+	if body.Color != nil {
+		args["Color"] = *body.Color
+	}
+
+	if body.Position != 0 {
+		args["Position"] = body.Position
+	}
+
+	if body.Permissions != "" {
+		args["Permissions"] = body.Permissions
+	}
+
+	if len(args) < 1 {
+		return c.JSON(http.StatusBadRequest, &domain.Response{
+			Success: false,
+			Message: "No update fields provided",
+		})
+	}
+
+	// Update
+	updated, err := h.service.Update(c.Request().Context(), groupID, args)
+	if err != nil {
+		return err
+	}
+
+	// Return updated group
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Group updated",
+		Payload: updated,
 	})
 }
