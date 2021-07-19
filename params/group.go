@@ -23,7 +23,7 @@ import (
 	"regexp"
 )
 
-type GroupParams struct {
+type CreateGroupParams struct {
 	Name        string `json:"name" form:"name"`
 	Color       int    `json:"color" form:"color"`
 	Position    int    `json:"position" form:"position"`
@@ -34,11 +34,27 @@ const maxColor = 0xffffff
 
 var permissionsPattern = regexp.MustCompile("^[0-9]{1,20}$") // numbers only, max length 20
 
-func (body GroupParams) Validate() error {
+func (body CreateGroupParams) Validate() error {
 	return ValidateStruct(&body,
 		validation.Field(&body.Name, validation.Required, validation.Length(1, 20)),
 		validation.Field(&body.Color, validation.Required, validation.Min(0), validation.Max(maxColor)),
 		validation.Field(&body.Position, validation.Required, validation.Min(1), validation.Max(math.MaxInt32)),
 		validation.Field(&body.Permissions, validation.Required, validation.Match(permissionsPattern)),
+	)
+}
+
+type UpdateGroupParams struct {
+	Name        string `json:"name" form:"name"`
+	Color       *int   `json:"color" form:"color"`
+	Position    int    `json:"position" form:"position"`
+	Permissions string `json:"permissions" form:"permissions"`
+}
+
+func (body UpdateGroupParams) Validate() error {
+	return ValidateStruct(&body,
+		validation.Field(&body.Name, validation.Length(1, 20)),
+		validation.Field(&body.Color, validation.Min(0), validation.Max(maxColor)),
+		validation.Field(&body.Position, validation.Min(1), validation.Max(math.MaxInt32)),
+		validation.Field(&body.Permissions, validation.Match(permissionsPattern)),
 	)
 }
