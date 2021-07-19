@@ -23,18 +23,18 @@ import (
 	"regexp"
 )
 
-type CreateGroupParams struct {
+type GroupParams struct {
 	Name        string `json:"name" form:"name"`
 	Color       int    `json:"color" form:"color"`
 	Position    int    `json:"position" form:"position"`
 	Permissions string `json:"permissions" form:"permissions"`
 }
 
-const maxColor = 16777215
+const maxColor = 0xffffff
 
-var permissionsPattern = regexp.MustCompile("^[0-9]{1,20}$")
+var permissionsPattern = regexp.MustCompile("^[0-9]{1,20}$") // numbers only, max length 20
 
-func (body CreateGroupParams) Validate() error {
+func (body GroupParams) Validate() error {
 	return ValidateStruct(&body,
 		validation.Field(&body.Name, validation.Required, validation.Length(1, 20)),
 		validation.Field(&body.Color, validation.Required, validation.Min(0), validation.Max(maxColor)),

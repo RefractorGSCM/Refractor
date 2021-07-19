@@ -21,10 +21,12 @@ import (
 	"Refractor/domain"
 	"Refractor/params"
 	"Refractor/pkg/api"
+	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/bitperms"
 	"Refractor/pkg/perms"
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 )
@@ -32,21 +34,28 @@ import (
 type groupHandler struct {
 	service    domain.GroupService
 	authorizer domain.Authorizer
+	logger     *zap.Logger
 }
 
-func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, authorizer domain.Authorizer, protect echo.MiddlewareFunc) {
+func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Authorizer, protect echo.MiddlewareFunc, log *zap.Logger) {
 	handler := &groupHandler{
 		service:    s,
-		authorizer: authorizer,
+		authorizer: a,
+		logger:     log,
 	}
 
 	// Create the server routing group
 	groupGroup := apiGroup.Group("/groups", protect)
 
-	groupGroup.POST("/", handler.CreateGroup)
+	// Create an enforcer to authorize the user on the various endpoints
+	enforcer := middleware.NewEnforcer(a, domain.AuthScope{
+		Type: domain.AuthObjRefractor,
+	}, log)
+
+	groupGroup.POST("/", handler.CreateGroup, enforcer.CheckAuth(superAdminAuthChecker))
 	groupGroup.GET("/", handler.GetGroups)
 	groupGroup.GET("/permissions", handler.GetPermissions)
-	groupGroup.DELETE("/:id", handler.DeleteGroup)
+	groupGroup.DELETE("/:id", handler.DeleteGroup, enforcer.CheckAuth(superAdminAuthChecker))
 }
 
 type resPermission struct {
@@ -78,22 +87,8 @@ func (h *groupHandler) GetPermissions(c echo.Context) error {
 }
 
 func (h *groupHandler) CreateGroup(c echo.Context) error {
-	// Check if the user has permission to create groups
-	ctx := c.Request().Context()
-	user := c.Get("user").(*domain.AuthUser)
-
-	authScope := domain.AuthScope{Type: domain.AuthObjRefractor}
-	hasPermission, err := api.CheckPermissions(ctx, h.authorizer, authScope, user.Identity.Id, superAdminAuthChecker)
-	if err != nil {
-		return err
-	}
-
-	if !hasPermission {
-		return c.JSON(http.StatusUnauthorized, domain.ResponseUnauthorized)
-	}
-
 	// Validate request body
-	var body params.CreateGroupParams
+	var body params.GroupParams
 	if err := c.Bind(&body); err != nil {
 		return err
 	}
@@ -135,20 +130,6 @@ func (h *groupHandler) GetGroups(c echo.Context) error {
 }
 
 func (h *groupHandler) DeleteGroup(c echo.Context) error {
-	// Check if the user has permission to delete a group
-	ctx := c.Request().Context()
-	user := c.Get("user").(*domain.AuthUser)
-
-	authScope := domain.AuthScope{Type: domain.AuthObjRefractor}
-	hasPermission, err := api.CheckPermissions(ctx, h.authorizer, authScope, user.Identity.Id, superAdminAuthChecker)
-	if err != nil {
-		return err
-	}
-
-	if !hasPermission {
-		return c.JSON(http.StatusUnauthorized, domain.ResponseUnauthorized)
-	}
-
 	groupIDString := c.Param("id")
 
 	groupID, err := strconv.ParseInt(groupIDString, 10, 64)
@@ -156,7 +137,7 @@ func (h *groupHandler) DeleteGroup(c echo.Context) error {
 		return domain.NewHTTPError(fmt.Errorf("invalid group id"), http.StatusBadRequest, "")
 	}
 
-	if err := h.service.Delete(ctx, groupID); err != nil {
+	if err := h.service.Delete(c.Request().Context(), groupID); err != nil {
 		return err
 	}
 
