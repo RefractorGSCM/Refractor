@@ -18,11 +18,11 @@
 package http
 
 import (
+	"Refractor/authcheckers"
 	"Refractor/domain"
 	"Refractor/params"
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
-	"Refractor/pkg/bitperms"
 	"Refractor/pkg/perms"
 	"fmt"
 	"github.com/labstack/echo/v4"
@@ -52,10 +52,10 @@ func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Aut
 		Type: domain.AuthObjRefractor,
 	}, log)
 
-	groupGroup.POST("/", handler.CreateGroup, enforcer.CheckAuth(superAdminAuthChecker))
+	groupGroup.POST("/", handler.CreateGroup, enforcer.CheckAuth(authcheckers.DenyAll))
 	groupGroup.GET("/", handler.GetGroups)
 	groupGroup.GET("/permissions", handler.GetPermissions)
-	groupGroup.DELETE("/:id", handler.DeleteGroup, enforcer.CheckAuth(superAdminAuthChecker))
+	groupGroup.DELETE("/:id", handler.DeleteGroup, enforcer.CheckAuth(authcheckers.DenyAll))
 }
 
 type resPermission struct {
@@ -145,14 +145,4 @@ func (h *groupHandler) DeleteGroup(c echo.Context) error {
 		Success: true,
 		Message: "Group deleted",
 	})
-}
-
-// superAdminAuthChecker is technically redundant since the api.CheckPermissions function already checks but we keep
-// it here incase we need to have more precise permission checking later on.
-func superAdminAuthChecker(permissions *bitperms.Permissions) (bool, error) {
-	if permissions.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {
-		return true, nil
-	}
-
-	return false, nil
 }
