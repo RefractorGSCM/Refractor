@@ -129,7 +129,7 @@ func (r *groupRepo) GetAll(ctx context.Context) ([]*domain.Group, error) {
 func (r *groupRepo) GetByID(ctx context.Context, id int64) (*domain.Group, error) {
 	const op = opTag + "GetByID"
 
-	query := "SELECT * FROM Groups WHERE GroupID = $1;"
+	query := `SELECT * FROM Groups WHERE GroupID = $1;`
 
 	results, err := r.fetch(ctx, query, id)
 	if err != nil {
@@ -146,7 +146,11 @@ func (r *groupRepo) GetByID(ctx context.Context, id int64) (*domain.Group, error
 func (r *groupRepo) GetUserGroups(ctx context.Context, userID string) ([]*domain.Group, error) {
 	const op = opTag + "GetUserGroups"
 
-	query := "SELECT * FROM UserGroups WHERE UserID = $1;"
+	query := `	SELECT
+					g.*
+				FROM UserGroups ug
+				INNER JOIN Groups g ON g.GroupID = ug.GroupID
+				WHERE UserID = $1;`
 
 	results, err := r.fetch(ctx, query, userID)
 	if err != nil {
