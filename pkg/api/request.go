@@ -17,7 +17,9 @@
 
 package api
 
-import "Refractor/domain"
+import (
+	"Refractor/domain"
+)
 
 func ValidateRequestBody(body domain.Validable) (bool, error) {
 	err := body.Validate()

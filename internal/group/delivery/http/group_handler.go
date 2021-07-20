@@ -58,6 +58,7 @@ func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Aut
 	groupGroup.GET("/permissions", handler.GetPermissions)
 	groupGroup.DELETE("/:id", handler.DeleteGroup, enforcer.CheckAuth(authcheckers.DenyAll))
 	groupGroup.PUT("/:id", handler.UpdateGroup, enforcer.CheckAuth(authcheckers.DenyAll))
+	groupGroup.PUT("/order", handler.ReorderGroups, enforcer.CheckAuth(authcheckers.DenyAll))
 }
 
 type resPermission struct {
@@ -192,5 +193,33 @@ func (h *groupHandler) UpdateGroup(c echo.Context) error {
 		Success: true,
 		Message: "Group updated",
 		Payload: updated,
+	})
+}
+
+func (h *groupHandler) ReorderGroups(c echo.Context) error {
+	var body params.GroupReorderArray
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(&body); !ok {
+		return err
+	}
+
+	var griArr []*domain.GroupReorderInfo
+	for _, gri := range body {
+		griArr = append(griArr, &domain.GroupReorderInfo{
+			GroupID: gri.GroupID,
+			NewPos:  gri.NewPos,
+		})
+	}
+
+	if err := h.service.Reorder(c.Request().Context(), griArr); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Groups reordered",
 	})
 }
