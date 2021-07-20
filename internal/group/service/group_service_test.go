@@ -21,6 +21,7 @@ import (
 	"Refractor/domain"
 	"Refractor/domain/mocks"
 	"context"
+	"fmt"
 	"github.com/franela/goblin"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -271,6 +272,41 @@ func Test(t *testing.T) {
 				g, _ := service.Update(context.TODO(), 1, domain.UpdateArgs{})
 
 				Expect(g).To(BeNil())
+				mockRepo.AssertExpectations(t)
+			})
+		})
+	})
+
+	g.Describe("Reorder()", func() {
+		g.BeforeEach(func() {
+			mockRepo = new(mocks.GroupRepo)
+			service = NewGroupService(mockRepo, time.Second*2)
+		})
+
+		g.Describe("Reorder success", func() {
+			g.BeforeEach(func() {
+				mockRepo.On("Reorder", mock.Anything, mock.AnythingOfType("[]*domain.GroupReorderInfo")).
+					Return(nil)
+			})
+
+			g.It("Should not return an error", func() {
+				err := service.Reorder(context.TODO(), []*domain.GroupReorderInfo{})
+
+				Expect(err).To(BeNil())
+				mockRepo.AssertExpectations(t)
+			})
+		})
+
+		g.Describe("Reorder error", func() {
+			g.BeforeEach(func() {
+				mockRepo.On("Reorder", mock.Anything, mock.AnythingOfType("[]*domain.GroupReorderInfo")).
+					Return(fmt.Errorf(""))
+			})
+
+			g.It("Should return an error", func() {
+				err := service.Reorder(context.TODO(), []*domain.GroupReorderInfo{})
+
+				Expect(err).ToNot(BeNil())
 				mockRepo.AssertExpectations(t)
 			})
 		})

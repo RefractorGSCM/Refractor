@@ -107,4 +107,5 @@ type GroupService interface {
 	GetByID(c context.Context, id int64) (*Group, error)
 	Delete(c context.Context, id int64) error
 	Update(c context.Context, id int64, args UpdateArgs) (*Group, error)
+	Reorder(c context.Context, newPositions []*GroupReorderInfo) error
 }
