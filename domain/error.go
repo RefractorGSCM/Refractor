@@ -43,10 +43,10 @@ type ClientError interface {
 
 // HTTPError implements the ClientError interface.
 type HTTPError struct {
-	Cause            error             `json:"-"`
-	Message          string            `json:"message"`
-	ValidationErrors map[string]string `json:"errors,omitempty"`
-	Status           int               `json:"-"`
+	Cause            error       `json:"-"`
+	Message          string      `json:"message"`
+	ValidationErrors interface{} `json:"errors,omitempty"`
+	Status           int         `json:"-"`
 }
 
 func (e *HTTPError) Error() string {

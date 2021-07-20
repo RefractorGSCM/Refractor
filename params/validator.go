@@ -34,6 +34,11 @@ func wrapError(err error) error {
 		return err
 	}
 
+	// If err is already an http error, just return it
+	if _, ok := err.(*domain.HTTPError); ok {
+		return err
+	}
+
 	httpError := &domain.HTTPError{
 		Cause:   domain.ErrInvalid,
 		Message: "Input errors exist",

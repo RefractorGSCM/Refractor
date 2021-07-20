@@ -18,8 +18,11 @@
 package params
 
 import (
+	"Refractor/domain"
+	"fmt"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"math"
+	"net/http"
 	"regexp"
 )
 
@@ -57,4 +60,48 @@ func (body UpdateGroupParams) Validate() error {
 		validation.Field(&body.Position, validation.Min(1), validation.Max(math.MaxInt32)),
 		validation.Field(&body.Permissions, validation.Match(permissionsPattern)),
 	)
+}
+
+type GroupReorderParams struct {
+	GroupID int64 `json:"id"`
+	NewPos  int64 `json:"pos"`
+}
+
+func (body GroupReorderParams) Validate() error {
+	return validation.ValidateStruct(&body,
+		validation.Field(&body.GroupID, validation.Required, validation.Min(1), validation.Max(math.MaxInt32)),
+		validation.Field(&body.NewPos, validation.Required, validation.Min(1), validation.Max(math.MaxInt32-1)), // -1 to account for the base group
+	)
+}
+
+type GroupReorderArray []GroupReorderParams
+
+type GroupReorderErr struct {
+	Index   int    `json:"index"`
+	Message string `json:"message"`
+}
+
+func (body GroupReorderArray) Validate() error {
+	if len(body) < 1 {
+		return wrapError(domain.NewHTTPError(fmt.Errorf("no reorder instructions provided"),
+			http.StatusBadRequest, "no reorder instructions provided"))
+	}
+
+	// Override default error behaviour since this is an unusual usecase where we need to provide both the index of the
+	// element which the error occurred on as well as the normal error message.
+	for idx, grp := range body {
+		if err := grp.Validate(); err != nil {
+			return &domain.HTTPError{
+				Cause:   err,
+				Message: "Input errors exist",
+				ValidationErrors: map[string]string{
+					"index":   fmt.Sprintf("%d", idx),
+					"message": err.Error(),
+				},
+				Status: http.StatusBadRequest,
+			}
+		}
+	}
+
+	return nil
 }
