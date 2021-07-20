@@ -81,3 +81,10 @@ func (s *groupService) Update(c context.Context, id int64, args domain.UpdateArg
 
 	return s.repo.Update(ctx, id, args)
 }
+
+func (s *groupService) Reorder(c context.Context, newPositions []*domain.GroupReorderInfo) error {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.Reorder(ctx, newPositions)
+}
