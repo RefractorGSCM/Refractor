@@ -151,7 +151,7 @@ func (h *groupHandler) DeleteGroup(c echo.Context) error {
 }
 
 func (h *groupHandler) UpdateGroup(c echo.Context) error {
-	// Parse targte group ID
+	// Parse target group ID
 	groupIDString := c.Param("id")
 
 	groupID, err := strconv.ParseInt(groupIDString, 10, 64)
@@ -192,6 +192,48 @@ func (h *groupHandler) UpdateGroup(c echo.Context) error {
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
 		Message: "Group updated",
+		Payload: updated,
+	})
+}
+
+func (h *groupHandler) UpdateBaseGroup(c echo.Context) error {
+	// Validate request body
+	var body params.UpdateGroupParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	// Get update args
+	updateArgs, err := structutils.GetNonNilFieldMap(body)
+	if err != nil {
+		return err
+	}
+
+	// Disalllow the updating of Name and Position for the base group
+	delete(updateArgs, "Name")
+	delete(updateArgs, "Position")
+
+	if len(updateArgs) < 1 {
+		return c.JSON(http.StatusBadRequest, &domain.Response{
+			Success: false,
+			Message: "No update fields provided",
+		})
+	}
+
+	// Update base group
+	updated, err := h.service.UpdateBase(c.Request().Context(), updateArgs)
+	if err != nil {
+		return err
+	}
+
+	// Return updated group
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Bae group updated",
 		Payload: updated,
 	})
 }

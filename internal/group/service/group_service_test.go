@@ -311,4 +311,82 @@ func Test(t *testing.T) {
 			})
 		})
 	})
+
+	g.Describe("UpdateBase()", func() {
+		var baseGroup *domain.Group
+		var updateArgs domain.UpdateArgs
+
+		g.BeforeEach(func() {
+			mockRepo = new(mocks.GroupRepo)
+			service = NewGroupService(mockRepo, time.Second*2)
+
+			baseGroup = &domain.Group{
+				ID:          -1,
+				Name:        "Everyone",
+				Color:       0xcecece,
+				Position:    math.MaxInt32,
+				Permissions: "1",
+				CreatedAt:   time.Time{},
+				ModifiedAt:  time.Time{},
+			}
+
+			updateArgs = domain.UpdateArgs{
+				"Color":       0xececec,
+				"Permissions": "2",
+			}
+		})
+
+		g.Describe("Successful update", func() {
+			g.BeforeEach(func() {
+				mockRepo.On("GetBaseGroup", mock.Anything).Return(baseGroup, nil)
+				mockRepo.On("SetBaseGroup", mock.Anything, mock.AnythingOfType("*domain.Group")).Return(nil)
+			})
+
+			g.It("Should not return an error", func() {
+				_, err := service.UpdateBase(context.TODO(), updateArgs)
+
+				Expect(err).To(BeNil())
+				mock.AssertExpectationsForObjects(t)
+			})
+
+			g.It("Should return the updated group", func() {
+				expected := &domain.Group{
+					ID:          -1,
+					Name:        "Everyone",
+					Color:       updateArgs["Color"].(int),
+					Position:    math.MaxInt32,
+					Permissions: updateArgs["Permissions"].(string),
+					CreatedAt:   time.Time{},
+					ModifiedAt:  time.Time{},
+				}
+
+				updated, _ := service.UpdateBase(context.TODO(), updateArgs)
+
+				Expect(updated).To(Equal(expected))
+				mock.AssertExpectationsForObjects(t)
+			})
+		})
+
+		g.Describe("Repository error", func() {
+			g.It("Should return an error on GetBaseGroup repo error", func() {
+				mockRepo.On("GetBaseGroup", mock.Anything).Return(nil, fmt.Errorf("getbasegroup error"))
+
+				_, err := service.UpdateBase(context.TODO(), updateArgs)
+
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("getbasegroup error"))
+			})
+
+			g.It("Should return an error on SetBaseGroup repo error", func() {
+				mockRepo.On("GetBaseGroup", mock.Anything).Return(baseGroup, nil)
+				mockRepo.On("SetBaseGroup", mock.Anything, mock.AnythingOfType("*domain.Group")).
+					Return(fmt.Errorf("setbasegroup error"))
+
+				_, err := service.UpdateBase(context.TODO(), updateArgs)
+
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("setbasegroup error"))
+			})
+		})
+	})
 }
