@@ -44,10 +44,10 @@ func (body CreateGroupParams) Validate() error {
 }
 
 type UpdateGroupParams struct {
-	Name        string `json:"name" form:"name"`
-	Color       *int   `json:"color" form:"color"`
-	Position    int    `json:"position" form:"position"`
-	Permissions string `json:"permissions" form:"permissions"`
+	Name        *string `json:"name" form:"name"`
+	Color       *int    `json:"color" form:"color"`
+	Position    *int    `json:"position" form:"position"`
+	Permissions *string `json:"permissions" form:"permissions"`
 }
 
 func (body UpdateGroupParams) Validate() error {

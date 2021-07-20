@@ -24,6 +24,7 @@ import (
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/perms"
+	"Refractor/pkg/structutils"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -167,26 +168,13 @@ func (h *groupHandler) UpdateGroup(c echo.Context) error {
 		return err
 	}
 
-	// Build update args
-	args := domain.UpdateArgs{}
-
-	if body.Name != "" {
-		args["Name"] = body.Name
+	// Get update args
+	updateArgs, err := structutils.GetNonNilFieldMap(body)
+	if err != nil {
+		return err
 	}
 
-	if body.Color != nil {
-		args["Color"] = *body.Color
-	}
-
-	if body.Position != 0 {
-		args["Position"] = body.Position
-	}
-
-	if body.Permissions != "" {
-		args["Permissions"] = body.Permissions
-	}
-
-	if len(args) < 1 {
+	if len(updateArgs) < 1 {
 		return c.JSON(http.StatusBadRequest, &domain.Response{
 			Success: false,
 			Message: "No update fields provided",
@@ -194,7 +182,7 @@ func (h *groupHandler) UpdateGroup(c echo.Context) error {
 	}
 
 	// Update
-	updated, err := h.service.Update(c.Request().Context(), groupID, args)
+	updated, err := h.service.Update(c.Request().Context(), groupID, updateArgs)
 	if err != nil {
 		return err
 	}
