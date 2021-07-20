@@ -156,7 +156,7 @@ func (r *groupRepo) GetUserGroups(ctx context.Context, userID string) ([]*domain
 					g.*
 				FROM UserGroups ug
 				INNER JOIN Groups g ON g.GroupID = ug.GroupID
-				WHERE UserID = $1;`
+				WHERE UserID = $1 ORDER BY g.Position ASC;`
 
 	results, err := r.fetch(ctx, query, userID)
 	if err != nil {
