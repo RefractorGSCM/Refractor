@@ -23,7 +23,10 @@ import (
 	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/gob"
+	"fmt"
+	"github.com/lib/pq"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -334,6 +337,39 @@ func (r *groupRepo) Update(ctx context.Context, id int64, args domain.UpdateArgs
 	}
 
 	return updatedGroup.Group(), nil
+}
+
+type GroupReorderInfo struct {
+	*domain.GroupReorderInfo
+}
+
+func (gri *GroupReorderInfo) Value() (driver.Value, error) {
+	return fmt.Sprintf("(%d, %d)", gri.GroupID, gri.NewPos), nil
+}
+
+func (r *groupRepo) Reorder(ctx context.Context, newPositions []*domain.GroupReorderInfo) error {
+	const op = opTag + "Reorder"
+
+	// Convert passed in group reordering info to our local GroupReorderInfo type
+	var reorderInfo []*GroupReorderInfo
+	for _, np := range newPositions {
+		reorderInfo = append(reorderInfo, &GroupReorderInfo{
+			GroupReorderInfo: &domain.GroupReorderInfo{
+				GroupID: np.GroupID,
+				NewPos:  np.NewPos,
+			},
+		})
+	}
+
+	query := `SELECT reorder_groups($1::reorder_groups_info[]);`
+
+	_, err := r.db.QueryContext(ctx, query, pq.Array(reorderInfo))
+	if err != nil {
+		r.logger.Error("Could not execute reorder groups function", zap.String("query", query), zap.Error(err))
+		return errors.Wrap(err, op)
+	}
+
+	return nil
 }
 
 // Scan helpers

@@ -549,4 +549,45 @@ func Test(t *testing.T) {
 			})
 		})
 	})
+
+	g.Describe("Reorder()", func() {
+		var repo domain.GroupRepo
+		var mock sqlmock.Sqlmock
+		var db *sql.DB
+
+		g.BeforeEach(func() {
+			var err error
+
+			db, mock, err = sqlmock.New()
+			if err != nil {
+				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
+			}
+
+			repo, _ = NewGroupRepo(db, zap.NewNop())
+		})
+
+		g.Describe("Reorder successful", func() {
+			g.BeforeEach(func() {
+				mock.ExpectQuery("SELECT reorder_groups").WillReturnRows(sqlmock.NewRows([]string{}).AddRow())
+			})
+
+			g.It("Should not return an error", func() {
+				err := repo.Reorder(context.TODO(), []*domain.GroupReorderInfo{})
+
+				Expect(err).To(BeNil())
+			})
+		})
+
+		g.Describe("Reorder error", func() {
+			g.BeforeEach(func() {
+				mock.ExpectQuery("SELECT reorder_groups").WillReturnError(fmt.Errorf(""))
+			})
+
+			g.It("Should return an error", func() {
+				err := repo.Reorder(context.TODO(), []*domain.GroupReorderInfo{})
+
+				Expect(err).ToNot(BeNil())
+			})
+		})
+	})
 }

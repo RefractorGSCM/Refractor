@@ -81,6 +81,11 @@ type Overrides struct {
 	DenyOverrides  string `json:"deny_overrides"`
 }
 
+type GroupReorderInfo struct {
+	GroupID int64 `json:"id"`
+	NewPos  int64 `json:"new_pos"`
+}
+
 // GroupRepo is an interface defining the behaviour required to manage permissions.
 type GroupRepo interface {
 	Store(ctx context.Context, group *Group) error
@@ -93,6 +98,7 @@ type GroupRepo interface {
 	SetBaseGroup(ctx context.Context, group *Group) error
 	Delete(ctx context.Context, id int64) error
 	Update(ctx context.Context, id int64, args UpdateArgs) (*Group, error)
+	Reorder(ctx context.Context, newPositions []*GroupReorderInfo) error
 }
 
 type GroupService interface {

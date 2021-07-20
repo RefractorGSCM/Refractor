@@ -143,6 +143,20 @@ func (_m *GroupRepo) GetUserOverrides(ctx context.Context, userID string) (*doma
 	return r0, r1
 }
 
+// Reorder provides a mock function with given fields: ctx, newPositions
+func (_m *GroupRepo) Reorder(ctx context.Context, newPositions []*domain.GroupReorderInfo) error {
+	ret := _m.Called(ctx, newPositions)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, []*domain.GroupReorderInfo) error); ok {
+		r0 = rf(ctx, newPositions)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // SetBaseGroup provides a mock function with given fields: ctx, group
 func (_m *GroupRepo) SetBaseGroup(ctx context.Context, group *domain.Group) error {
 	ret := _m.Called(ctx, group)
