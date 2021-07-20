@@ -13,6 +13,7 @@ require (
 	github.com/jackc/pgx/v4 v4.10.1 // indirect
 	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/labstack/echo/v4 v4.3.0 // indirect
+	github.com/lib/pq v1.8.0 // indirect
 	github.com/onsi/gomega v1.14.0 // indirect
 	github.com/ory/kratos-client-go v0.6.3-alpha.1 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
