@@ -337,9 +337,21 @@ func Test(t *testing.T) {
 		})
 
 		g.Describe("Successful update", func() {
+			var expected *domain.Group
+
 			g.BeforeEach(func() {
 				mockRepo.On("GetBaseGroup", mock.Anything).Return(baseGroup, nil)
 				mockRepo.On("SetBaseGroup", mock.Anything, mock.AnythingOfType("*domain.Group")).Return(nil)
+
+				expected = &domain.Group{
+					ID:          -1,
+					Name:        "Everyone",
+					Color:       updateArgs["Color"].(int),
+					Position:    math.MaxInt32,
+					Permissions: updateArgs["Permissions"].(string),
+					CreatedAt:   time.Time{},
+					ModifiedAt:  time.Time{},
+				}
 			})
 
 			g.It("Should not return an error", func() {
@@ -350,16 +362,16 @@ func Test(t *testing.T) {
 			})
 
 			g.It("Should return the updated group", func() {
-				expected := &domain.Group{
-					ID:          -1,
-					Name:        "Everyone",
-					Color:       updateArgs["Color"].(int),
-					Position:    math.MaxInt32,
-					Permissions: updateArgs["Permissions"].(string),
-					CreatedAt:   time.Time{},
-					ModifiedAt:  time.Time{},
-				}
+				updateArgs["Name"] = "Should not update"
+				updateArgs["Position"] = 10
 
+				updated, _ := service.UpdateBase(context.TODO(), updateArgs)
+
+				Expect(updated).To(Equal(expected))
+				mock.AssertExpectationsForObjects(t)
+			})
+
+			g.It("Should not update the name or position fields", func() {
 				updated, _ := service.UpdateBase(context.TODO(), updateArgs)
 
 				Expect(updated).To(Equal(expected))
