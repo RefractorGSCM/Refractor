@@ -1,0 +1,1 @@
+DROP TYPE reorder_groups_info;
