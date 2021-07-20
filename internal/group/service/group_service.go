@@ -88,3 +88,29 @@ func (s *groupService) Reorder(c context.Context, newPositions []*domain.GroupRe
 
 	return s.repo.Reorder(ctx, newPositions)
 }
+
+func (s *groupService) UpdateBase(c context.Context, args domain.UpdateArgs) (*domain.Group, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	currentBase, err := s.repo.GetBaseGroup(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Only allow the updating of Permissions and Color
+	if args["Permissions"] != nil {
+		currentBase.Permissions = args["Permissions"].(string)
+	}
+
+	if args["Color"] != nil {
+		currentBase.Color = args["Color"].(int)
+	}
+
+	// Set the base group
+	if err := s.repo.SetBaseGroup(ctx, currentBase); err != nil {
+		return nil, err
+	}
+
+	return currentBase, nil
+}
