@@ -100,11 +100,13 @@ func (s *groupService) UpdateBase(c context.Context, args domain.UpdateArgs) (*d
 
 	// Only allow the updating of Permissions and Color
 	if args["Permissions"] != nil {
-		currentBase.Permissions = args["Permissions"].(string)
+		updatedPermissions := args["Permissions"].(*string)
+		currentBase.Permissions = *updatedPermissions
 	}
 
 	if args["Color"] != nil {
-		currentBase.Color = args["Color"].(int)
+		updatedColor := args["Color"].(*int)
+		currentBase.Color = *updatedColor
 	}
 
 	// Set the base group

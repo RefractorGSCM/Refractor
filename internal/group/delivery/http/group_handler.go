@@ -58,6 +58,7 @@ func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Aut
 	groupGroup.GET("/permissions", handler.GetPermissions)
 	groupGroup.DELETE("/:id", handler.DeleteGroup, enforcer.CheckAuth(authcheckers.DenyAll))
 	groupGroup.PUT("/:id", handler.UpdateGroup, enforcer.CheckAuth(authcheckers.DenyAll))
+	groupGroup.PUT("/base", handler.UpdateBaseGroup, enforcer.CheckAuth(authcheckers.DenyAll))
 	groupGroup.PUT("/order", handler.ReorderGroups, enforcer.CheckAuth(authcheckers.DenyAll))
 }
 
@@ -233,7 +234,7 @@ func (h *groupHandler) UpdateBaseGroup(c echo.Context) error {
 	// Return updated group
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
-		Message: "Bae group updated",
+		Message: "Base group updated",
 		Payload: updated,
 	})
 }
