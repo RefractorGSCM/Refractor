@@ -360,7 +360,7 @@ func TestAuthorizer(t *testing.T) {
 				}
 			})
 
-			g.Describe("User has permission", func() {
+			g.Describe("NewUser has permission", func() {
 				g.BeforeEach(func() {
 					repo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
 					repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
@@ -382,7 +382,7 @@ func TestAuthorizer(t *testing.T) {
 				})
 			})
 
-			g.Describe("User does not have permission", func() {
+			g.Describe("NewUser does not have permission", func() {
 				g.BeforeEach(func() {
 					baseGroupPerms := bitperms.NewPermissionBuilder().
 						AddFlag(bitperms.GetFlag(60)).

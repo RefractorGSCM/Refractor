@@ -32,7 +32,7 @@ func (h *publicHandlers) RecoveryHandler(c echo.Context) error {
 			fmt.Sprintf("%s/self-service/recovery/browser", h.config.KratosPublic))
 	}
 
-	_, res, err := h.client.PublicApi.GetSelfServiceRecoveryFlow(c.Request().Context()).Id(flowID).Execute()
+	_, res, err := h.client.V0alpha1Api.GetSelfServiceRecoveryFlow(c.Request().Context()).Id(flowID).Execute()
 	if err != nil {
 		if res != nil && (res.StatusCode == http.StatusGone || res.StatusCode == http.StatusNotFound) {
 			// the flow is invalid or is no longer valid
@@ -85,8 +85,8 @@ func (h *publicHandlers) RecoveryHandler(c echo.Context) error {
 			}
 
 			attrVal := attributes.UiNodeInputAttributes.GetValue()
-			if attrVal.String != nil {
-				newNode.Value = *attrVal.String
+			if val, ok := attrVal.(string); ok {
+				newNode.Value = val
 			}
 
 			attributes.UiNodeInputAttributes.GetRequired()

@@ -92,8 +92,8 @@ func (h *publicHandlers) SettingsHandler(c echo.Context) error {
 			newNode.Type = attributes.UiNodeInputAttributes.Type
 
 			attrVal := attributes.UiNodeInputAttributes.GetValue()
-			if attrVal.String != nil {
-				newNode.Value = *attrVal.String
+			if val, ok := attrVal.(string); ok {
+				newNode.Value = val
 			}
 
 			attributes.UiNodeInputAttributes.GetRequired()

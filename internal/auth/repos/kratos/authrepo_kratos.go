@@ -45,7 +45,7 @@ type createIdentityPayload struct {
 	Traits *domain.Traits
 }
 
-func (r *authRepo) CreateUser(userTraits *domain.Traits) (*domain.User, error) {
+func (r *authRepo) CreateUser(userTraits *domain.Traits) (*domain.AuthUser, error) {
 	const op = opTag + "CreateUser"
 
 	url := fmt.Sprintf("%s/identities", r.config.KratosAdmin)
@@ -75,8 +75,8 @@ func (r *authRepo) CreateUser(userTraits *domain.Traits) (*domain.User, error) {
 		return nil, errors.Wrap(fmt.Errorf("response status was %d and not %d", res.StatusCode, http.StatusOK), op)
 	}
 
-	identity := &kratos.Identity{}
-	if err := json.NewDecoder(res.Body).Decode(identity); err != nil {
+	identity := kratos.Identity{}
+	if err := json.NewDecoder(res.Body).Decode(&identity); err != nil {
 		return nil, errors.Wrap(err, op)
 	}
 
@@ -91,9 +91,11 @@ func (r *authRepo) CreateUser(userTraits *domain.Traits) (*domain.User, error) {
 	}
 
 	// Create user struct
-	newUser := &domain.User{
-		Traits:   traits,
-		Identity: identity,
+	newUser := &domain.AuthUser{
+		Traits: traits,
+		Session: &kratos.Session{
+			Identity: identity,
+		},
 	}
 
 	return newUser, nil
