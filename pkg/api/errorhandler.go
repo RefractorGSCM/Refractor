@@ -29,7 +29,6 @@ func GetEchoErrorHandler(logger *zap.Logger) echo.HTTPErrorHandler {
 	return func(err error, c echo.Context) {
 		// If this error is a custom http error, treat it as such
 		if httpError, ok := err.(*domain.HTTPError); ok {
-
 			body, err := httpError.ResponseBody()
 			if err != nil {
 				c.Logger().Error(err)
