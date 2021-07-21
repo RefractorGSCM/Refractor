@@ -289,7 +289,7 @@ func Test(t *testing.T) {
 			cols = []string{"GroupID", "Name", "Color", "Position", "Permissions", "CreatedAt", "ModifiedAt"}
 		})
 
-		g.Describe("User groups were found", func() {
+		g.Describe("NewUser groups were found", func() {
 			var groups []*domain.Group
 
 			g.Before(func() {
@@ -375,7 +375,7 @@ func Test(t *testing.T) {
 			cols = []string{"AllowOverrides", "DenyOverrides"}
 		})
 
-		g.Describe("User overrides were found", func() {
+		g.Describe("NewUser overrides were found", func() {
 			g.BeforeEach(func() {
 				mock.ExpectQuery("SELECT AllowOverrides, DenyOverrides FROM UserOverrides").WillReturnRows(
 					sqlmock.NewRows(cols).AddRow("1234", "12345"))

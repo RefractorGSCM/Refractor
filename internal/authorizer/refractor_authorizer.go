@@ -42,8 +42,8 @@ func (a *authorizer) computePermissionsRefractor(ctx context.Context, userID str
 	// Permissions are computed in the following order:
 	// 1. Base permissions given to everyone (default group) at the application level
 	// 2. Permissions allowed to a user by their groups at the application level
-	// 3. User-specific overrides that deny permissions at the application level
-	// 4. User-specific overrides that allow permissions at the application level
+	// 3. NewUser-specific overrides that deny permissions at the application level
+	// 4. NewUser-specific overrides that allow permissions at the application level
 	// The final calculated result is the user's fully computed permissions.
 
 	// 1. Compute base permissions

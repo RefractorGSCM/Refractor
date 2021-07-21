@@ -33,7 +33,7 @@ func (h *publicHandlers) LoginHandler(c echo.Context) error {
 			fmt.Sprintf("%s/self-service/login/browser", h.config.KratosPublic))
 	}
 
-	_, res, err := h.client.PublicApi.GetSelfServiceLoginFlow(c.Request().Context()).Id(flowID).Execute()
+	_, res, err := h.client.V0alpha1Api.GetSelfServiceLoginFlow(c.Request().Context()).Id(flowID).Execute()
 	if err != nil {
 		if res != nil && (res.StatusCode == http.StatusGone || res.StatusCode == http.StatusNotFound) {
 			// the flow is invalid or is no longer valid
@@ -83,8 +83,8 @@ func (h *publicHandlers) LoginHandler(c echo.Context) error {
 			newNode.Type = attributes.UiNodeInputAttributes.Type
 
 			attrVal := attributes.UiNodeInputAttributes.GetValue()
-			if attrVal.String != nil {
-				newNode.Value = *attrVal.String
+			if val, ok := attrVal.(string); ok {
+				newNode.Value = val
 			}
 
 			attributes.UiNodeInputAttributes.GetRequired()

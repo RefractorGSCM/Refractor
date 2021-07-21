@@ -33,18 +33,8 @@ type AuthUser struct {
 	*kratos.Session
 }
 
-func (au *AuthUser) User() *User {
-	return &User{
-		Traits: &Traits{
-			Email:    au.Traits.Email,
-			Username: au.Traits.Username,
-		},
-		Identity: &au.Identity,
-	}
-}
-
 type AuthRepo interface {
-	CreateUser(userTraits *Traits) (*User, error)
+	CreateUser(userTraits *Traits) (*AuthUser, error)
 	GetUserByID(id string) (*AuthUser, error)
 	GetAllUsers() ([]*AuthUser, error)
 }

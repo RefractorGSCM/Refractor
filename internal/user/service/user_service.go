@@ -15,12 +15,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package domain
+package service
 
-import (
-	"context"
-)
+import "Refractor/domain"
 
-type UserService interface {
-	GetAllUsers(c context.Context)
+type userService struct {
+	authRepo  domain.AuthRepo
+	groupRepo domain.GroupRepo
 }
