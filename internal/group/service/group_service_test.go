@@ -330,9 +330,12 @@ func Test(t *testing.T) {
 				ModifiedAt:  time.Time{},
 			}
 
+			color := 0xececec
+			permissions := "2"
+
 			updateArgs = domain.UpdateArgs{
-				"Color":       0xececec,
-				"Permissions": "2",
+				"Color":       &color,
+				"Permissions": &permissions,
 			}
 		})
 
@@ -346,9 +349,9 @@ func Test(t *testing.T) {
 				expected = &domain.Group{
 					ID:          -1,
 					Name:        "Everyone",
-					Color:       updateArgs["Color"].(int),
+					Color:       *updateArgs["Color"].(*int),
 					Position:    math.MaxInt32,
-					Permissions: updateArgs["Permissions"].(string),
+					Permissions: *updateArgs["Permissions"].(*string),
 					CreatedAt:   time.Time{},
 					ModifiedAt:  time.Time{},
 				}
