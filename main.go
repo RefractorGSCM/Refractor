@@ -27,6 +27,7 @@ import (
 	_groupHandler "Refractor/internal/group/delivery/http"
 	_groupRepo "Refractor/internal/group/repos/postgres"
 	_groupService "Refractor/internal/group/service"
+	"Refractor/internal/mail/service"
 	_serverHandler "Refractor/internal/server/delivery/http"
 	_postgresServerRepo "Refractor/internal/server/repos/postgres"
 	_serverService "Refractor/internal/server/service"
@@ -86,6 +87,11 @@ func main() {
 
 	// Set up application components
 	authRepo := _authRepo.NewAuthRepo(config)
+
+	mailService, err := service.NewMailService(config)
+	if err != nil {
+		log.Fatalf("Could not set up mail service. Error: %v", err)
+	}
 
 	groupRepo, err := _groupRepo.NewGroupRepo(db, logger)
 	if err != nil {

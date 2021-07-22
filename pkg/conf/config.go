@@ -30,6 +30,7 @@ type Config struct {
 	Mode                string `mapstructure:"MODE"`
 	InitialUserEmail    string `mapstructure:"INITIAL_USER_EMAIL"`
 	InitialUserUsername string `mapstructure:"INITIAL_USER_USERNAME"`
+	SmtpConnectionUri   string `mapstructure:"SMTP_CONNECTION_URI"`
 }
 
 // LoadConfig reads configuration from a file or environment variables.

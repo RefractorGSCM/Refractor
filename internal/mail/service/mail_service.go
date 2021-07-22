@@ -20,11 +20,17 @@ package service
 import (
 	"Refractor/domain"
 	"Refractor/pkg/conf"
+	"bytes"
 	"fmt"
+	"github.com/go-gomail/gomail"
+	"html/template"
 	"net/url"
+	"strconv"
 )
 
 type mailService struct {
+	uri    *url.URL
+	dialer *gomail.Dialer
 }
 
 func NewMailService(config *conf.Config) (domain.MailService, error) {
@@ -33,11 +39,69 @@ func NewMailService(config *conf.Config) (domain.MailService, error) {
 		return nil, err
 	}
 
-	fmt.Println(uri)
+	username := uri.User.Username()
+	password, _ := uri.User.Password()
 
-	return &mailService{}, nil
+	port, err := strconv.ParseInt(uri.Port(), 10, 32)
+	if err != nil {
+		return nil, err
+	}
+
+	dialer := gomail.NewDialer(uri.Hostname(), int(port), username, password)
+
+	return &mailService{
+		uri:    uri,
+		dialer: dialer,
+	}, nil
 }
 
-func (s *mailService) SendMail(to []string, msg string) error {
+func (s *mailService) SendMail(to []string, sub string, body string) error {
+	m := gomail.NewMessage()
+	m.SetHeader("From", fmt.Sprintf("refractor@%s", s.uri.Hostname()))
+	m.SetHeader("To", to...)
+	m.SetHeader("Subject", sub)
+	m.SetBody("text/html", body)
+
+	if err := s.dialer.DialAndSend(m); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+type welcomeEmailData struct {
+	Inviter string
+	Link    string
+}
+
+func (s *mailService) SendWelcomeEmail(to, inviterName, link string) error {
+	data := welcomeEmailData{
+		Inviter: inviterName,
+		Link:    link,
+	}
+
+	body, err := s.parseTemplate("./internal/mail/templates/welcome.html", data)
+	if err != nil {
+		return err
+	}
+
+	if err := s.SendMail([]string{to}, "Welcome to Refractor", body.String()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *mailService) parseTemplate(templateFile string, data interface{}) (*bytes.Buffer, error) {
+	t, err := template.ParseFiles(templateFile)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := new(bytes.Buffer)
+	if err := t.Execute(buf, data); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
 }
