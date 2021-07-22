@@ -21,6 +21,7 @@ import (
 	"Refractor/domain"
 	"Refractor/pkg/conf"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	kratos "github.com/ory/kratos-client-go"
@@ -45,7 +46,7 @@ type createIdentityPayload struct {
 	Traits *domain.Traits
 }
 
-func (r *authRepo) CreateUser(userTraits *domain.Traits) (*domain.AuthUser, error) {
+func (r *authRepo) CreateUser(ctx context.Context, userTraits *domain.Traits) (*domain.AuthUser, error) {
 	const op = opTag + "CreateUser"
 
 	url := fmt.Sprintf("%s/identities", r.config.KratosAdmin)
@@ -64,6 +65,7 @@ func (r *authRepo) CreateUser(userTraits *domain.Traits) (*domain.AuthUser, erro
 	if err != nil {
 		return nil, errors.Wrap(err, op)
 	}
+	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
 	res, err := http.DefaultClient.Do(req)
@@ -101,7 +103,7 @@ func (r *authRepo) CreateUser(userTraits *domain.Traits) (*domain.AuthUser, erro
 	return newUser, nil
 }
 
-func (r *authRepo) GetUserByID(id string) (*domain.AuthUser, error) {
+func (r *authRepo) GetUserByID(ctx context.Context, id string) (*domain.AuthUser, error) {
 	const op = opTag + "GetUserByID"
 
 	url := fmt.Sprintf("%s/identities/%s", r.config.KratosAdmin, id)
@@ -110,6 +112,7 @@ func (r *authRepo) GetUserByID(id string) (*domain.AuthUser, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, op)
 	}
+	req = req.WithContext(ctx)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -143,7 +146,7 @@ func (r *authRepo) GetUserByID(id string) (*domain.AuthUser, error) {
 	return user, nil
 }
 
-func (r *authRepo) GetAllUsers() ([]*domain.AuthUser, error) {
+func (r *authRepo) GetAllUsers(ctx context.Context) ([]*domain.AuthUser, error) {
 	const op = opTag + "GetAllUsers"
 
 	url := fmt.Sprintf("%s/identities", r.config.KratosAdmin)
@@ -152,6 +155,7 @@ func (r *authRepo) GetAllUsers() ([]*domain.AuthUser, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, op)
 	}
+	req = req.WithContext(ctx)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -187,4 +191,42 @@ func (r *authRepo) GetAllUsers() ([]*domain.AuthUser, error) {
 	}
 
 	return users, nil
+}
+
+type recoveryData struct {
+	ExpiresIn string `json:"expires_in"`
+	UserID    string `json:"identity_id"`
+}
+
+type recoveryRes struct {
+	Link string `json:"recovery_link"`
+}
+
+func (r *authRepo) GetRecoveryLink(ctx context.Context, userID string) (string, error) {
+	const op = opTag + "GetRecoveryLink"
+
+	url := fmt.Sprintf("%s/recovery/link", r.config.KratosAdmin)
+
+	data, err := json.Marshal(recoveryData{"24h", userID})
+	if err != nil {
+		return "", errors.Wrap(err, op)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+	if err != nil {
+		return "", errors.Wrap(err, op)
+	}
+	req = req.WithContext(ctx)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", errors.Wrap(err, op)
+	}
+
+	link := &recoveryRes{}
+	if err := json.NewDecoder(res.Body).Decode(link); err != nil {
+		return "", errors.Wrap(err, op)
+	}
+
+	return link.Link, nil
 }

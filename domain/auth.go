@@ -34,9 +34,14 @@ type AuthUser struct {
 }
 
 type AuthRepo interface {
-	CreateUser(userTraits *Traits) (*AuthUser, error)
-	GetUserByID(id string) (*AuthUser, error)
-	GetAllUsers() ([]*AuthUser, error)
+	CreateUser(ctx context.Context, userTraits *Traits) (*AuthUser, error)
+	GetUserByID(ctx context.Context, id string) (*AuthUser, error)
+	GetAllUsers(ctx context.Context) ([]*AuthUser, error)
+	GetRecoveryLink(ctx context.Context, userID string) (string, error)
+}
+
+type AuthService interface {
+	CreateUser(c context.Context, userTraits *Traits, inviter string) (*AuthUser, error)
 }
 
 type AuthObject string
