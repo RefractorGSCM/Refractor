@@ -17,33 +17,34 @@
 
 {{ define "verification" }}
 {{ template "head" . }}
-<div class="auth">
     <div class="container" id="settings">
         <h1>Email Verification</h1>
 
-        {{ range $message := .Messages }}
-        <div class="{{ $message.Type }}">{{ $message.Text }}</div>
-        {{ end }}
-
         <form method="{{ .Method }}" action="{{ .Action }}">
-            {{ range $node := .UiNodes }}
-            {{ if eq $node.Type "submit" }}
-            <button type="submit" name="{{ $node.Name }}" value="{{ $node.Value }}">{{ $node.Label }}</button>
-            {{ else }}
-            <label>
-                {{ if $node.Label }}
-                {{ $node.Label }}
-                {{ end }}
+            {{ range $message := .Messages }}
+            <div class="message-{{ $message.Type }}">{{ $message.Text }}</div>
+            {{ end }}
 
-                {{ if eq $node.Name "email" }}
-                    Email
+            <div class="inputs">
+                {{ range $node := .UiNodes }}
+                {{ if eq $node.Type "submit" }}
+                <button type="submit" name="{{ $node.Name }}" value="{{ $node.Value }}">{{ $node.Label }}</button>
+                {{ else }}
+                <div class="input-wrapper">
+                    <div class="input-main">
+                        <input id="input-{{ $node.Name }}" type="{{ $node.Type }}" name="{{ $node.Name }}" value="{{ $node.Value }}" required />
+
+                        <div class="underline"></div>
+
+                        {{ if $node.Label }}
+                        <label for="input-{{ $node.Name }}">{{ $node.Label }}</label>
+                        {{ end }}
+                    </div>
+                </div>
                 {{ end }}
-                <input type="{{ $node.Type }}" name="{{ $node.Name }}" value="{{ $node.Value }}" />
-            </label>
-            {{ end }}
-            {{ end }}
+                {{ end }}
+            </div>
         </form>
     </div>
-</div>
 {{ template "foot" . }}
 {{ end }}

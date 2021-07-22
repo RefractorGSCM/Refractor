@@ -239,7 +239,10 @@ func setupEchoPages(logger *zap.Logger, client *kratos.APIClient, config *conf.C
 
 	pagesHandler := auth.NewPublicHandlers(client, config)
 
-	//echo.NotFoundHandler = pagesHandler.RootHandler
+	// Serve css stylesheet
+	e.File("/style.css", "./auth/static/style.css")
+
+	echo.NotFoundHandler = pagesHandler.RootHandler
 	kratosGroup := e.Group("/k")
 	kratosGroup.GET("/login", pagesHandler.LoginHandler)
 	kratosGroup.GET("/verify", pagesHandler.VerificationHandler)
