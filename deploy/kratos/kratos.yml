@@ -51,11 +51,11 @@ selfservice:
       enabled: true
       ui_url: http://127.0.0.1:4455/k/verify
       after:
-        default_browser_return_url: http://127.0.0.1:4455/
+        default_browser_return_url: http://127.0.0.1:4455/k/activated
 
     logout:
       after:
-        default_browser_return_url: http://127.0.0.1:4455/auth/login
+        default_browser_return_url: http://127.0.0.1:4455/k/login
 
     login:
       ui_url: http://127.0.0.1:4455/k/login

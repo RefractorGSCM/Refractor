@@ -24,6 +24,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/labstack/echo/v4"
 	kratos "github.com/ory/kratos-client-go"
 	"github.com/pkg/errors"
 	"net/http"
@@ -216,6 +217,7 @@ func (r *authRepo) GetRecoveryLink(ctx context.Context, userID string) (string, 
 	if err != nil {
 		return "", errors.Wrap(err, op)
 	}
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	req = req.WithContext(ctx)
 
 	res, err := http.DefaultClient.Do(req)
