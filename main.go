@@ -93,6 +93,8 @@ func main() {
 		log.Fatalf("Could not set up mail service. Error: %v", err)
 	}
 
+	fmt.Println(mailService)
+
 	groupRepo, err := _groupRepo.NewGroupRepo(db, logger)
 	if err != nil {
 		log.Fatalf("Could not set up group repository. Error: %v", err)
