@@ -22,6 +22,7 @@ import (
 	"Refractor/domain"
 	"Refractor/games/mordhau"
 	_authRepo "Refractor/internal/auth/repos/kratos"
+	_authService "Refractor/internal/auth/service"
 	_authorizer "Refractor/internal/authorizer"
 	_gameService "Refractor/internal/game/service"
 	_groupHandler "Refractor/internal/group/delivery/http"
@@ -85,29 +86,28 @@ func main() {
 		log.Fatalf("Could not set up auth webserver. Error: %v", err)
 	}
 
-	// Set up application components
-	authRepo := _authRepo.NewAuthRepo(config)
-
 	mailService, err := service.NewMailService(config)
 	if err != nil {
 		log.Fatalf("Could not set up mail service. Error: %v", err)
 	}
 
-	fmt.Println(mailService)
+	// Set up application components
+	authRepo := _authRepo.NewAuthRepo(config)
+	authService := _authService.NewAuthService(authRepo, mailService, time.Second*2)
 
 	groupRepo, err := _groupRepo.NewGroupRepo(db, logger)
 	if err != nil {
 		log.Fatalf("Could not set up group repository. Error: %v", err)
 	}
 
-	users, err := authRepo.GetAllUsers()
+	users, err := authRepo.GetAllUsers(context.TODO())
 	if err != nil {
 		log.Fatalf("Could not check if a user currently exists. Error: %v", err)
 	}
 
 	// If no users exist, we create one from the initial user config variables.
 	if len(users) < 1 {
-		if err := SetupInitialUser(authRepo, groupRepo, config); err != nil {
+		if err := SetupInitialUser(authService, groupRepo, config); err != nil {
 			log.Fatalf("Could not create initial user. Error: %v", err)
 		}
 
@@ -242,17 +242,19 @@ func setupEchoPages(logger *zap.Logger, client *kratos.APIClient, config *conf.C
 	//echo.NotFoundHandler = pagesHandler.RootHandler
 	kratosGroup := e.Group("/k")
 	kratosGroup.GET("/login", pagesHandler.LoginHandler)
+	kratosGroup.GET("/verify", pagesHandler.VerificationHandler)
 	kratosGroup.GET("/recovery", pagesHandler.RecoveryHandler)
 	kratosGroup.GET("/settings", pagesHandler.SettingsHandler, protect)
+	kratosGroup.GET("/activated", pagesHandler.SetupCompleteHandler, protect)
 
 	return e, nil
 }
 
-func SetupInitialUser(authRepo domain.AuthRepo, groupRepo domain.GroupRepo, config *conf.Config) error {
-	user, err := authRepo.CreateUser(&domain.Traits{
+func SetupInitialUser(authService domain.AuthService, groupRepo domain.GroupRepo, config *conf.Config) error {
+	user, err := authService.CreateUser(context.TODO(), &domain.Traits{
 		Email:    config.InitialUserEmail,
 		Username: config.InitialUserUsername,
-	})
+	}, "RefractorSys")
 	if err != nil {
 		return err
 	}

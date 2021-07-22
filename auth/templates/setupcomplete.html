@@ -15,12 +15,12 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<h2>Hello!</h2>
+{{ define "setupcomplete" }}
+{{ template "head" . }}
+<div class="container">
+    <h1>You're all set.</h1>
 
-<h3>You've been invited by {{ .Inviter }} to join Refractor</h3>
-
-<p>Please click the link below to finish setting up your account.</p>
-
-<a href="{{.Link}}">{{ .Link }}</a>
-
-<p>If this email was sent to you by mistake, please disregard it.</p>
+    <a href="http://127.0.0.1:3000">Click here to start using Refractor</a>
+</div>
+{{ template "foot" . }}
+{{ end }}
