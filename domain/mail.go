@@ -18,5 +18,6 @@
 package domain
 
 type MailService interface {
-	SendMail(to []string, msg string) error
+	SendMail(to []string, sub string, body string) error
+	SendWelcomeEmail(to, inviterName, link string) error
 }

@@ -70,22 +70,6 @@ func NewBrowserProtectMiddleware(config *conf.Config) echo.MiddlewareFunc {
 				return err
 			}
 
-			// Ensure that the user's account has at least one verifiable address verified
-			var accountVerified = false
-			for _, address := range session.Identity.VerifiableAddresses {
-				if address.Verified {
-					accountVerified = true
-					break
-				}
-			}
-
-			if !accountVerified {
-				return c.JSON(http.StatusUnauthorized, &domain.Response{
-					Success: false,
-					Message: "You must verify your account before accessing Refractor",
-				})
-			}
-
 			traitBytes, err := json.Marshal(session.Identity.Traits)
 			if err != nil {
 				return err
