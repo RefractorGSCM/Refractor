@@ -1,0 +1,215 @@
+/*
+ * This file is part of Refractor.
+ *
+ * Refractor is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
+
+:root {
+    --color-background1: #1F2B5E;
+    --color-background2: #141C3D;
+    --color-background3: #0A0E1F;
+    --color-accent-light: #29387A;
+    --color-accent: #1F2B5E;
+    --color-topbar: #263780;
+    --color-text1: #F2F3F7;
+    --color-text2: #d0d3d9;
+    --color-text3: #121212;
+    --color-text-muted: #b8b8ba;
+    --color-text-muted2: #525252;
+    --color-textPrimary: #c8cfe8;
+    --color-primary-light: #6696ff;
+    --color-primary: #526ECB;
+    --color-success-light: #0CE982;
+    --color-success: #0BD577;
+    --color-warning-light: #F3AE3F;
+    --color-warning: #F1A01D;
+    --color-danger-light: #D54856;
+    --color-danger: #D02F3F;
+    --border-sm: 4px;
+    --border-md: 6px;
+    --border-lg: 10px;
+    --border-xl: 14px;
+}
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: inherit;
+}
+
+html {
+    font-size: 62.5%;
+    font-family: "Inter", sans-serif;
+}
+
+body {
+    box-sizing: border-box;
+    background: linear-gradient(
+            130deg,
+            var(--color-background3),
+            var(--color-background2)
+    );
+    color:  var(--color-text1);
+}
+
+h1 {
+    font-size: 4rem;
+    margin-bottom: 3rem;
+    color: var(--color-text2);
+}
+
+h2 {
+    font-size: 2.6rem;
+    margin-bottom: 3rem;
+    color: var(--color-text2);
+}
+
+.container {
+    padding-top: 10rem;
+    width: 100%;
+    height: 100vh;
+
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 25rem;
+    max-width: 35rem;
+}
+
+p.footnote {
+    font-size: 1.5rem;
+    margin-top: 6rem;
+}
+
+a {
+    color: var(--color-primary-light);
+    text-decoration: underline;
+}
+
+.inputs {
+    width: 25rem;
+}
+
+.input-wrapper {
+    height: 5rem;
+}
+
+.input-wrapper .input-main {
+    margin-top: 1rem;
+    height: 3rem;
+    width: 100%;
+    position: relative;
+}
+
+.input-wrapper .input-main input {
+    height: 100%;
+    width: 100%;
+    border: none;
+    background: none;
+    border-bottom: 2px solid var(--color-primary);
+    line-height: 2rem;
+    font-size: 1.7rem;
+    outline: none;
+    color: var(--color-text2);
+}
+
+.input-wrapper .input-main label {
+    position: absolute;
+    bottom: 1rem;
+    left: 0;
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+
+.input-wrapper .input-main input:focus ~ label,
+.input-wrapper .input-main input:valid ~ label{
+    transform: translateY(-1.8rem);
+    font-size: 1.2rem;
+    color: var(--color-primary-light);
+}
+
+.input-wrapper .input-main .underline {
+    position: absolute;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+}
+
+.input-wrapper .input-main .underline::before {
+    position: absolute;
+    content: "";
+    width: 100%;
+    height: 100%;
+    background: var(--color-primary-light);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.3s ease;
+}
+
+.input-wrapper .input-main input:focus ~ .underline::before,
+.input-wrapper .input-main input:valid ~ .underline::before{
+    transform: scaleX(1);
+}
+
+button[type=submit] {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: var(--border-sm);
+    background-color: var(--color-primary);
+    transition: all 0.3s;
+    color: var(--color-text1);
+    font-size: 1.6rem;
+    margin-bottom: 3rem;
+}
+
+button[type=submit]:hover {
+    background-color: var(--color-primary-light);
+    cursor: pointer;
+}
+
+.message-error {
+    font-size: 1.6rem;
+    color: var(--color-danger-light);
+    text-align: center;
+    border: 1px solid var(--color-danger);
+    padding: 1rem;
+    border-radius: var(--border-sm);
+}
+
+.message-info {
+    font-size: 1.6rem;
+    color: var(--color-success-light);
+    text-align: center;
+    border: 1px solid var(--color-success);
+    padding: 1rem;
+    border-radius: var(--border-sm);
+}
+
+.back-button {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    font-size: 3rem;
+}

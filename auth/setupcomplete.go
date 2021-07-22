@@ -18,10 +18,34 @@
 package auth
 
 import (
+	"Refractor/domain"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
 
 func (h *publicHandlers) SetupCompleteHandler(c echo.Context) error {
-	return c.Render(http.StatusOK, "setupcomplete", nil)
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not get AuthUser from context")
+	}
+
+	// Check if this user has a verified address
+	verified := false
+	for _, address := range user.Identity.VerifiableAddresses {
+		if address.Verified {
+			verified = true
+			break
+		}
+	}
+
+	if !verified {
+		// If this user is not yet verified, redirect them to the frontend application where they will be notified that
+		// they have to verify their email.
+		return c.JSON(http.StatusTemporaryRedirect, "http://127.0.0.1:3000") // TODO: Do not hardcode this value
+	}
+
+	const redirectURI = "http://127.0.0.1:3000" // TODO: Do not hardcode this value
+
+	return c.Render(http.StatusOK, "setupcomplete", redirectURI)
 }

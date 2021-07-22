@@ -17,32 +17,36 @@
 
 {{ define "login" }}
 {{ template "head" . }}
-
-<div class="auth">
     <div class="container" id="login">
-        <h1>Log in</h1>
-
-        {{ range $message := .Messages }}
-        <div class="{{ $message.Type }}">{{ $message.Text }}</div>
-        {{ end }}
+        <h1>Sign in</h1>
 
         <form method="{{ .Method }}" action="{{ .Action }}">
-            {{ range $node := .UiNodes }}
-            {{ if eq $node.Type "submit" }}
-            <button type="submit" name="{{ $node.Name }}" value="{{ $node.Value }}">{{ $node.Label }}</button>
-            {{ else }}
-            <label>
-                {{ if $node.Label }}
-                {{ $node.Label }}
+            {{ range $message := .Messages }}
+            <div class="message-{{ $message.Type }}">{{ $message.Text }}</div>
+            {{ end }}
+
+            <div class="inputs">
+                {{ range $node := .UiNodes }}
+                {{ if eq $node.Type "submit" }}
+                <button type="submit" name="{{ $node.Name }}" value="{{ $node.Value }}">{{ $node.Label }}</button>
+                {{ else }}
+                <div class="input-wrapper">
+                    <div class="input-main">
+                        <input id="input-{{ $node.Name }}" type="{{ $node.Type }}" name="{{ $node.Name }}" value="{{ $node.Value }}" required />
+
+                        <div class="underline"></div>
+
+                        {{ if $node.Label }}
+                        <label for="input-{{ $node.Name }}">{{ $node.Label }}</label>
+                        {{ end }}
+                    </div>
+                </div>
                 {{ end }}
-                <input type="{{ $node.Type }}" name="{{ $node.Name }}" value="{{ $node.Value }}" />
-            </label>
-            {{ end }}
-            {{ end }}
+                {{ end }}
+            </div>
         </form>
 
-            <p>Forget your password? Click <a href="/k/recovery">here</a> to recover your account</p>
+        <p class="footnote">Forget your password? Click <a href="/k/recovery">here</a> to recover your account</p>
     </div>
-</div>
 {{ template "foot" . }}
 {{ end }}

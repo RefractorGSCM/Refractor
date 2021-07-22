@@ -23,6 +23,7 @@ import (
 	"github.com/labstack/echo/v4"
 	kratos "github.com/ory/kratos-client-go"
 	"net/http"
+	"strings"
 )
 
 func (h *publicHandlers) SettingsHandler(c echo.Context) error {
@@ -69,12 +70,47 @@ func (h *publicHandlers) SettingsHandler(c echo.Context) error {
 	//l.Debug(string(data))
 
 	// pass the flow data along to the renderer for display
-	rData := RenderData{
-		Action:   flow.Ui.GetAction(),
-		Method:   flow.Ui.GetMethod(),
-		UiNodes:  []Node{},
-		Messages: []Message{},
+	type rDataGroup struct {
+		ProfileData        RenderData
+		PasswordData       RenderData
+		Messages           []Message
+		ShowProfile        bool
+		Success            bool
+		SuccessRedirectURL string
+		BackRedirectURL    string
 	}
+
+	rData := rDataGroup{
+		ProfileData: RenderData{
+			Action:  flow.Ui.GetAction(),
+			Method:  flow.Ui.GetMethod(),
+			UiNodes: []Node{},
+		},
+		PasswordData: RenderData{
+			Action:  flow.Ui.GetAction(),
+			Method:  flow.Ui.GetMethod(),
+			UiNodes: []Node{},
+		},
+		Messages:           []Message{},
+		ShowProfile:        true,
+		Success:            false,
+		SuccessRedirectURL: "http://127.0.0.1:3000", // TODO: don't hardcode these values
+		BackRedirectURL:    "http://127.0.0.1:3000",
+	}
+
+	// If this flow was initialized by an account recovery, we do not want to show the profile update form
+	// to avoid confusing the user.
+	if strings.Contains(flow.RequestUrl, "/self-service/recovery") {
+		rData.ShowProfile = false
+	}
+
+	// If the user set their password, then the flow should be marked as complete so we update the render data success
+	// variable to adjust rendering accordingly.
+	if flow.State == "success" {
+		rData.Success = true
+	}
+
+	submitsSeen := 0
 
 	for _, node := range flow.Ui.Nodes {
 		newNode := Node{}
@@ -99,7 +135,31 @@ func (h *publicHandlers) SettingsHandler(c echo.Context) error {
 			attributes.UiNodeInputAttributes.GetRequired()
 		}
 
-		rData.UiNodes = append(rData.UiNodes, newNode)
+		// Since the settings flow has two points of submission, we want to put the UI nodes in the correct form
+		// based on where they belong. The following if/else if logic is determining where they belong.
+		if newNode.Name == "traits.email" || newNode.Name == "traits.username" {
+			// if this node belongs to the profile form, add it to profile data
+			rData.ProfileData.UiNodes = append(rData.ProfileData.UiNodes, newNode)
+		} else if newNode.Name == "csrf_token" {
+			// if this node is the CSRF token, add it to both
+			rData.ProfileData.UiNodes = append(rData.ProfileData.UiNodes, newNode)
+			rData.PasswordData.UiNodes = append(rData.PasswordData.UiNodes, newNode)
+		} else if newNode.Name == "password" {
+			// if this node is the password, add it to the password form
+			rData.PasswordData.UiNodes = append(rData.PasswordData.UiNodes, newNode)
+		}
+
+		if newNode.Type == "submit" {
+			if submitsSeen == 0 {
+				// if this is the first submit, put under profile data
+				rData.ProfileData.UiNodes = append(rData.ProfileData.UiNodes, newNode)
+			} else {
+				// otherwise, put it under password data
+				rData.PasswordData.UiNodes = append(rData.PasswordData.UiNodes, newNode)
+			}
+
+			submitsSeen++
+		}
 	}
 
 	for _, message := range flow.Ui.Messages {

@@ -82,6 +82,12 @@ func (h *publicHandlers) VerificationHandler(c echo.Context) error {
 			newNode.Required = attributes.UiNodeInputAttributes.GetRequired()
 			newNode.Type = attributes.UiNodeInputAttributes.Type
 
+			// For some reason this field doesn't arrive pre-labeled by the Kratos API so we need to add it
+			// manually. This rendering system is pretty jank...
+			if newNode.Name == "email" {
+				newNode.Label = "Email"
+			}
+
 			attrVal := attributes.UiNodeInputAttributes.GetValue()
 			if val, ok := attrVal.(string); ok {
 				newNode.Value = val

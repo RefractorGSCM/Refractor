@@ -21,6 +21,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"html/template"
 	"io"
+	"strings"
 )
 
 type Renderer struct {
@@ -30,7 +31,11 @@ type Renderer struct {
 }
 
 func (t *Renderer) ReloadTemplates() {
-	t.template = template.Must(template.ParseGlob(t.location))
+	funcMap := template.FuncMap{
+		"Capitalize": strings.Title,
+	}
+
+	t.template = template.Must(template.New("main").Funcs(funcMap).ParseGlob(t.location))
 }
 
 func (t *Renderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {

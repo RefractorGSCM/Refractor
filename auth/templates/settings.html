@@ -17,29 +17,89 @@
 
 {{ define "settings" }}
 {{ template "head" . }}
-<div class="auth">
     <div class="container" id="settings">
         <h1>Settings</h1>
 
-        {{ range $message := .Messages }}
-        <div class="{{ $message.Type }}">{{ $message.Text }}</div>
+        <div style="max-width: 30rem; margin-bottom: 2rem;">
+            {{ range $message := .Messages }}
+            <div class="message-{{ $message.Type }}">{{ $message.Text }}</div>
+            {{ end }}
+        </div>
+
+        {{ if .ShowProfile }}
+        <a href="{{ .BackRedirectURL }}" class="back-button">
+            Back to Refractor
+        </a>
+
+        <form method="{{ .ProfileData.Method }}" action="{{ .ProfileData.Action }}">
+            <div class="inputs">
+                {{ range $node := .ProfileData.UiNodes }}
+                {{ if eq $node.Type "submit" }}
+                <button type="submit" name="{{ $node.Name }}" value="{{ $node.Value }}">{{ $node.Label }} {{ $node.Value | Capitalize }}</button>
+                {{ else }}
+
+                {{ if eq $node.Type "hidden" }}
+                <label>
+                    <input type="{{ $node.Type }}" name="{{ $node.Name }}" value="{{ $node.Value }}" required />
+                </label>
+                {{ else }}
+                <div class="input-wrapper">
+                    <div class="input-main">
+                        <input id="input1-{{ $node.Name }}" type="{{ $node.Type }}" name="{{ $node.Name }}" value="{{ $node.Value }}" required />
+
+                        <div class="underline"></div>
+
+                        {{ if $node.Label }}
+                        <label for="input1-{{ $node.Name }}">{{ $node.Label }}</label>
+                        {{ end }}
+                    </div>
+                </div>
+                {{ end }}
+                {{ end }}
+                {{ end }}
+            </div>
+        </form>
         {{ end }}
 
-        <form method="{{ .Method }}" action="{{ .Action }}">
-            {{ range $node := .UiNodes }}
-            {{ if eq $node.Type "submit" }}
-            <button type="submit" name="{{ $node.Name }}" value="{{ $node.Value }}">{{ $node.Label }}</button>
-            {{ else }}
-            <label>
-                {{ if $node.Label }}
-                {{ $node.Label }}
+        <form method="{{ .PasswordData.Method }}" action="{{ .PasswordData.Action }}">
+            <div class="inputs">
+                {{ range $node := .PasswordData.UiNodes }}
+                {{ if eq $node.Type "submit" }}
+                <button type="submit" name="{{ $node.Name }}" value="{{ $node.Value }}">{{ $node.Label }} {{ $node.Value | Capitalize }}</button>
+                {{ else }}
+
+                {{ if eq $node.Type "hidden" }}
+                <label>
+                    <input type="{{ $node.Type }}" name="{{ $node.Name }}" value="{{ $node.Value }}" required />
+                </label>
+                {{ else }}
+                <div class="input-wrapper">
+                    <div class="input-main">
+                        <input id="input-{{ $node.Name }}" type="{{ $node.Type }}" name="{{ $node.Name }}" value="{{ $node.Value }}" required />
+
+                        <div class="underline"></div>
+
+                        {{ if $node.Label }}
+                        <label for="input-{{ $node.Name }}">{{ $node.Label }}</label>
+                        {{ end }}
+                    </div>
+                </div>
                 {{ end }}
-                <input type="{{ $node.Type }}" name="{{ $node.Name }}" value="{{ $node.Value }}" />
-            </label>
-            {{ end }}
-            {{ end }}
+                {{ end }}
+                {{ end }}
+            </div>
         </form>
     </div>
-</div>
+{{ if .Success }}
+<script type="text/javascript">
+    window.onload = function() {
+        setTimeout(function() {
+            // Redirect on success after 3 seconds
+            window.location.replace("{{ .SuccessRedirectURL }}")
+        }, 3000)
+    }
+</script>
+{{ end }}
+
 {{ template "foot" . }}
 {{ end }}

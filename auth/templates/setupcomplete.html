@@ -20,7 +20,16 @@
 <div class="container">
     <h1>You're all set.</h1>
 
-    <a href="http://127.0.0.1:3000">Click here to start using Refractor</a>
+    <h2 style="margin-top: 3rem">You will be redirected in a moment. Enjoy Refractor!</h2>
 </div>
+
+<script type="text/javascript">
+    window.onload = function() {
+        setTimeout(function() {
+            // Redirect on success after 3 seconds
+            window.location.replace("{{ . }}")
+        }, 3000)
+    }
+</script>
 {{ template "foot" . }}
 {{ end }}
