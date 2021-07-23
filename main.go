@@ -53,12 +53,13 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"log"
+	"net/url"
 	"strings"
 	"time"
 )
 
 func main() {
-	config, err := conf.LoadConfig(".")
+	config, err := conf.LoadConfig()
 	if err != nil {
 		log.Fatalf("Could not load configuration. Error: %v", err)
 	}
@@ -79,7 +80,7 @@ func main() {
 	}
 	apiGroup := apiServer.Group("/api/v1")
 
-	kratosClient := setupKratos()
+	kratosClient := setupKratos(config)
 
 	authServer, err := setupEchoPages(logger, kratosClient, config)
 	if err != nil {
@@ -204,10 +205,22 @@ func setupPostgres(dbURI string) (*sql.DB, error) {
 	return db, nil
 }
 
-func setupKratos() *kratos.APIClient {
+func setupKratos(config *conf.Config) *kratos.APIClient {
 	kratosConf := kratos.NewConfiguration()
-	kratosConf.Scheme = "http"
-	kratosConf.Host = "127.0.0.1:4433"
+
+	uri, err := url.Parse(config.KratosPublic)
+	if err != nil {
+		log.Fatalf("Invalid kratos public URI provided. Error: %v", err)
+	}
+
+	if config.Mode == "dev" {
+		kratosConf.Scheme = "http"
+	} else {
+		kratosConf.Scheme = "https"
+	}
+
+	kratosConf.Host = uri.Host
+	kratosConf.Debug = true
 
 	kratosClient := kratos.NewAPIClient(kratosConf)
 
@@ -240,7 +253,7 @@ func setupEchoPages(logger *zap.Logger, client *kratos.APIClient, config *conf.C
 	pagesHandler := auth.NewPublicHandlers(client, config)
 
 	// Serve css stylesheet
-	e.File("/style.css", "./auth/static/style.css")
+	e.File("/k/style.css", "./auth/static/style.css")
 
 	echo.NotFoundHandler = pagesHandler.RootHandler
 	kratosGroup := e.Group("/k")
