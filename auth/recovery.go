@@ -32,7 +32,18 @@ func (h *publicHandlers) RecoveryHandler(c echo.Context) error {
 			fmt.Sprintf("%s/self-service/recovery/browser", h.config.KratosPublic))
 	}
 
-	_, res, err := h.client.V0alpha1Api.GetSelfServiceRecoveryFlow(c.Request().Context()).Id(flowID).Execute()
+	recoveryURL := fmt.Sprintf("%s/self-service/recovery/flows?id=%s", h.config.KratosPublic, flowID)
+
+	req, err := http.NewRequest("GET", recoveryURL, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, cookie := range c.Cookies() {
+		req.AddCookie(cookie)
+	}
+
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		if res != nil && (res.StatusCode == http.StatusGone || res.StatusCode == http.StatusNotFound) {
 			// the flow is invalid or is no longer valid
@@ -42,6 +53,17 @@ func (h *publicHandlers) RecoveryHandler(c echo.Context) error {
 
 		return err
 	}
+
+	/*_, res, err := h.client.V0alpha1Api.GetSelfServiceRecoveryFlow(c.Request().Context()).Id(flowID).Execute()
+	if err != nil {
+		if res != nil && (res.StatusCode == http.StatusGone || res.StatusCode == http.StatusNotFound) {
+			// the flow is invalid or is no longer valid
+			return c.Redirect(http.StatusTemporaryRedirect,
+				fmt.Sprintf("%s/self-service/recovery/browser", h.config.KratosPublic))
+		}
+
+		return err
+	}*/
 
 	flow := kratos.RecoveryFlow{}
 	if err := json.NewDecoder(res.Body).Decode(&flow); err != nil {

@@ -33,7 +33,34 @@ func (h *publicHandlers) LoginHandler(c echo.Context) error {
 			fmt.Sprintf("%s/self-service/login/browser", h.config.KratosPublic))
 	}
 
-	_, res, err := h.client.V0alpha1Api.GetSelfServiceLoginFlow(c.Request().Context()).Id(flowID).Execute()
+	/*f, res, err := h.client.V0alpha1Api.GetSelfServiceLoginFlow(c.Request().Context()).Id(flowID).Execute()
+	if err != nil {
+		if res != nil && (res.StatusCode == http.StatusGone || res.StatusCode == http.StatusNotFound) {
+			// the flow is invalid or is no longer valid
+			return c.Redirect(http.StatusTemporaryRedirect,
+				fmt.Sprintf("%s/self-service/login/browser", h.config.KratosPublic))
+		}
+
+		fmt.Println(f)
+
+		fmt.Println(res.Status, res.StatusCode)
+
+		fmt.Println("CLIENT ERR", err)
+		return err
+	}*/
+
+	loginURL := fmt.Sprintf("%s/self-service/login/flows?id=%s", h.config.KratosPublic, flowID)
+
+	req, err := http.NewRequest("GET", loginURL, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, cookie := range c.Cookies() {
+		req.AddCookie(cookie)
+	}
+
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		if res != nil && (res.StatusCode == http.StatusGone || res.StatusCode == http.StatusNotFound) {
 			// the flow is invalid or is no longer valid
@@ -49,14 +76,7 @@ func (h *publicHandlers) LoginHandler(c echo.Context) error {
 		return err
 	}
 
-	//data, err := json.MarshalIndent(flow, "", "  ")
-	//if err != nil {
-	//	fmt.Println("flow marshal", err)
-	//	return err
-	//}
-	//
-	//l, _ := zap.NewDevelopment()
-	//l.Debug(string(data))
+	fmt.Println(flow)
 
 	// pass the flow data along to the renderer for display
 	rData := RenderData{

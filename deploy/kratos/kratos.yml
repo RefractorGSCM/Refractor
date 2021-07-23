@@ -1,14 +1,14 @@
 version: v0.6.3-alpha.1
 
-dsn: postgres://postgres:password@postgresd:5432/kratos?sslmode=disable&max_conns=20&max_idle_conns=4
+dsn: {{DSN}}
 
 serve:
   public:
-    base_url: http://127.0.0.1:4433/
+    base_url: https://{{DOMAIN}}/kp/
     cors:
       enabled: true
       allowed_origins:
-        - http://127.0.0.1:3000
+        - https://{{DOMAIN}}
       allowed_methods:
         - POST
         - GET
@@ -22,12 +22,12 @@ serve:
         - Content-Type
         - Set-Cookie
   admin:
-    base_url: http://kratos:4434/
+    base_url: http://127.0.0.1:4434/
 
 selfservice:
-  default_browser_return_url: http://127.0.0.1:3000/
+  default_browser_return_url: https://{{DOMAIN}}/
   whitelisted_return_urls:
-    - http://127.0.0.1:3000
+    - https://{{DOMAIN}}/
 
   methods:
     password:
@@ -37,28 +37,28 @@ selfservice:
 
   flows:
     error:
-      ui_url: http://127.0.0.1:4455/error
+      ui_url: https://{{DOMAIN}}/k/error
 
     settings:
-      ui_url: http://127.0.0.1:4455/k/settings
+      ui_url: https://{{DOMAIN}}/k/settings
       privileged_session_max_age: 15m
 
     recovery:
       enabled: true
-      ui_url: http://127.0.0.1:4455/k/recovery
+      ui_url: https://{{DOMAIN}}/k/recovery
 
     verification:
       enabled: true
-      ui_url: http://127.0.0.1:4455/k/verify
+      ui_url: https://{{DOMAIN}}/k/verify
       after:
-        default_browser_return_url: http://127.0.0.1:4455/k/activated
+        default_browser_return_url: https://{{DOMAIN}}/k/activated
 
     logout:
       after:
-        default_browser_return_url: http://127.0.0.1:4455/k/login
+        default_browser_return_url: https://{{DOMAIN}}/k/login
 
     login:
-      ui_url: http://127.0.0.1:4455/k/login
+      ui_url: https://{{DOMAIN}}/k/login
       lifespan: 10m
 
 log:
@@ -81,6 +81,6 @@ hashers:
 identity:
   default_schema_url: file:///etc/config/kratos/identity.schema.json
 
-courier:
-  smtp:
-    connection_uri: smtp://@mailhog:1025/
+#courier:
+#  smtp:
+#    connection_uri: smtp://@mailhog:1025/

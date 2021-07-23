@@ -33,7 +33,18 @@ func (h *publicHandlers) VerificationHandler(c echo.Context) error {
 			fmt.Sprintf("%s/self-service/verification/browser", h.config.KratosPublic))
 	}
 
-	_, res, err := h.client.V0alpha1Api.GetSelfServiceVerificationFlow(c.Request().Context()).Id(flowID).Execute()
+	verificationURL := fmt.Sprintf("%s/self-service/verification/flows?id=%s", h.config.KratosPublic, flowID)
+
+	req, err := http.NewRequest("GET", verificationURL, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, cookie := range c.Cookies() {
+		req.AddCookie(cookie)
+	}
+
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		if res != nil && (res.StatusCode == http.StatusGone || res.StatusCode == http.StatusNotFound) {
 			// the flow is invalid or is no longer valid
@@ -43,6 +54,17 @@ func (h *publicHandlers) VerificationHandler(c echo.Context) error {
 
 		return err
 	}
+
+	/*_, res, err := h.client.V0alpha1Api.GetSelfServiceVerificationFlow(c.Request().Context()).Id(flowID).Execute()
+	if err != nil {
+		if res != nil && (res.StatusCode == http.StatusGone || res.StatusCode == http.StatusNotFound) {
+			// the flow is invalid or is no longer valid
+			return c.Redirect(http.StatusTemporaryRedirect,
+				fmt.Sprintf("%s/self-service/verification/browser", h.config.KratosPublic))
+		}
+
+		return err
+	}*/
 
 	flow := kratos.VerificationFlow{}
 	if err := json.NewDecoder(res.Body).Decode(&flow); err != nil {

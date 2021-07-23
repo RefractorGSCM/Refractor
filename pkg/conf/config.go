@@ -17,14 +17,18 @@
 
 package conf
 
-import "github.com/spf13/viper"
+import (
+	"Refractor/pkg/env"
+	"github.com/joho/godotenv"
+	"log"
+	"os"
+)
 
 // Config stores all configuration of Refractor.
 // The values are read in by Viper from a config file or from environment variables.
 type Config struct {
 	DBDriver            string `mapstructure:"DB_DRIVER"`
 	DBSource            string `mapstructure:"DB_SOURCE"`
-	APIBind             string `mapstructure:"API_BIND"`
 	KratosPublic        string `mapstructure:"KRATOS_PUBLIC_ROOT"`
 	KratosAdmin         string `mapstructure:"KRATOS_ADMIN_ROOT"`
 	Mode                string `mapstructure:"MODE"`
@@ -34,21 +38,38 @@ type Config struct {
 }
 
 // LoadConfig reads configuration from a file or environment variables.
-func LoadConfig(path string) (*Config, error) {
-	viper.AddConfigPath(path)
-	viper.SetConfigName("app")
-	viper.SetConfigType("env")
-	viper.SetDefault("MODE", "production")
+func LoadConfig() (*Config, error) {
+	if err := godotenv.Load("app.env"); err == nil {
+		log.Println("Environment variables loaded from app.env file")
+	}
 
-	// Tells viper to automatically override values read from a config file with values in env variables if they exist.
-	viper.AutomaticEnv()
-
-	if err := viper.ReadInConfig(); err != nil {
+	err := env.RequireEnv("DB_DRIVER").
+		RequireEnv("DB_SOURCE").
+		RequireEnv("KRATOS_PUBLIC_ROOT").
+		RequireEnv("KRATOS_ADMIN_ROOT").
+		RequireEnv("SMTP_CONNECTION_URI").
+		RequireEnv("INITIAL_USER_EMAIL").
+		RequireEnv("INITIAL_USER_USERNAME").
+		GetError()
+	if err != nil {
 		return nil, err
 	}
 
-	config := &Config{}
-	err := viper.Unmarshal(config)
+	config := &Config{
+		DBDriver:            os.Getenv("DB_DRIVER"),
+		DBSource:            os.Getenv("DB_SOURCE"),
+		KratosPublic:        os.Getenv("KRATOS_PUBLIC_ROOT"),
+		KratosAdmin:         os.Getenv("KRATOS_ADMIN_ROOT"),
+		InitialUserEmail:    os.Getenv("INITIAL_USER_EMAIL"),
+		InitialUserUsername: os.Getenv("INITIAL_USER_USERNAME"),
+		SmtpConnectionUri:   os.Getenv("SMTP_CONNECTION_URI"),
+	}
+
+	if os.Getenv("MODE") == "dev" {
+		config.Mode = "dev"
+	} else {
+		config.Mode = "prod"
+	}
 
 	return config, err
 }

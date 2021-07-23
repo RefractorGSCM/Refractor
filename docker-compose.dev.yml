@@ -44,6 +44,8 @@ services:
     environment:
       - DSN=postgres://postgres:password@postgresd:5432/kratos?sslmode=disable&max_conns=20&max_idle_conns=4
       - LOG_LEVEL=trace
+      - COURIER_SMTP_CONNECTION_URI=smtp://@mailhog:1025/
+      - COURIER_SMTP_FROM_ADDRESS=noreply@refractor
     command: serve -c /etc/config/kratos/kratos.yml --dev --watch-courier
     volumes:
       - type: bind
