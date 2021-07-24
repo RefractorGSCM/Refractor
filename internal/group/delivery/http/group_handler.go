@@ -45,7 +45,7 @@ func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Aut
 		logger:     log,
 	}
 
-	// Create the server routing group
+	// Create the routing group
 	groupGroup := apiGroup.Group("/groups", protect)
 
 	// Create an enforcer to authorize the user on the various endpoints
