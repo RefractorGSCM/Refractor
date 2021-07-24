@@ -99,6 +99,8 @@ type GroupRepo interface {
 	Delete(ctx context.Context, id int64) error
 	Update(ctx context.Context, id int64, args UpdateArgs) (*Group, error)
 	Reorder(ctx context.Context, newPositions []*GroupReorderInfo) error
+	AddUserGroup(ctx context.Context, userID string, groupID int64) error
+	RemoveUserGroup(ctx context.Context, userID string, groupID int64) error
 }
 
 type GroupService interface {
