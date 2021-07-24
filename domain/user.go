@@ -21,6 +21,14 @@ import (
 	"context"
 )
 
+type User struct {
+	ID          string   `json:"id"`
+	Username    string   `json:"username"`
+	Permissions string   `json:"permissions"`
+	Groups      []*Group `json:"groups"`
+}
+
 type UserService interface {
-	GetAllUsers(c context.Context)
+	GetAllUsers(c context.Context) ([]*User, error)
+	CreateUser(c context.Context, traits *Traits) error
 }
