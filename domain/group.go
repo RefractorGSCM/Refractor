@@ -111,4 +111,6 @@ type GroupService interface {
 	Update(c context.Context, id int64, args UpdateArgs) (*Group, error)
 	UpdateBase(c context.Context, args UpdateArgs) (*Group, error)
 	Reorder(c context.Context, newPositions []*GroupReorderInfo) error
+	AddUserGroup(c context.Context, userID string, groupID int64) error
+	RemoveUserGroup(c context.Context, userID string, groupID int64) error
 }
