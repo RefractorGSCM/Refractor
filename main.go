@@ -32,6 +32,8 @@ import (
 	_serverHandler "Refractor/internal/server/delivery/http"
 	_postgresServerRepo "Refractor/internal/server/repos/postgres"
 	_serverService "Refractor/internal/server/service"
+	_userHandler "Refractor/internal/user/delivery/http"
+	_userService "Refractor/internal/user/service"
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/conf"
@@ -128,6 +130,9 @@ func main() {
 	serverRepo := _postgresServerRepo.NewServerRepo(db, logger)
 	serverService := _serverService.NewServerService(serverRepo, time.Second*2)
 	_serverHandler.ApplyServerHandler(apiGroup, serverService, authorizer, protectMiddleware)
+
+	userService := _userService.NewUserService(authRepo, groupRepo, authorizer, time.Second*2, logger)
+	_userHandler.ApplyUserHandler(apiGroup, userService, authService, authorizer, protectMiddleware, logger)
 
 	// Setup complete. Begin serving requests.
 	logger.Info("Setup complete!")

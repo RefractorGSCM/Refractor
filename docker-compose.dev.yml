@@ -26,7 +26,7 @@ services:
       - type: bind
         source: ./deploy/kratos
         target: /etc/config/kratos
-    command: -c /etc/config/kratos/kratos.yml migrate sql -e --yes
+    command: -c /etc/config/kratos/kratos.dev.yml migrate sql -e --yes
     restart: on-failure
     networks:
       - intranet
@@ -46,7 +46,7 @@ services:
       - LOG_LEVEL=trace
       - COURIER_SMTP_CONNECTION_URI=smtp://@mailhog:1025/
       - COURIER_SMTP_FROM_ADDRESS=noreply@refractor
-    command: serve -c /etc/config/kratos/kratos.yml --dev --watch-courier
+    command: serve -c /etc/config/kratos/kratos.dev.yml --dev --watch-courier
     volumes:
       - type: bind
         source: ./deploy/kratos
