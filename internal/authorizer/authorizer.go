@@ -67,7 +67,7 @@ func (a *authorizer) GetPermissions(ctx context.Context, scope domain.AuthScope,
 			return nil, fmt.Errorf("an invalid server id was provided")
 		}
 
-		//return a.computePermissionsServer(ctx, userID, serverID, comparator) TODO: implement function
+		// return a.computePermissionsServer(ctx, userID, serverID, comparator) TODO: implement function
 		return nil, fmt.Errorf("server permissions not yet supported %d", serverID)
 	}
 
