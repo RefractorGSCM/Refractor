@@ -65,7 +65,7 @@ func (s *userService) GetAllUsers(c context.Context) ([]*domain.User, error) {
 		scope := domain.AuthScope{Type: domain.AuthObjRefractor}
 		permissions, err := s.authorizer.GetPermissions(ctx, scope, newUser.ID)
 		if err != nil {
-			s.logger.Error("Could not get computed permissions for user", zap.String("userID", newUser.ID))
+			s.logger.Error("Could not get computed permissions for user", zap.String("userID", newUser.ID), zap.Error(err))
 			return nil, errors.Wrap(err, fmt.Sprintf("user ID: %s", newUser.ID))
 		}
 
@@ -73,8 +73,10 @@ func (s *userService) GetAllUsers(c context.Context) ([]*domain.User, error) {
 
 		// Use the groups repo to get the user's groups
 		groups, err := s.groupRepo.GetUserGroups(ctx, newUser.ID)
-		if err != nil {
-			s.logger.Error("Could not get groups for user", zap.String("userID", newUser.ID))
+		if errors.Cause(err) == domain.ErrNotFound {
+			groups = []*domain.Group{}
+		} else if err != nil {
+			s.logger.Error("Could not get groups for user", zap.String("userID", newUser.ID), zap.Error(err))
 			return nil, errors.Wrap(err, fmt.Sprintf("user ID: %s", newUser.ID))
 		}
 
