@@ -116,3 +116,17 @@ func (s *groupService) UpdateBase(c context.Context, args domain.UpdateArgs) (*d
 
 	return currentBase, nil
 }
+
+func (s *groupService) AddUserGroup(c context.Context, userID string, groupID int64) error {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.AddUserGroup(ctx, userID, groupID)
+}
+
+func (s *groupService) RemoveUserGroup(c context.Context, userID string, groupID int64) error {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.RemoveUserGroup(ctx, userID, groupID)
+}
