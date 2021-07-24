@@ -86,7 +86,3 @@ func (s *userService) GetAllUsers(c context.Context) ([]*domain.User, error) {
 
 	return users, nil
 }
-
-func (s *userService) CreateUser(c context.Context, traits *domain.Traits) error {
-	panic("implement me")
-}
