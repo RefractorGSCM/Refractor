@@ -14,6 +14,20 @@ type GroupRepo struct {
 	mock.Mock
 }
 
+// AddUserGroup provides a mock function with given fields: ctx, userID, groupID
+func (_m *GroupRepo) AddUserGroup(ctx context.Context, userID string, groupID int64) error {
+	ret := _m.Called(ctx, userID, groupID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, int64) error); ok {
+		r0 = rf(ctx, userID, groupID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Delete provides a mock function with given fields: ctx, id
 func (_m *GroupRepo) Delete(ctx context.Context, id int64) error {
 	ret := _m.Called(ctx, id)
@@ -141,6 +155,20 @@ func (_m *GroupRepo) GetUserOverrides(ctx context.Context, userID string) (*doma
 	}
 
 	return r0, r1
+}
+
+// RemoveUserGroup provides a mock function with given fields: ctx, userID, groupID
+func (_m *GroupRepo) RemoveUserGroup(ctx context.Context, userID string, groupID int64) error {
+	ret := _m.Called(ctx, userID, groupID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, int64) error); ok {
+		r0 = rf(ctx, userID, groupID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // Reorder provides a mock function with given fields: ctx, newPositions

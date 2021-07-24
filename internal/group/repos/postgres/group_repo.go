@@ -372,6 +372,32 @@ func (r *groupRepo) Reorder(ctx context.Context, newPositions []*domain.GroupReo
 	return nil
 }
 
+func (r *groupRepo) AddUserGroup(ctx context.Context, userID string, groupID int64) error {
+	const op = opTag + "AddUserGroup"
+
+	query := `INSERT INTO UserGroups (UserID, GroupID) VALUES ($1, $2);`
+
+	if _, err := r.db.ExecContext(ctx, query, userID, groupID); err != nil {
+		r.logger.Error("Could not execute query", zap.String("query", query))
+		return errors.Wrap(err, op)
+	}
+
+	return nil
+}
+
+func (r *groupRepo) RemoveUserGroup(ctx context.Context, userID string, groupID int64) error {
+	const op = opTag + "RemoveUserGroup"
+
+	query := `DELETE FROM UserGroups WHERE UserID = $1 AND GroupID = $2;`
+
+	if _, err := r.db.ExecContext(ctx, query, userID, groupID); err != nil {
+		r.logger.Error("Could not execute query", zap.String("query", query))
+		return errors.Wrap(err, op)
+	}
+
+	return nil
+}
+
 // Scan helpers
 func (r *groupRepo) scanRow(row *sql.Row, group *domain.DBGroup) error {
 	return row.Scan(&group.ID, &group.Name, &group.Color, &group.Position, &group.Permissions, &group.CreatedAt, &group.ModifiedAt)
