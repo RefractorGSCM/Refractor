@@ -21,8 +21,10 @@ import (
 	"Refractor/authcheckers"
 	"Refractor/domain"
 	"Refractor/pkg/api/middleware"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+	"net/http"
 )
 
 type userHandler struct {
@@ -55,5 +57,16 @@ func ApplyUserHandler(apiGroup *echo.Group, s domain.UserService, as domain.Auth
 }
 
 func (h *userHandler) GetAllUsers(c echo.Context) error {
-	return c.String(200, "ok")
+	ctx := c.Request().Context()
+
+	users, err := h.service.GetAllUsers(ctx)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: fmt.Sprintf("Fetched %d users", len(users)),
+		Payload: users,
+	})
 }
