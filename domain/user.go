@@ -30,5 +30,4 @@ type User struct {
 
 type UserService interface {
 	GetAllUsers(c context.Context) ([]*User, error)
-	CreateUser(c context.Context, traits *Traits) error
 }
