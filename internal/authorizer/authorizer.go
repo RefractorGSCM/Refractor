@@ -19,6 +19,7 @@ package authorizer
 
 import (
 	"Refractor/domain"
+	"Refractor/pkg/bitperms"
 	"context"
 	"fmt"
 	"go.uber.org/zap"
@@ -53,4 +54,22 @@ func (a *authorizer) HasPermission(ctx context.Context, scope domain.AuthScope, 
 	}
 
 	return false, fmt.Errorf("an invalid AuthScope.type was provided")
+}
+
+func (a *authorizer) GetPermissions(ctx context.Context, scope domain.AuthScope, userID string) (*bitperms.Permissions, error) {
+	switch scope.Type {
+	case domain.AuthObjRefractor:
+		return a.computePermissionsRefractor(ctx, userID)
+
+	case domain.AuthObjServer:
+		serverID, ok := scope.ID.(int64)
+		if !ok {
+			return nil, fmt.Errorf("an invalid server id was provided")
+		}
+
+		//return a.computePermissionsServer(ctx, userID, serverID, comparator) TODO: implement function
+		return nil, fmt.Errorf("server permissions not yet supported %d", serverID)
+	}
+
+	return nil, fmt.Errorf("an invalid AuthScope.type was provided")
 }
