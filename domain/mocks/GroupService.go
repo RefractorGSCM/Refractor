@@ -14,6 +14,20 @@ type GroupService struct {
 	mock.Mock
 }
 
+// AddUserGroup provides a mock function with given fields: c, groupctx
+func (_m *GroupService) AddUserGroup(c context.Context, groupctx domain.GroupSetContext) error {
+	ret := _m.Called(c, groupctx)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, domain.GroupSetContext) error); ok {
+		r0 = rf(c, groupctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Delete provides a mock function with given fields: c, id
 func (_m *GroupService) Delete(c context.Context, id int64) error {
 	ret := _m.Called(c, id)
@@ -72,6 +86,20 @@ func (_m *GroupService) GetByID(c context.Context, id int64) (*domain.Group, err
 	}
 
 	return r0, r1
+}
+
+// RemoveUserGroup provides a mock function with given fields: c, groupctx
+func (_m *GroupService) RemoveUserGroup(c context.Context, groupctx domain.GroupSetContext) error {
+	ret := _m.Called(c, groupctx)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, domain.GroupSetContext) error); ok {
+		r0 = rf(c, groupctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // Reorder provides a mock function with given fields: c, newPositions
