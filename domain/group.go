@@ -35,9 +35,13 @@ type Group struct {
 }
 
 type DBGroup struct {
-	ID          int64
-	Name        string
-	Color       int
+	ID    int64
+	Name  string
+	Color int
+
+	// Position is the position a group will be displayed ar in a list.
+	// It is also treated as a rank in some permission checks. The lower a position value of a group is, the more
+	// important that group is.
 	Position    int
 	Permissions string
 	CreatedAt   sql.NullTime
@@ -103,6 +107,12 @@ type GroupRepo interface {
 	RemoveUserGroup(ctx context.Context, userID string, groupID int64) error
 }
 
+type GroupSetContext struct {
+	SetterUserID string
+	TargetUserID string
+	GroupID      int64
+}
+
 type GroupService interface {
 	Store(c context.Context, group *Group) error
 	GetAll(c context.Context) ([]*Group, error)
@@ -111,6 +121,6 @@ type GroupService interface {
 	Update(c context.Context, id int64, args UpdateArgs) (*Group, error)
 	UpdateBase(c context.Context, args UpdateArgs) (*Group, error)
 	Reorder(c context.Context, newPositions []*GroupReorderInfo) error
-	AddUserGroup(c context.Context, userID string, groupID int64) error
-	RemoveUserGroup(c context.Context, userID string, groupID int64) error
+	AddUserGroup(c context.Context, groupctx GroupSetContext) error
+	RemoveUserGroup(c context.Context, groupctx GroupSetContext) error
 }

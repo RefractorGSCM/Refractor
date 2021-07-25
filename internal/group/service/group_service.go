@@ -19,19 +19,27 @@ package service
 
 import (
 	"Refractor/domain"
+	"Refractor/pkg/bitperms"
+	"Refractor/pkg/perms"
 	"context"
+	"go.uber.org/zap"
+	"net/http"
 	"time"
 )
 
 type groupService struct {
-	repo    domain.GroupRepo
-	timeout time.Duration
+	repo       domain.GroupRepo
+	authorizer domain.Authorizer
+	timeout    time.Duration
+	logger     *zap.Logger
 }
 
-func NewGroupService(repo domain.GroupRepo, timeout time.Duration) domain.GroupService {
+func NewGroupService(r domain.GroupRepo, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.GroupService {
 	return &groupService{
-		repo:    repo,
-		timeout: timeout,
+		repo:       r,
+		authorizer: a,
+		timeout:    to,
+		logger:     log,
 	}
 }
 
@@ -117,16 +125,112 @@ func (s *groupService) UpdateBase(c context.Context, args domain.UpdateArgs) (*d
 	return currentBase, nil
 }
 
-func (s *groupService) AddUserGroup(c context.Context, userID string, groupID int64) error {
+func (s *groupService) AddUserGroup(c context.Context, groupctx domain.GroupSetContext) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.AddUserGroup(ctx, userID, groupID)
+	canSetGroup, err := s.canAddGroup(ctx, groupctx)
+	if err != nil {
+		return err
+	}
+
+	if !canSetGroup {
+		return domain.NewHTTPError(nil, http.StatusUnauthorized,
+			"You do not have permission to assign that group to that user.")
+	}
+
+	return s.repo.AddUserGroup(ctx, groupctx.TargetUserID, groupctx.GroupID)
 }
 
-func (s *groupService) RemoveUserGroup(c context.Context, userID string, groupID int64) error {
+func (s *groupService) canAddGroup(ctx context.Context, groupctx domain.GroupSetContext) (bool, error) {
+	// A user can only add a group to another user if the following criteria is met:
+	// 1a. The setting user is a super admin
+	// OR
+	// 1. The group being given does not have administrator access,
+	// 2. The setting user is an administrator and the target user is not.
+	//
+	// NOTE: "top group" is a user's group which has the highest position value of all their groups.
+	// NOTE: The lower the group position, the higher it is ranked.
+
+	////////////////////////////////////////////////////////
+	// 1a. If the setting user is super admin
+	// Get setting user permissions
+	setterPerms, err := s.authorizer.GetPermissions(ctx, domain.AuthScope{Type: domain.AuthObjRefractor}, groupctx.SetterUserID)
+	if err != nil {
+		s.logger.Error("Could not get setter perms", zap.Error(err))
+		return false, err
+	}
+
+	if setterPerms.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {
+		s.logger.Info("User was granted access to add role to target user",
+			zap.String("Setter User ID", groupctx.SetterUserID),
+			zap.String("Target User ID", groupctx.TargetUserID),
+			zap.Int64("Target Group ID", groupctx.GroupID),
+			zap.String("Reason", "Setter was a super admin"),
+		)
+		return true, nil
+	}
+
+	//////////////////////////////////////////////////////////////////
+	// 1. The group being given does not have administrator access
+	addGroup, err := s.repo.GetByID(ctx, groupctx.GroupID)
+	if err != nil {
+		s.logger.Error("Could not get target group", zap.Error(err))
+		return false, err
+	}
+
+	groupPerms, err := bitperms.FromString(addGroup.Permissions)
+	if err != nil {
+		s.logger.Error("Could not parse target group permissions", zap.Error(err))
+		return false, err
+	}
+
+	if groupPerms.CheckFlag(perms.GetFlag(perms.FlagAdministrator)) {
+		s.logGroupSetDenyMsg(groupctx, "The target group has administrator access and the setting user is not a super admin")
+		return false, nil
+	}
+
+	///////////////////////////////////////////////////////////////////////
+	// 2. The setting user is an administrator and the target user is not.
+	targetPerms, err := s.authorizer.GetPermissions(ctx, domain.AuthScope{Type: domain.AuthObjRefractor}, groupctx.TargetUserID)
+	if err != nil {
+		s.logger.Error("Could not get setter perms", zap.Error(err))
+		return false, err
+	}
+
+	setterIsAdmin := setterPerms.CheckFlag(perms.GetFlag(perms.FlagAdministrator))
+	targetIsAdmin := targetPerms.CheckFlag(perms.GetFlag(perms.FlagAdministrator))
+
+	if !setterIsAdmin {
+		s.logGroupSetDenyMsg(groupctx, "The setter user is not an administrator")
+		return false, nil
+	} else if setterIsAdmin && targetIsAdmin {
+		s.logGroupSetDenyMsg(groupctx, "The target user is an administrator and the setter is not a super admin")
+		return false, nil
+	}
+
+	s.logger.Info("User was granted access to add role to target user",
+		zap.String("Setter User ID", groupctx.SetterUserID),
+		zap.String("Target User ID", groupctx.TargetUserID),
+		zap.Int64("Target Group ID", groupctx.GroupID),
+	)
+
+	return true, nil
+}
+
+func (s *groupService) RemoveUserGroup(c context.Context, groupctx domain.GroupSetContext) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.RemoveUserGroup(ctx, userID, groupID)
+	return s.repo.RemoveUserGroup(ctx, groupctx.TargetUserID, groupctx.GroupID)
+}
+
+// logGroupSetDenyMsg is a helper function to reduce repetition of logging group add/remove permission deny messages.
+func (s *groupService) logGroupSetDenyMsg(groupctx domain.GroupSetContext, reason string) {
+	s.logger.Info("User was denied access to add role to target user",
+		zap.String("Setter User ID", groupctx.SetterUserID),
+		zap.String("Target User ID", groupctx.TargetUserID),
+		zap.Int64("Target Group ID", groupctx.GroupID),
+		zap.String("Reason", reason),
+	)
 }

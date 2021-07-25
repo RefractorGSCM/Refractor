@@ -121,7 +121,7 @@ func main() {
 
 	authorizer := _authorizer.NewAuthorizer(groupRepo, logger)
 
-	groupService := _groupService.NewGroupService(groupRepo, time.Second*2)
+	groupService := _groupService.NewGroupService(groupRepo, authorizer, time.Second*2, logger)
 	_groupHandler.ApplyGroupHandler(apiGroup, groupService, authorizer, protectMiddleware, logger)
 
 	gameService := _gameService.NewGameService()
