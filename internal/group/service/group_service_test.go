@@ -390,7 +390,7 @@ func Test(t *testing.T) {
 			})
 		})
 
-		g.Describe("canAddGroup()", func() {
+		g.Describe("canSetGroup()", func() {
 			var groupctx domain.GroupSetContext
 
 			g.BeforeEach(func() {
@@ -409,7 +409,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return true", func() {
-					hasPermission, err := service.canAddGroup(ctx, groupctx)
+					hasPermission, err := service.canSetGroup(ctx, groupctx)
 
 					Expect(err).To(BeNil())
 					Expect(hasPermission).To(BeTrue())
@@ -437,7 +437,7 @@ func Test(t *testing.T) {
 					})
 
 					g.It("Should return true", func() {
-						hasPermission, err := service.canAddGroup(ctx, groupctx)
+						hasPermission, err := service.canSetGroup(ctx, groupctx)
 
 						Expect(err).To(BeNil())
 						Expect(hasPermission).To(BeTrue())
@@ -451,7 +451,7 @@ func Test(t *testing.T) {
 					})
 
 					g.It("Should return false", func() {
-						hasPermission, err := service.canAddGroup(ctx, groupctx)
+						hasPermission, err := service.canSetGroup(ctx, groupctx)
 
 						Expect(err).To(BeNil())
 						Expect(hasPermission).To(BeFalse())
@@ -468,7 +468,7 @@ func Test(t *testing.T) {
 					})
 
 					g.It("Should return false", func() {
-						hasPermission, err := service.canAddGroup(ctx, groupctx)
+						hasPermission, err := service.canSetGroup(ctx, groupctx)
 
 						Expect(err).To(BeNil())
 						Expect(hasPermission).To(BeFalse())

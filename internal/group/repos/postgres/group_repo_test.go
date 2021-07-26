@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/franela/goblin"
+	"github.com/lib/pq"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -608,14 +609,28 @@ func Test(t *testing.T) {
 		})
 
 		g.Describe("Target group exists", func() {
-			g.BeforeEach(func() {
-				mock.ExpectExec("INSERT INTO UserGroups").WillReturnResult(sqlmock.NewResult(0, 1))
+			g.Describe("User does not yet have this group", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("INSERT INTO UserGroups").WillReturnResult(sqlmock.NewResult(0, 1))
+				})
+
+				g.It("Should not return an error", func() {
+					err := repo.AddUserGroup(context.TODO(), "userid", 1)
+
+					Expect(err).To(BeNil())
+				})
 			})
 
-			g.It("Should not return an error", func() {
-				err := repo.AddUserGroup(context.TODO(), "userid", 1)
+			g.Describe("User already has this group", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("INSERT INTO UserGroups").WillReturnError(&pq.Error{Constraint: "usergroups_pkey"})
+				})
 
-				Expect(err).To(BeNil())
+				g.It("Should return domain.ErrConflict error", func() {
+					err := repo.AddUserGroup(context.TODO(), "userid", 1)
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrConflict))
+				})
 			})
 		})
 

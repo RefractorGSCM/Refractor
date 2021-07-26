@@ -22,6 +22,7 @@ import (
 	"Refractor/pkg/bitperms"
 	"Refractor/pkg/perms"
 	"context"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"net/http"
 	"time"
@@ -129,7 +130,7 @@ func (s *groupService) AddUserGroup(c context.Context, groupctx domain.GroupSetC
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	canSetGroup, err := s.canAddGroup(ctx, groupctx)
+	canSetGroup, err := s.canSetGroup(ctx, groupctx)
 	if err != nil {
 		return err
 	}
@@ -139,18 +140,21 @@ func (s *groupService) AddUserGroup(c context.Context, groupctx domain.GroupSetC
 			"You do not have permission to assign that group to that user.")
 	}
 
-	return s.repo.AddUserGroup(ctx, groupctx.TargetUserID, groupctx.GroupID)
+	if err := s.repo.AddUserGroup(ctx, groupctx.TargetUserID, groupctx.GroupID); err != nil {
+		if errors.Cause(err) == domain.ErrConflict {
+			return domain.NewHTTPError(err, http.StatusConflict, "User already has this group")
+		}
+	}
+
+	return nil
 }
 
-func (s *groupService) canAddGroup(ctx context.Context, groupctx domain.GroupSetContext) (bool, error) {
-	// A user can only add a group to another user if the following criteria is met:
+func (s *groupService) canSetGroup(ctx context.Context, groupctx domain.GroupSetContext) (bool, error) {
+	// A user can only add/remove a group to another user if the following criteria is met:
 	// 1a. The setting user is a super admin
 	// OR
-	// 1. The group being given does not have administrator access,
+	// 1. The group being given/removed does not have administrator access,
 	// 2. The setting user is an administrator and the target user is not.
-	//
-	// NOTE: "top group" is a user's group which has the highest position value of all their groups.
-	// NOTE: The lower the group position, the higher it is ranked.
 
 	////////////////////////////////////////////////////////
 	// 1a. If the setting user is super admin
@@ -186,7 +190,7 @@ func (s *groupService) canAddGroup(ctx context.Context, groupctx domain.GroupSet
 	}
 
 	if groupPerms.CheckFlag(perms.GetFlag(perms.FlagAdministrator)) {
-		s.logGroupSetDenyMsg(groupctx, "The target group has administrator access and the setting user is not a super admin")
+		s.logGroupSetDenyMsg(groupctx, "add", "The target group has administrator access and the setting user is not a super admin")
 		return false, nil
 	}
 
@@ -202,10 +206,10 @@ func (s *groupService) canAddGroup(ctx context.Context, groupctx domain.GroupSet
 	targetIsAdmin := targetPerms.CheckFlag(perms.GetFlag(perms.FlagAdministrator))
 
 	if !setterIsAdmin {
-		s.logGroupSetDenyMsg(groupctx, "The setter user is not an administrator")
+		s.logGroupSetDenyMsg(groupctx, "add", "The setter user is not an administrator")
 		return false, nil
 	} else if setterIsAdmin && targetIsAdmin {
-		s.logGroupSetDenyMsg(groupctx, "The target user is an administrator and the setter is not a super admin")
+		s.logGroupSetDenyMsg(groupctx, "add", "The target user is an administrator and the setter is not a super admin")
 		return false, nil
 	}
 
@@ -222,12 +226,22 @@ func (s *groupService) RemoveUserGroup(c context.Context, groupctx domain.GroupS
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
+	canSetGroup, err := s.canSetGroup(ctx, groupctx)
+	if err != nil {
+		return err
+	}
+
+	if !canSetGroup {
+		return domain.NewHTTPError(nil, http.StatusUnauthorized,
+			"You do not have permission to remove a group from that user.")
+	}
+
 	return s.repo.RemoveUserGroup(ctx, groupctx.TargetUserID, groupctx.GroupID)
 }
 
 // logGroupSetDenyMsg is a helper function to reduce repetition of logging group add/remove permission deny messages.
-func (s *groupService) logGroupSetDenyMsg(groupctx domain.GroupSetContext, reason string) {
-	s.logger.Info("User was denied access to add role to target user",
+func (s *groupService) logGroupSetDenyMsg(groupctx domain.GroupSetContext, roleAction string, reason string) {
+	s.logger.Info("User was denied access to "+roleAction+" role to target user",
 		zap.String("Setter User ID", groupctx.SetterUserID),
 		zap.String("Target User ID", groupctx.TargetUserID),
 		zap.Int64("Target Group ID", groupctx.GroupID),

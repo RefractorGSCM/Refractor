@@ -378,6 +378,11 @@ func (r *groupRepo) AddUserGroup(ctx context.Context, userID string, groupID int
 	query := `INSERT INTO UserGroups (UserID, GroupID) VALUES ($1, $2);`
 
 	if _, err := r.db.ExecContext(ctx, query, userID, groupID); err != nil {
+		pqErr, ok := err.(*pq.Error)
+		if ok && pqErr.Constraint == "usergroups_pkey" {
+			return errors.Wrap(domain.ErrConflict, op)
+		}
+
 		r.logger.Error("Could not execute query", zap.String("query", query))
 		return errors.Wrap(err, op)
 	}
