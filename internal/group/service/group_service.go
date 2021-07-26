@@ -154,7 +154,7 @@ func (s *groupService) canSetGroup(ctx context.Context, groupctx domain.GroupSet
 	// 1a. The setting user is a super admin
 	// OR
 	// 1. The group being given/removed does not have administrator access,
-	// 2. The setting user is an administrator and the target user is not.
+	// 2. The setting user is an administrator and the target user is not an administrator or super admin.
 
 	////////////////////////////////////////////////////////
 	// 1a. If the setting user is super admin
@@ -195,7 +195,7 @@ func (s *groupService) canSetGroup(ctx context.Context, groupctx domain.GroupSet
 	}
 
 	///////////////////////////////////////////////////////////////////////
-	// 2. The setting user is an administrator and the target user is not.
+	// 2. The setting user is an administrator and the target user is not an administrator or super admin.
 	targetPerms, err := s.authorizer.GetPermissions(ctx, domain.AuthScope{Type: domain.AuthObjRefractor}, groupctx.TargetUserID)
 	if err != nil {
 		s.logger.Error("Could not get setter perms", zap.Error(err))
@@ -204,12 +204,16 @@ func (s *groupService) canSetGroup(ctx context.Context, groupctx domain.GroupSet
 
 	setterIsAdmin := setterPerms.CheckFlag(perms.GetFlag(perms.FlagAdministrator))
 	targetIsAdmin := targetPerms.CheckFlag(perms.GetFlag(perms.FlagAdministrator))
+	targetIsSuperAdmin := targetPerms.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin))
 
 	if !setterIsAdmin {
 		s.logGroupSetDenyMsg(groupctx, "add", "The setter user is not an administrator")
 		return false, nil
 	} else if setterIsAdmin && targetIsAdmin {
 		s.logGroupSetDenyMsg(groupctx, "add", "The target user is an administrator and the setter is not a super admin")
+		return false, nil
+	} else if setterIsAdmin && targetIsSuperAdmin {
+		s.logGroupSetDenyMsg(groupctx, "add", "The target user is a super admin and the setter is not")
 		return false, nil
 	}
 

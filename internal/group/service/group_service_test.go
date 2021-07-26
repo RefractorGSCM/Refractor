@@ -427,7 +427,7 @@ func Test(t *testing.T) {
 					}, nil)
 				})
 
-				g.Describe("The setting user is an administrator and the target user is not", func() {
+				g.Describe("The setting user is an administrator and the target user is not an admin", func() {
 					g.BeforeEach(func() {
 						setterPerms := bitperms.NewPermissionBuilder().AddFlag(perms.GetFlag(perms.FlagAdministrator)).GetPermission()
 						authorizer.On("GetPermissions", mock.Anything, mock.Anything, "userid1").Return(setterPerms, nil)
@@ -464,6 +464,23 @@ func Test(t *testing.T) {
 						authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(setterPerms, nil).Once()
 
 						targetPerms := bitperms.NewPermissionBuilder().AddFlag(perms.GetFlag(perms.FlagAdministrator)).GetPermission()
+						authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(targetPerms, nil).Once()
+					})
+
+					g.It("Should return false", func() {
+						hasPermission, err := service.canSetGroup(ctx, groupctx)
+
+						Expect(err).To(BeNil())
+						Expect(hasPermission).To(BeFalse())
+					})
+				})
+
+				g.Describe("The setting user is an administrator and the target is a super admin", func() {
+					g.BeforeEach(func() {
+						setterPerms := bitperms.NewPermissionBuilder().AddFlag(perms.GetFlag(perms.FlagAdministrator)).GetPermission()
+						authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(setterPerms, nil).Once()
+
+						targetPerms := bitperms.NewPermissionBuilder().AddFlag(perms.GetFlag(perms.FlagSuperAdmin)).GetPermission()
 						authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(targetPerms, nil).Once()
 					})
 
