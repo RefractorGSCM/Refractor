@@ -60,6 +60,8 @@ func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Aut
 	groupGroup.PUT("/:id", handler.UpdateGroup, enforcer.CheckAuth(authcheckers.DenyAll))
 	groupGroup.PUT("/base", handler.UpdateBaseGroup, enforcer.CheckAuth(authcheckers.DenyAll))
 	groupGroup.PUT("/order", handler.ReorderGroups, enforcer.CheckAuth(authcheckers.DenyAll))
+	groupGroup.PUT("/users", handler.SetUserGroup(true), enforcer.CheckAuth(authcheckers.RequireAdmin))
+	groupGroup.DELETE("/users", handler.SetUserGroup(false), enforcer.CheckAuth(authcheckers.RequireAdmin))
 }
 
 type resPermission struct {
@@ -265,4 +267,56 @@ func (h *groupHandler) ReorderGroups(c echo.Context) error {
 		Success: true,
 		Message: "Groups reordered",
 	})
+}
+
+func (h *groupHandler) SetUserGroup(add bool) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var body params.SetUserGroupParams
+		if err := c.Bind(&body); err != nil {
+			return err
+		}
+
+		if ok, err := api.ValidateRequestBody(body); !ok {
+			fmt.Println(err)
+
+			httpErr, ok := err.(*domain.HTTPError)
+			if !ok {
+				return fmt.Errorf("err was not an http error")
+			}
+
+			return httpErr
+		}
+
+		user, ok := c.Get("user").(*domain.AuthUser)
+		if !ok {
+			return fmt.Errorf("could not cast user to *domain.AuthUser")
+		}
+
+		groupSetCtx := domain.GroupSetContext{
+			SetterUserID: user.Identity.Id,
+			TargetUserID: body.UserID,
+			GroupID:      body.GroupID,
+		}
+
+		ctx := c.Request().Context()
+		if add {
+			if err := h.service.AddUserGroup(ctx, groupSetCtx); err != nil {
+				return err
+			}
+
+			return c.JSON(http.StatusOK, &domain.Response{
+				Success: true,
+				Message: "Group added",
+			})
+		} else {
+			if err := h.service.RemoveUserGroup(ctx, groupSetCtx); err != nil {
+				return err
+			}
+
+			return c.JSON(http.StatusOK, &domain.Response{
+				Success: true,
+				Message: "Group removed",
+			})
+		}
+	}
 }

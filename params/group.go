@@ -105,3 +105,15 @@ func (body GroupReorderArray) Validate() error {
 
 	return nil
 }
+
+type SetUserGroupParams struct {
+	UserID  string `json:"user_id" form:"user_id"`
+	GroupID int64  `json:"group_id" form:"group_id"`
+}
+
+func (body SetUserGroupParams) Validate() error {
+	return ValidateStruct(&body,
+		validation.Field(&body.UserID, validation.Required, validation.Length(36, 36)), // uuid length
+		validation.Field(&body.GroupID, validation.Required, validation.Min(1), validation.Max(math.MaxInt32)),
+	)
+}
