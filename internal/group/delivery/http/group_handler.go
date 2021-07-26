@@ -60,8 +60,8 @@ func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Aut
 	groupGroup.PUT("/:id", handler.UpdateGroup, enforcer.CheckAuth(authcheckers.DenyAll))
 	groupGroup.PUT("/base", handler.UpdateBaseGroup, enforcer.CheckAuth(authcheckers.DenyAll))
 	groupGroup.PUT("/order", handler.ReorderGroups, enforcer.CheckAuth(authcheckers.DenyAll))
-	groupGroup.PUT("/users", handler.SetUserGroup(true), enforcer.CheckAuth(authcheckers.RequireAdmin))
-	groupGroup.DELETE("/users", handler.SetUserGroup(false), enforcer.CheckAuth(authcheckers.RequireAdmin))
+	groupGroup.PUT("/users/add", handler.SetUserGroup(true), enforcer.CheckAuth(authcheckers.RequireAdmin))
+	groupGroup.PUT("/users/remove", handler.SetUserGroup(false), enforcer.CheckAuth(authcheckers.RequireAdmin))
 }
 
 type resPermission struct {
