@@ -22,11 +22,11 @@ import (
 )
 
 type User struct {
-	ID          string   `json:"id"`
-	Username    string   `json:"username"`
-	Permissions string   `json:"permissions"`
-	Groups      []*Group `json:"groups"`
-	*UserMeta
+	ID          string    `json:"id"`
+	Username    string    `json:"username"`
+	Permissions string    `json:"permissions"`
+	Groups      []*Group  `json:"groups"`
+	UserMeta    *UserMeta `json:"meta"`
 }
 
 type UserMeta struct {
