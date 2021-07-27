@@ -54,6 +54,7 @@ func ApplyUserHandler(apiGroup *echo.Group, s domain.UserService, as domain.Auth
 
 	// Map routes to handlers
 	userGroup.GET("/", handler.GetAllUsers, enforcer.CheckAuth(authcheckers.RequireAdmin))
+	userGroup.GET("/me", handler.GetOwnInfo)
 }
 
 func (h *userHandler) GetAllUsers(c echo.Context) error {
@@ -68,5 +69,25 @@ func (h *userHandler) GetAllUsers(c echo.Context) error {
 		Success: true,
 		Message: fmt.Sprintf("Fetched %d users", len(users)),
 		Payload: users,
+	})
+}
+
+func (h *userHandler) GetOwnInfo(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	userInfo, err := h.service.GetByID(ctx, user.Identity.Id)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Own user info fetched",
+		Payload: userInfo,
 	})
 }

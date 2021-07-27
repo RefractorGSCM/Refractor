@@ -43,7 +43,7 @@ func NewUserRepo(db *sql.DB, log *zap.Logger) domain.UserMetaRepo {
 }
 
 func (r *userRepo) fetch(ctx context.Context, query string, args ...interface{}) ([]*domain.UserMeta, error) {
-	const op = opTag + "Fetch"
+	const op = opTag + "fetch"
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -97,13 +97,14 @@ func (r *userRepo) Store(ctx context.Context, meta *domain.UserMeta) error {
 	return nil
 }
 
-func (r *userRepo) GetByID(ctx context.Context, id string) (*domain.UserMeta, error) {
+func (r *userRepo) GetByID(ctx context.Context, userID string) (*domain.UserMeta, error) {
 	const op = opTag + "GetByID"
 
-	query := `SELECT * FROM UserMeta WHERE UserID = $1;`
+	query := "SELECT * FROM UserMeta WHERE UserID = $1;"
 
-	results, err := r.fetch(ctx, query, id)
+	results, err := r.fetch(ctx, query, userID)
 	if err != nil {
+		r.logger.Error("Could not get user by id", zap.Error(err))
 		return nil, errors.Wrap(err, op)
 	}
 
