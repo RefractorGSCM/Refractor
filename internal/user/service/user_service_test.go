@@ -41,22 +41,25 @@ func Test(t *testing.T) {
 	ctx := context.TODO()
 
 	g.Describe("User Service", func() {
+		var metaRepo *mocks.UserMetaRepo
 		var groupRepo *mocks.GroupRepo
 		var authRepo *mocks.AuthRepo
 		var authorizer *mocks.Authorizer
 		var service domain.UserService
 
 		g.BeforeEach(func() {
+			metaRepo = new(mocks.UserMetaRepo)
 			groupRepo = new(mocks.GroupRepo)
 			authRepo = new(mocks.AuthRepo)
 			authorizer = new(mocks.Authorizer)
-			service = NewUserService(authRepo, groupRepo, authorizer, time.Second*2, zap.NewNop())
+			service = NewUserService(metaRepo, authRepo, groupRepo, authorizer, time.Second*2, zap.NewNop())
 		})
 
 		g.Describe("GetAllUsers()", func() {
 			g.Describe("Users retrieved successfully", func() {
 				var authUsers []*domain.AuthUser
 				var userGroups []*domain.Group
+				var userMeta *domain.UserMeta
 				var permVal *bitperms.Permissions
 
 				g.BeforeEach(func() {
@@ -124,11 +127,19 @@ func Test(t *testing.T) {
 						},
 					}
 
+					userMeta = &domain.UserMeta{
+						ID:              "userid",
+						InitialUsername: "initial-username",
+						Username:        "new-username",
+						Deactivated:     true,
+					}
+
 					permVal, _ = bitperms.FromString("1")
 
 					authRepo.On("GetAllUsers", mock.Anything).Return(authUsers, nil)
 					authorizer.On("GetPermissions", mock.Anything, mock.AnythingOfType("domain.AuthScope"),
 						mock.AnythingOfType("string")).Return(permVal, nil)
+					metaRepo.On("GetByID", mock.Anything, mock.Anything).Return(userMeta, nil)
 					groupRepo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(userGroups, nil)
 				})
 
@@ -136,6 +147,7 @@ func Test(t *testing.T) {
 					_, err := service.GetAllUsers(ctx)
 
 					Expect(err).To(BeNil())
+					metaRepo.AssertExpectations(t)
 					authRepo.AssertExpectations(t)
 					groupRepo.AssertExpectations(t)
 					authorizer.AssertExpectations(t)
@@ -145,18 +157,22 @@ func Test(t *testing.T) {
 					var expected []*domain.User
 
 					for _, au := range authUsers {
-						expected = append(expected, &domain.User{
+						usr := &domain.User{
 							ID:          au.Identity.Id,
 							Username:    au.Traits.Username,
 							Permissions: permVal.String(),
 							Groups:      userGroups,
-						})
+							UserMeta:    userMeta,
+						}
+
+						expected = append(expected, usr)
 					}
 
 					users, err := service.GetAllUsers(ctx)
 
 					Expect(err).To(BeNil())
 					Expect(users).To(Equal(expected))
+					metaRepo.AssertExpectations(t)
 					authRepo.AssertExpectations(t)
 					groupRepo.AssertExpectations(t)
 					authorizer.AssertExpectations(t)
@@ -166,6 +182,7 @@ func Test(t *testing.T) {
 			g.Describe("Error(s) occurred", func() {
 				var authUsers []*domain.AuthUser
 				var permVal *bitperms.Permissions
+				var groups []*domain.Group
 
 				g.BeforeEach(func() {
 					authUsers = []*domain.AuthUser{
@@ -179,6 +196,12 @@ func Test(t *testing.T) {
 									Id: "userid-1",
 								},
 							},
+						},
+					}
+
+					groups = []*domain.Group{
+						{
+							ID: 1,
 						},
 					}
 
@@ -229,6 +252,26 @@ func Test(t *testing.T) {
 						authRepo.AssertExpectations(t)
 						authorizer.AssertExpectations(t)
 						groupRepo.AssertExpectations(t)
+					})
+				})
+
+				g.Describe("Meta repo error", func() {
+					g.BeforeEach(func() {
+						authRepo.On("GetAllUsers", mock.Anything).Return(authUsers, nil)
+						authorizer.On("GetPermissions", mock.Anything, mock.AnythingOfType("domain.AuthScope"),
+							mock.AnythingOfType("string")).Return(permVal, nil)
+						groupRepo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(groups, nil)
+						metaRepo.On("GetByID", mock.Anything, mock.AnythingOfType("string")).Return(nil, fmt.Errorf("err"))
+					})
+
+					g.It("Should return an error", func() {
+						_, err := service.GetAllUsers(ctx)
+
+						Expect(err).ToNot(BeNil())
+						authRepo.AssertExpectations(t)
+						authorizer.AssertExpectations(t)
+						groupRepo.AssertExpectations(t)
+						metaRepo.AssertExpectations(t)
 					})
 				})
 			})
