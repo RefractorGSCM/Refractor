@@ -124,12 +124,12 @@ func (r *authRepo) GetUserByID(ctx context.Context, id string) (*domain.AuthUser
 		return nil, errors.Wrap(fmt.Errorf("response status was %d and not %d", res.StatusCode, http.StatusOK), op)
 	}
 
-	session := &kratos.Session{}
-	if err := json.NewDecoder(res.Body).Decode(session); err != nil {
+	identity := kratos.Identity{}
+	if err := json.NewDecoder(res.Body).Decode(&identity); err != nil {
 		return nil, errors.Wrap(err, op)
 	}
 
-	traitBytes, err := json.Marshal(session.Identity.Traits)
+	traitBytes, err := json.Marshal(identity.Traits)
 	if err != nil {
 		return nil, errors.Wrap(err, op)
 	}
@@ -140,8 +140,10 @@ func (r *authRepo) GetUserByID(ctx context.Context, id string) (*domain.AuthUser
 	}
 
 	user := &domain.AuthUser{
-		Traits:  traits,
-		Session: session,
+		Traits: traits,
+		Session: &kratos.Session{
+			Identity: identity,
+		},
 	}
 
 	return user, nil
