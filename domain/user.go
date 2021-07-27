@@ -28,6 +28,21 @@ type User struct {
 	Groups      []*Group `json:"groups"`
 }
 
+type UserInfo struct {
+	ID              string `json:"id"`
+	InitialUsername string `json:"initial_username"`
+	Username        string `json:"username"`
+	Deactivated     bool   `json:"deactivated"`
+}
+
+// UserRepo is the interface to handle the storing of UserInfo data. This is NOT an auth repository and only contains
+// relevant metadata for Refractor. No user identities are stored in a UserRepo!
+type UserRepo interface {
+	Store(ctx context.Context, userInfo *UserInfo) error
+	GetByID(ctx context.Context, userID string) (*UserInfo, error)
+	SetUsername(ctx context.Context, username string) error
+}
+
 type UserService interface {
 	GetAllUsers(c context.Context) ([]*User, error)
 }
