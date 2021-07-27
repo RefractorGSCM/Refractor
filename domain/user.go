@@ -46,4 +46,5 @@ type UserMetaRepo interface {
 
 type UserService interface {
 	GetAllUsers(c context.Context) ([]*User, error)
+	GetByID(c context.Context, userID string) (*User, error)
 }
