@@ -64,7 +64,7 @@ func (qb *qb) BuildFindQuery(table string, args map[string]interface{}) (string,
 	return query, values
 }
 
-func (qb *qb) BuildUpdateQuery(table string, id int64, idName string, args map[string]interface{}) (string, []interface{}) {
+func (qb *qb) BuildUpdateQuery(table string, id interface{}, idName string, args map[string]interface{}) (string, []interface{}) {
 	var query = fmt.Sprintf("UPDATE %s SET ", table)
 	var values []interface{}
 

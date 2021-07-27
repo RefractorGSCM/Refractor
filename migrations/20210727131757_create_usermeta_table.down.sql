@@ -15,14 +15,4 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/* The UserInfo is for recording user info as well as other metadata not currently supported by Ory Kratos (the identity
-   management solution we are using). Storing this data separately allows us to keep track of contextual info which may
-   be useful to Refractor admins. This table also contains the 'Deactivated' property which allows us to block user
-   requests if an account needs to be deactivated without having to delete their account.
-*/
-CREATE TABLE IF NOT EXISTS UserInfo(
-    UserID VARCHAR(36) NOT NULL PRIMARY KEY,
-    InitialUsername VARCHAR(20) NOT NULL,
-    Username VARCHAR(20) NOT NULL,
-    Deactivated BOOLEAN DEFAULT FALSE
-)
+DROP TABLE IF EXISTS UserMeta;

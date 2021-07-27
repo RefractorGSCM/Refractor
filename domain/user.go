@@ -28,19 +28,19 @@ type User struct {
 	Groups      []*Group `json:"groups"`
 }
 
-type UserInfo struct {
+type UserMeta struct {
 	ID              string `json:"id"`
 	InitialUsername string `json:"initial_username"`
 	Username        string `json:"username"`
 	Deactivated     bool   `json:"deactivated"`
 }
 
-// UserRepo is the interface to handle the storing of UserInfo data. This is NOT an auth repository and only contains
-// relevant metadata for Refractor. No user identities are stored in a UserRepo!
-type UserRepo interface {
-	Store(ctx context.Context, userInfo *UserInfo) error
-	GetByID(ctx context.Context, userID string) (*UserInfo, error)
-	SetUsername(ctx context.Context, username string) error
+// UserMetaRepo is the interface to handle the storing of UserMeta data. This is NOT an auth repository and only contains
+// relevant metadata for Refractor. No user identities are stored in a UserMetaRepo!
+type UserMetaRepo interface {
+	Store(ctx context.Context, userInfo *UserMeta) error
+	GetByID(ctx context.Context, userID string) (*UserMeta, error)
+	Update(ctx context.Context, userID string, args UpdateArgs) (*UserMeta, error)
 }
 
 type UserService interface {

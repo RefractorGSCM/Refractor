@@ -19,31 +19,132 @@ package postgres
 
 import (
 	"Refractor/domain"
+	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
+
+const opTag = "UserRepo.Postgres."
 
 type userRepo struct {
 	db     *sql.DB
 	logger *zap.Logger
+	qb     domain.QueryBuilder
 }
 
-func NewUserRepo(db *sql.DB, log *zap.Logger) domain.UserRepo {
+func NewUserRepo(db *sql.DB, log *zap.Logger) domain.UserMetaRepo {
 	return &userRepo{
 		db:     db,
 		logger: log,
+		qb:     psqlqb.NewPostgresQueryBuilder(),
 	}
 }
 
-func (r *userRepo) Store(ctx context.Context, userInfo *domain.UserInfo) error {
-	panic("implement me")
+func (r *userRepo) fetch(ctx context.Context, query string, args ...interface{}) ([]*domain.UserMeta, error) {
+	const op = opTag + "Fetch"
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		r.logger.Error("Could not execute SQL query", zap.String("query", query), zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	// Clean up on function exit
+	defer func() {
+		errRow := rows.Close()
+		if errRow != nil {
+			r.logger.Warn("Could not close SQL rows", zap.Error(err))
+		}
+	}()
+
+	results := make([]*domain.UserMeta, 0)
+	for rows.Next() {
+		meta := &domain.UserMeta{}
+
+		if err := r.scanRows(rows, meta); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, errors.Wrap(domain.ErrNotFound, op)
+			}
+
+			return nil, errors.Wrap(err, op)
+		}
+
+		results = append(results, meta)
+	}
+
+	return results, nil
 }
 
-func (r *userRepo) GetByID(ctx context.Context, userID string) (*domain.UserInfo, error) {
-	panic("implement me")
+func (r *userRepo) Store(ctx context.Context, meta *domain.UserMeta) error {
+	const op = opTag + "Store"
+
+	query := "INSERT INTO UserMeta (UserID, InitialUsername, Username, Deactivated) VALUES ($1, $2, $3, $4);"
+
+	stmt, err := r.db.PrepareContext(ctx, query)
+	if err != nil {
+		r.logger.Error("Could not prepare statement", zap.String("query", query), zap.Error(err))
+		return errors.Wrap(err, op)
+	}
+
+	_, err = stmt.ExecContext(ctx, meta.ID, meta.InitialUsername, meta.Username, meta.Deactivated)
+	if err != nil {
+		r.logger.Error("Could not execute statement", zap.String("query", query), zap.Error(err))
+		return errors.Wrap(err, op)
+	}
+
+	return nil
 }
 
-func (r *userRepo) SetUsername(ctx context.Context, username string) error {
-	panic("implement me")
+func (r *userRepo) GetByID(ctx context.Context, id string) (*domain.UserMeta, error) {
+	const op = opTag + "GetByID"
+
+	query := `SELECT * FROM UserMeta WHERE UserID = $1;`
+
+	results, err := r.fetch(ctx, query, id)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	if len(results) > 0 {
+		return results[0], nil
+	}
+
+	return nil, errors.Wrap(domain.ErrNotFound, op)
+}
+
+func (r *userRepo) Update(ctx context.Context, id string, args domain.UpdateArgs) (*domain.UserMeta, error) {
+	const op = opTag + "Update"
+
+	query, values := r.qb.BuildUpdateQuery("UserMeta", id, "UserID", args)
+
+	stmt, err := r.db.PrepareContext(ctx, query)
+	if err != nil {
+		r.logger.Error("Could not prepare statement", zap.String("query", query), zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	row := stmt.QueryRowContext(ctx, values...)
+
+	updatedMeta := &domain.UserMeta{}
+	if err := r.scanRow(row, updatedMeta); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Wrap(domain.ErrNotFound, op)
+		}
+
+		r.logger.Error("Could not scan updated meta", zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	return updatedMeta, nil
+}
+
+// Scan helpers
+func (r *userRepo) scanRow(row *sql.Row, meta *domain.UserMeta) error {
+	return row.Scan(&meta.ID, &meta.InitialUsername, &meta.Username, &meta.Deactivated)
+}
+
+func (r *userRepo) scanRows(rows *sql.Rows, meta *domain.UserMeta) error {
+	return rows.Scan(&meta.ID, &meta.InitialUsername, &meta.Username, &meta.Deactivated)
 }
