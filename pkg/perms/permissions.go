@@ -28,9 +28,12 @@ import (
 // the bitperms.GetFlag() helper function which automatically does the shifting for us.
 
 const (
-	FlagSuperAdmin    = FlagName("FLAG_SUPER_ADMIN")
-	FlagAdministrator = FlagName("FLAG_ADMINISTRATOR")
-	FlagViewServers   = FlagName("FLAG_VIEW_SERVERS")
+	FlagSuperAdmin            = FlagName("FLAG_SUPER_ADMIN")
+	FlagAdministrator         = FlagName("FLAG_ADMINISTRATOR")
+	FlagViewServers           = FlagName("FLAG_VIEW_SERVERS")
+	FlagViewPlayerRecords     = FlagName("FLAG_VIEW_PLAYER_RECORDS")
+	FlagViewInfractionRecords = FlagName("FLAG_VIEW_INFRACTION_RECORDS")
+	FlagViewChatRecords       = FlagName("FLAG_VIEW_CHAT_RECORDS")
 )
 
 type FlagName string
@@ -71,12 +74,28 @@ func init() {
 			Name:        FlagViewServers,
 			Description: "Allows viewing of servers",
 		},
+		{
+			Name: FlagViewPlayerRecords,
+			Description: `Allows viewing of player records. This permissions can be overridden on the server level to
+						  allow or deny accessing player records for individual servers.`,
+		},
+		{
+			Name: FlagViewInfractionRecords,
+			Description: `Allows viewing of infraction records. This permissions can be overridden on the server level to
+						  allow or deny accessing infraction records for individual servers.`,
+		},
+		{
+			Name: FlagViewChatRecords,
+			Description: `Allows viewing of chat records. This permissions can be overridden on the server level to
+						  allow or deny accessing chat records for individual servers.`,
+		},
 		// ADD NEW FLAGS HERE. Do not touch any of the above permissions!
 	})
 
 	// Create default permissions value
 	defaultPermissions = bitperms.NewPermissionBuilder().
 		AddFlag(GetFlag(FlagViewServers)).
+		AddFlag(GetFlag(FlagViewPlayerRecords)).
 		GetPermission()
 }
 
