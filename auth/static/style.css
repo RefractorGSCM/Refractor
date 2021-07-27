@@ -208,8 +208,7 @@ button[type=submit]:hover {
 }
 
 .back-button {
+    font-size: 1.6rem;
     position: absolute;
-    bottom: 1rem;
-    right: 1rem;
-    font-size: 3rem;
+    bottom: 10vh;
 }
