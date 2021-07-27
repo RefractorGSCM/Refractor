@@ -38,6 +38,7 @@ func Test(t *testing.T) {
 
 	g.Describe("CreateUser()", func() {
 		var repo *mocks.AuthRepo
+		var metaRepo *mocks.UserMetaRepo
 		var mailService *mocks.MailService
 		var service domain.AuthService
 		var newUserTraits *domain.Traits
@@ -45,8 +46,9 @@ func Test(t *testing.T) {
 
 		g.BeforeEach(func() {
 			repo = new(mocks.AuthRepo)
+			metaRepo = new(mocks.UserMetaRepo)
 			mailService = new(mocks.MailService)
-			service = NewAuthService(repo, mailService, time.Second*2)
+			service = NewAuthService(repo, metaRepo, mailService, time.Second*2)
 
 			newUserTraits = &domain.Traits{
 				Email:    "test@test.com",
@@ -66,6 +68,7 @@ func Test(t *testing.T) {
 		g.Describe("Successful creation", func() {
 			g.BeforeEach(func() {
 				repo.On("CreateUser", mock.Anything, mock.AnythingOfType("*domain.Traits")).Return(newUser, nil)
+				metaRepo.On("Store", mock.Anything, mock.Anything).Return(nil)
 				repo.On("GetRecoveryLink", mock.Anything, mock.AnythingOfType("string")).Return("fakelink", nil)
 				mailService.On("SendWelcomeEmail", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			})
@@ -76,6 +79,7 @@ func Test(t *testing.T) {
 				Expect(err).To(BeNil())
 				mailService.AssertExpectations(t)
 				repo.AssertExpectations(t)
+				metaRepo.AssertExpectations(t)
 			})
 
 			g.It("Should return the new user", func() {
@@ -84,10 +88,11 @@ func Test(t *testing.T) {
 				Expect(user).To(Equal(newUser))
 				mailService.AssertExpectations(t)
 				repo.AssertExpectations(t)
+				metaRepo.AssertExpectations(t)
 			})
 		})
 
-		g.Describe("CreateUser repo error", func() {
+		g.Describe("Auth repo CreateUser() error", func() {
 			g.BeforeEach(func() {
 				repo.On("CreateUser", mock.Anything, mock.AnythingOfType("*domain.Traits")).Return(nil, fmt.Errorf("err"))
 			})
@@ -100,10 +105,10 @@ func Test(t *testing.T) {
 			})
 		})
 
-		g.Describe("GetRecoveryLink repo error", func() {
+		g.Describe("UserMeta repo error", func() {
 			g.BeforeEach(func() {
 				repo.On("CreateUser", mock.Anything, mock.AnythingOfType("*domain.Traits")).Return(newUser, nil)
-				repo.On("GetRecoveryLink", mock.Anything, mock.AnythingOfType("string")).Return("", fmt.Errorf("err"))
+				metaRepo.On("Store", mock.Anything, mock.Anything).Return(fmt.Errorf("err"))
 			})
 
 			g.It("Should return an error", func() {
@@ -114,9 +119,26 @@ func Test(t *testing.T) {
 			})
 		})
 
-		g.Describe("SendWelcomeEmail mail service error", func() {
+		g.Describe("Auth repo GetRecoveryLink() error", func() {
 			g.BeforeEach(func() {
 				repo.On("CreateUser", mock.Anything, mock.AnythingOfType("*domain.Traits")).Return(newUser, nil)
+				metaRepo.On("Store", mock.Anything, mock.Anything).Return(nil)
+				repo.On("GetRecoveryLink", mock.Anything, mock.AnythingOfType("string")).Return("", fmt.Errorf("err"))
+			})
+
+			g.It("Should return an error", func() {
+				_, err := service.CreateUser(context.TODO(), newUserTraits, "system")
+
+				Expect(err).ToNot(BeNil())
+				repo.AssertExpectations(t)
+				metaRepo.AssertExpectations(t)
+			})
+		})
+
+		g.Describe("Mail service SendWelcomeEmail() error", func() {
+			g.BeforeEach(func() {
+				repo.On("CreateUser", mock.Anything, mock.AnythingOfType("*domain.Traits")).Return(newUser, nil)
+				metaRepo.On("Store", mock.Anything, mock.Anything).Return(nil)
 				repo.On("GetRecoveryLink", mock.Anything, mock.AnythingOfType("string")).Return("fakelink", nil)
 				mailService.On("SendWelcomeEmail", mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("err"))
 			})
@@ -127,6 +149,7 @@ func Test(t *testing.T) {
 				Expect(err).ToNot(BeNil())
 				mailService.AssertExpectations(t)
 				repo.AssertExpectations(t)
+				metaRepo.AssertExpectations(t)
 			})
 		})
 	})
