@@ -27,6 +27,7 @@ import (
 )
 
 type userService struct {
+	metaRepo   domain.UserMetaRepo
 	authRepo   domain.AuthRepo
 	groupRepo  domain.GroupRepo
 	authorizer domain.Authorizer
@@ -34,8 +35,9 @@ type userService struct {
 	logger     *zap.Logger
 }
 
-func NewUserService(ar domain.AuthRepo, gr domain.GroupRepo, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.UserService {
+func NewUserService(mr domain.UserMetaRepo, ar domain.AuthRepo, gr domain.GroupRepo, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.UserService {
 	return &userService{
+		metaRepo:   mr,
 		authRepo:   ar,
 		groupRepo:  gr,
 		authorizer: a,
@@ -81,6 +83,15 @@ func (s *userService) GetAllUsers(c context.Context) ([]*domain.User, error) {
 		}
 
 		newUser.Groups = groups
+
+		// Get user meta
+		meta, err := s.metaRepo.GetByID(ctx, newUser.ID)
+		if err != nil {
+			s.logger.Error("Could not get meta for user", zap.String("userID", newUser.ID), zap.Error(err))
+			return nil, errors.Wrap(err, fmt.Sprintf("user ID: %s", newUser.ID))
+		}
+
+		newUser.UserMeta = meta
 
 		// Add user to list
 		users = append(users, newUser)

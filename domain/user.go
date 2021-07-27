@@ -26,6 +26,7 @@ type User struct {
 	Username    string   `json:"username"`
 	Permissions string   `json:"permissions"`
 	Groups      []*Group `json:"groups"`
+	*UserMeta
 }
 
 type UserMeta struct {
