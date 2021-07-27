@@ -25,13 +25,15 @@ import (
 
 type authService struct {
 	repo        domain.AuthRepo
+	metaRepo    domain.UserMetaRepo
 	mailService domain.MailService
 	timeout     time.Duration
 }
 
-func NewAuthService(repo domain.AuthRepo, mailService domain.MailService, to time.Duration) domain.AuthService {
+func NewAuthService(repo domain.AuthRepo, mr domain.UserMetaRepo, mailService domain.MailService, to time.Duration) domain.AuthService {
 	return &authService{
 		repo:        repo,
+		metaRepo:    mr,
 		mailService: mailService,
 		timeout:     to,
 	}
@@ -44,6 +46,16 @@ func (s *authService) CreateUser(c context.Context, userTraits *domain.Traits, i
 	// Create the user
 	user, err := s.repo.CreateUser(ctx, userTraits)
 	if err != nil {
+		return nil, err
+	}
+
+	// Create the user's metadata
+	if err := s.metaRepo.Store(ctx, &domain.UserMeta{
+		ID:              user.Identity.Id,
+		InitialUsername: user.Traits.Username,
+		Username:        user.Traits.Username,
+		Deactivated:     false,
+	}); err != nil {
 		return nil, err
 	}
 

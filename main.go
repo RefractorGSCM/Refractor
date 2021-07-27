@@ -97,7 +97,8 @@ func main() {
 
 	// Set up application components
 	authRepo := _authRepo.NewAuthRepo(config)
-	authService := _authService.NewAuthService(authRepo, mailService, time.Second*2)
+	userMetaRepo := _userRepo.NewUserRepo(db, logger)
+	authService := _authService.NewAuthService(authRepo, userMetaRepo, mailService, time.Second*2)
 
 	groupRepo, err := _groupRepo.NewGroupRepo(db, logger)
 	if err != nil {
@@ -132,8 +133,7 @@ func main() {
 	serverService := _serverService.NewServerService(serverRepo, time.Second*2)
 	_serverHandler.ApplyServerHandler(apiGroup, serverService, authorizer, protectMiddleware)
 
-	userRepo := _userRepo.NewUserRepo(db, logger)
-	userService := _userService.NewUserService(userRepo, authRepo, groupRepo, authorizer, time.Second*2, logger)
+	userService := _userService.NewUserService(userMetaRepo, authRepo, groupRepo, authorizer, time.Second*2, logger)
 	_userHandler.ApplyUserHandler(apiGroup, userService, authService, authorizer, protectMiddleware, logger)
 
 	// Setup complete. Begin serving requests.
