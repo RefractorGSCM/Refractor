@@ -20,5 +20,5 @@ package domain
 type QueryBuilder interface {
 	BuildExistsQuery(table string, args map[string]interface{}) (string, []interface{})
 	BuildFindQuery(table string, args map[string]interface{}) (string, []interface{})
-	BuildUpdateQuery(table string, id int64, idName string, args map[string]interface{}) (string, []interface{})
+	BuildUpdateQuery(table string, id interface{}, idName string, args map[string]interface{}) (string, []interface{})
 }
