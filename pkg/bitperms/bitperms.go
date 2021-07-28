@@ -68,6 +68,14 @@ func (p *Permissions) CheckFlags(flags ...*big.Int) bool {
 	return true
 }
 
+// UnsetFlag unsets a flag by doing a binary AND comparison with the NOTed value of the flag.
+func (p *Permissions) UnsetFlag(flag *big.Int) *Permissions {
+	val := new(big.Int).Not(flag)
+	val = new(big.Int).And(p.value, val)
+
+	return newPermission(val)
+}
+
 func (p *Permissions) Value() *big.Int {
 	return p.value
 }
