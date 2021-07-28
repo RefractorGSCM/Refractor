@@ -20,6 +20,7 @@ package service
 import (
 	"Refractor/domain"
 	"context"
+	"go.uber.org/zap"
 	"time"
 )
 
@@ -28,14 +29,16 @@ type authService struct {
 	metaRepo    domain.UserMetaRepo
 	mailService domain.MailService
 	timeout     time.Duration
+	logger      *zap.Logger
 }
 
-func NewAuthService(repo domain.AuthRepo, mr domain.UserMetaRepo, mailService domain.MailService, to time.Duration) domain.AuthService {
+func NewAuthService(repo domain.AuthRepo, mr domain.UserMetaRepo, mailService domain.MailService, to time.Duration, log *zap.Logger) domain.AuthService {
 	return &authService{
 		repo:        repo,
 		metaRepo:    mr,
 		mailService: mailService,
 		timeout:     to,
+		logger:      log,
 	}
 }
 
@@ -48,6 +51,11 @@ func (s *authService) CreateUser(c context.Context, userTraits *domain.Traits, i
 	if err != nil {
 		return nil, err
 	}
+
+	s.logger.Info("User created",
+		zap.String("User ID", user.Identity.Id),
+		zap.String("Username", userTraits.Username),
+	)
 
 	// Create the user's metadata
 	if err := s.metaRepo.Store(ctx, &domain.UserMeta{
@@ -69,6 +77,11 @@ func (s *authService) CreateUser(c context.Context, userTraits *domain.Traits, i
 	if err := s.mailService.SendWelcomeEmail(user.Traits.Email, inviter, recoveryLink); err != nil {
 		return nil, err
 	}
+
+	s.logger.Info("Welcome email sent",
+		zap.String("User ID", user.Identity.Id),
+		zap.String("Username", userTraits.Username),
+	)
 
 	return user, nil
 }
