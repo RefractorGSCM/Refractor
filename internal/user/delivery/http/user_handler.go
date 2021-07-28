@@ -20,6 +20,8 @@ package http
 import (
 	"Refractor/authcheckers"
 	"Refractor/domain"
+	"Refractor/params"
+	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"fmt"
 	"github.com/labstack/echo/v4"
@@ -55,6 +57,7 @@ func ApplyUserHandler(apiGroup *echo.Group, s domain.UserService, as domain.Auth
 	// Map routes to handlers
 	userGroup.GET("/", handler.GetAllUsers, enforcer.CheckAuth(authcheckers.RequireAdmin))
 	userGroup.GET("/me", handler.GetOwnInfo)
+	userGroup.POST("/", handler.CreateUser, enforcer.CheckAuth(authcheckers.RequireAdmin))
 }
 
 func (h *userHandler) GetAllUsers(c echo.Context) error {
@@ -89,5 +92,37 @@ func (h *userHandler) GetOwnInfo(c echo.Context) error {
 		Success: true,
 		Message: "Own user info fetched",
 		Payload: userInfo,
+	})
+}
+
+func (h *userHandler) CreateUser(c echo.Context) error {
+	// Validate request body
+	var body params.CreateUserParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	// Get user
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	newUser, err := h.authService.CreateUser(c.Request().Context(), &domain.Traits{
+		Email:    body.Email,
+		Username: body.Username,
+	}, user.Traits.Username)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusCreated, &domain.Response{
+		Success: true,
+		Message: "User created",
+		Payload: newUser,
 	})
 }
