@@ -45,13 +45,11 @@ func Test(t *testing.T) {
 	var service *groupService
 	var ctx = context.TODO()
 
-	logger, _ := zap.NewDevelopment()
-
 	g.Describe("User Service", func() {
 		g.BeforeEach(func() {
 			mockRepo = new(mocks.GroupRepo)
 			authorizer = new(mocks.Authorizer)
-			service = &groupService{mockRepo, authorizer, time.Second * 2, logger}
+			service = &groupService{mockRepo, authorizer, time.Second * 2, zap.NewNop()}
 		})
 
 		g.Describe("Store()", func() {
@@ -245,6 +243,29 @@ func Test(t *testing.T) {
 					Expect(err).To(BeNil())
 					Expect(updated).To(Equal(updatedGroup))
 					mockRepo.AssertExpectations(t)
+				})
+
+				g.Describe("A new permissions value was provided with the super admin flag set", func() {
+					g.It("Should update the args to contain a new permissions string without the super admin flag set", func() {
+						args := domain.UpdateArgs{
+							"Permissions": bitperms.NewPermissionBuilder().
+								AddFlag(perms.GetFlag(perms.FlagSuperAdmin)).
+								AddFlag(bitperms.GetFlag(1)).
+								AddFlag(bitperms.GetFlag(2)).
+								AddFlag(bitperms.GetFlag(3)).
+								GetPermission().String(),
+						}
+						_, _ = service.Update(context.TODO(), 1, args)
+
+						newVal := args["Permissions"].(string)
+						expected := bitperms.NewPermissionBuilder().
+							AddFlag(bitperms.GetFlag(1)).
+							AddFlag(bitperms.GetFlag(2)).
+							AddFlag(bitperms.GetFlag(3)).
+							GetPermission()
+
+						Expect(newVal).To(Equal(expected.String()))
+					})
 				})
 			})
 

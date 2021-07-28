@@ -41,6 +41,7 @@ type FlagName string
 type Permission struct {
 	ID          int
 	Name        FlagName
+	DisplayName string
 	Description string
 	Flag        *big.Int
 }
@@ -59,33 +60,39 @@ func init() {
 	// installations of Refractor!
 	registerPermissions([]Permission{
 		{
-			Name: FlagSuperAdmin,
+			Name:        FlagSuperAdmin,
+			DisplayName: "Super Admin",
 			Description: `Grants full access to Refractor including management of admin users, roles, etc. This should
 						  NEVER be granted to anybody except for the initial user account in Refractor. No more than one
 						  user should have this permission at a time. Seriously, never manually set this permission!`,
 		},
 		{
-			Name: FlagAdministrator,
+			Name:        FlagAdministrator,
+			DisplayName: "Administrator",
 			Description: `Grants full access to Refractor. Administrator is required to be able to add, edit and delete
 						  servers as well as modify admin level settings. Only give this Permission to people who
 						  absolutely need it.`,
 		},
 		{
 			Name:        FlagViewServers,
+			DisplayName: "View servers",
 			Description: "Allows viewing of servers",
 		},
 		{
-			Name: FlagViewPlayerRecords,
+			Name:        FlagViewPlayerRecords,
+			DisplayName: "View player records",
 			Description: `Allows viewing of player records. This permissions can be overridden on the server level to
 						  allow or deny accessing player records for individual servers.`,
 		},
 		{
-			Name: FlagViewInfractionRecords,
+			Name:        FlagViewInfractionRecords,
+			DisplayName: "View infraction records",
 			Description: `Allows viewing of infraction records. This permissions can be overridden on the server level to
 						  allow or deny accessing infraction records for individual servers.`,
 		},
 		{
-			Name: FlagViewChatRecords,
+			Name:        FlagViewChatRecords,
+			DisplayName: "View chat records",
 			Description: `Allows viewing of chat records. This permissions can be overridden on the server level to
 						  allow or deny accessing chat records for individual servers.`,
 		},
@@ -109,6 +116,7 @@ func registerPermissions(newPerms []Permission) {
 		newPermission := &Permission{
 			ID:          int(i),
 			Name:        perm.Name,
+			DisplayName: perm.DisplayName,
 			Description: perm.Description,
 			Flag:        next,
 		}

@@ -88,6 +88,24 @@ func (s *groupService) Update(c context.Context, id int64, args domain.UpdateArg
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
+	// Check if the user is attempting to set the super admin flag
+	if args["Permissions"] != nil {
+		newPerms, err := bitperms.FromString(args["Permissions"].(string))
+		if err != nil {
+			return nil, err
+		}
+
+		superAdminFlag := perms.GetFlag(perms.FlagSuperAdmin)
+
+		// If the super admin flag is set, disable it.
+		if newPerms.CheckFlag(superAdminFlag) {
+			newPerms = newPerms.UnsetFlag(superAdminFlag)
+
+			// Update args["Permissions"] with the cleaned value
+			args["Permissions"] = newPerms.String()
+		}
+	}
+
 	return s.repo.Update(ctx, id, args)
 }
 
