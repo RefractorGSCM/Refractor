@@ -76,8 +76,6 @@ func (h *publicHandlers) LoginHandler(c echo.Context) error {
 		return err
 	}
 
-	fmt.Println(flow)
-
 	// pass the flow data along to the renderer for display
 	rData := RenderData{
 		Action:   flow.Ui.GetAction(),

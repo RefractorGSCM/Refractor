@@ -70,13 +70,13 @@ func init() {
 			Name:        FlagAdministrator,
 			DisplayName: "Administrator",
 			Description: `Grants full access to Refractor. Administrator is required to be able to add, edit and delete
-						  servers as well as modify admin level settings. Only give this Permission to people who
-						  absolutely need it.`,
+						  servers as well as modify admin level settings. Admins can not create or edit groups. Only give
+						  this Permission to people who absolutely need it.`,
 		},
 		{
 			Name:        FlagViewServers,
 			DisplayName: "View servers",
-			Description: "Allows viewing of servers",
+			Description: "Allows viewing of servers.",
 		},
 		{
 			Name:        FlagViewPlayerRecords,
