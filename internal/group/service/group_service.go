@@ -48,6 +48,14 @@ func (s *groupService) Store(c context.Context, group *domain.Group) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
+	// Check if the user is attempting to set the super admin flag
+	permString, err := s.unsetSuperAdminFlag(group.Permissions)
+	if err != nil {
+		return err
+	}
+
+	group.Permissions = permString
+
 	return s.repo.Store(ctx, group)
 }
 
@@ -90,20 +98,14 @@ func (s *groupService) Update(c context.Context, id int64, args domain.UpdateArg
 
 	// Check if the user is attempting to set the super admin flag
 	if args["Permissions"] != nil {
-		newPerms, err := bitperms.FromString(args["Permissions"].(string))
+		permString := args["Permissions"].(string)
+
+		permString, err := s.unsetSuperAdminFlag(permString)
 		if err != nil {
 			return nil, err
 		}
 
-		superAdminFlag := perms.GetFlag(perms.FlagSuperAdmin)
-
-		// If the super admin flag is set, disable it.
-		if newPerms.CheckFlag(superAdminFlag) {
-			newPerms = newPerms.UnsetFlag(superAdminFlag)
-
-			// Update args["Permissions"] with the cleaned value
-			args["Permissions"] = newPerms.String()
-		}
+		args["Permissions"] = permString
 	}
 
 	return s.repo.Update(ctx, id, args)
@@ -165,6 +167,29 @@ func (s *groupService) AddUserGroup(c context.Context, groupctx domain.GroupSetC
 	}
 
 	return nil
+}
+
+func (s *groupService) unsetSuperAdminFlag(permString string) (string, error) {
+	if permString == "" {
+		return permString, nil
+	}
+
+	newPerms, err := bitperms.FromString(permString)
+	if err != nil {
+		return "", err
+	}
+
+	superAdminFlag := perms.GetFlag(perms.FlagSuperAdmin)
+
+	// If the super admin flag is set, disable it.
+	if newPerms.CheckFlag(superAdminFlag) {
+		newPerms = newPerms.UnsetFlag(superAdminFlag)
+
+		return newPerms.String(), nil
+	}
+
+	// Otherwise, simply return the old value since the super admin flag is not set.
+	return permString, nil
 }
 
 func (s *groupService) canSetGroup(ctx context.Context, groupctx domain.GroupSetContext) (bool, error) {
