@@ -21,6 +21,7 @@ import (
 	"Refractor/domain"
 	"Refractor/pkg/bitperms"
 	"Refractor/pkg/perms"
+	"Refractor/pkg/pointer"
 	"context"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -98,8 +99,8 @@ func (s *groupService) Update(c context.Context, id int64, args domain.UpdateArg
 
 	// Check if the user is attempting to set the super admin flag
 	if args["Permissions"] != nil {
-		permString := args["Permissions"].(string)
-
+		permsArg := pointer.DePointer(args["Permissions"])
+		permString, _ := permsArg.(string)
 		permString, err := s.unsetSuperAdminFlag(permString)
 		if err != nil {
 			return nil, err

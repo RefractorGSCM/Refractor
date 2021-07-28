@@ -176,6 +176,7 @@ func (h *groupHandler) UpdateGroup(c echo.Context) error {
 
 	// Get update args
 	updateArgs, err := structutils.GetNonNilFieldMap(body)
+
 	if err != nil {
 		return err
 	}
