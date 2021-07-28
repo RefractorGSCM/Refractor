@@ -20,6 +20,7 @@ package params
 import (
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
+	"strings"
 )
 
 type CreateUserParams struct {
@@ -28,6 +29,9 @@ type CreateUserParams struct {
 }
 
 func (body CreateUserParams) Validate() error {
+	body.Username = strings.TrimSpace(body.Username)
+	body.Email = strings.TrimSpace(body.Email)
+
 	return ValidateStruct(&body,
 		validation.Field(&body.Username, validation.Required, validation.Length(1, 20)),
 		validation.Field(&body.Email, validation.Required, is.Email),
