@@ -62,6 +62,34 @@ func Test(t *testing.T) {
 					Expect(err).To(BeNil())
 					mockRepo.AssertExpectations(t)
 				})
+
+				g.Describe("A group is being stored with the super admin flag set in the permissions field", func() {
+					g.BeforeEach(func() {
+						mockRepo.On("Store", mock.Anything, mock.AnythingOfType("*domain.Group")).Return(nil)
+					})
+
+					g.It("Should unset the super admin flag in the permissions field", func() {
+						newGroup := &domain.Group{
+							Permissions: bitperms.NewPermissionBuilder().
+								AddFlag(perms.GetFlag(perms.FlagSuperAdmin)).
+								AddFlag(bitperms.GetFlag(1)).
+								AddFlag(bitperms.GetFlag(2)).
+								AddFlag(bitperms.GetFlag(3)).
+								GetPermission().String(),
+						}
+
+						_ = service.Store(context.TODO(), newGroup)
+
+						newVal := newGroup.Permissions
+						expected := bitperms.NewPermissionBuilder().
+							AddFlag(bitperms.GetFlag(1)).
+							AddFlag(bitperms.GetFlag(2)).
+							AddFlag(bitperms.GetFlag(3)).
+							GetPermission()
+
+						Expect(newVal).To(Equal(expected.String()))
+					})
+				})
 			})
 		})
 
