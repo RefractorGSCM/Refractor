@@ -171,6 +171,27 @@ func Test(t *testing.T) {
 			})
 		})
 
+		g.Describe("UnsetFlag()", func() {
+			g.It("Should return a the correct value", func() {
+				perm := NewPermissionBuilder().
+					AddFlag(GetFlag(0)).
+					AddFlag(GetFlag(1)).
+					AddFlag(GetFlag(2)).
+					AddFlag(GetFlag(3)).
+					GetPermission()
+
+				expected := NewPermissionBuilder().
+					AddFlag(GetFlag(0)).
+					AddFlag(GetFlag(1)).
+					AddFlag(GetFlag(3)).
+					GetPermission()
+
+				output := perm.UnsetFlag(GetFlag(2))
+
+				Expect(output.value).To(Equal(expected.value))
+			})
+		})
+
 		g.Describe("isPowerOfTwo()", func() {
 			g.It("Should return true", func() {
 				x := big.NewInt(0).Lsh(big.NewInt(1), 32) // 1 << 32
