@@ -28,6 +28,7 @@ import (
 	kratos "github.com/ory/kratos-client-go"
 	"github.com/pkg/errors"
 	"net/http"
+	"strings"
 )
 
 const opTag = "AuthRepo.Kratos."
@@ -50,6 +51,38 @@ type createIdentityPayload struct {
 func (r *authRepo) CreateUser(ctx context.Context, userTraits *domain.Traits) (*domain.AuthUser, error) {
 	const op = opTag + "CreateUser"
 
+	// Check if a user already exists with any of the provided credentials. Normally, this kind of logic is redundant
+	// and does not belong in a repository, but we place it here for convenience. This does not represent a pattern in
+	// the code, this is a one-off workaround because Ory Kratos does not give us any human readable conflict reporting (why?????)
+	// if the email or username is already in use. It simply returns a SQL error which is no good.
+	allUsers, err := r.GetAllUsers(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	validationErrors := map[string]string{}
+	for _, user := range allUsers {
+		// If the username is taken, send back an error
+		if strings.TrimSpace(user.Traits.Username) == userTraits.Username {
+			validationErrors["username"] = "This username is taken"
+		}
+
+		// If the email is taken, send back an error
+		if strings.TrimSpace(user.Traits.Email) == userTraits.Email {
+			validationErrors["email"] = "This email is already in use"
+		}
+	}
+
+	if len(validationErrors) > 0 {
+		return nil, &domain.HTTPError{
+			Cause:            nil,
+			Message:          "Input errors exist",
+			ValidationErrors: validationErrors,
+			Status:           http.StatusBadRequest,
+		}
+	}
+
+	// Create the user
 	url := fmt.Sprintf("%s/identities", r.config.KratosAdmin)
 
 	payload := createIdentityPayload{
