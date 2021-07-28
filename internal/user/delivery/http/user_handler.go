@@ -106,13 +106,14 @@ func (h *userHandler) CreateUser(c echo.Context) error {
 		return err
 	}
 
+	ctx := c.Request().Context()
 	// Get user
 	user, ok := c.Get("user").(*domain.AuthUser)
 	if !ok {
 		return fmt.Errorf("could not cast user to *domain.AuthUser")
 	}
 
-	newUser, err := h.authService.CreateUser(c.Request().Context(), &domain.Traits{
+	newUser, err := h.authService.CreateUser(ctx, &domain.Traits{
 		Email:    body.Email,
 		Username: body.Username,
 	}, user.Traits.Username)
@@ -120,9 +121,14 @@ func (h *userHandler) CreateUser(c echo.Context) error {
 		return err
 	}
 
+	userInfo, err := h.service.GetByID(ctx, newUser.Identity.Id)
+	if err != nil {
+		return err
+	}
+
 	return c.JSON(http.StatusCreated, &domain.Response{
 		Success: true,
 		Message: "User created",
-		Payload: newUser,
+		Payload: userInfo,
 	})
 }
