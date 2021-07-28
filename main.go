@@ -98,7 +98,7 @@ func main() {
 	// Set up application components
 	authRepo := _authRepo.NewAuthRepo(config)
 	userMetaRepo := _userRepo.NewUserRepo(db, logger)
-	authService := _authService.NewAuthService(authRepo, userMetaRepo, mailService, time.Second*2)
+	authService := _authService.NewAuthService(authRepo, userMetaRepo, mailService, time.Second*2, logger)
 
 	groupRepo, err := _groupRepo.NewGroupRepo(db, logger)
 	if err != nil {

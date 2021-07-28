@@ -105,6 +105,11 @@ func (h *groupHandler) CreateGroup(c echo.Context) error {
 		return err
 	}
 
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
 	// Create the new group
 	newGroup := &domain.Group{
 		Name:        body.Name,
@@ -116,6 +121,11 @@ func (h *groupHandler) CreateGroup(c echo.Context) error {
 	if err := h.service.Store(c.Request().Context(), newGroup); err != nil {
 		return err
 	}
+
+	h.logger.Info("Group created",
+		zap.Int64("Group ID", newGroup.ID),
+		zap.String("Created By", user.Identity.Id),
+	)
 
 	return c.JSON(http.StatusCreated, &domain.Response{
 		Success: true,
@@ -148,6 +158,16 @@ func (h *groupHandler) DeleteGroup(c echo.Context) error {
 	if err := h.service.Delete(c.Request().Context(), groupID); err != nil {
 		return err
 	}
+
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	h.logger.Info("Group deleted",
+		zap.Int64("Group ID", groupID),
+		zap.String("Deleted By", user.Identity.Id),
+	)
 
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
