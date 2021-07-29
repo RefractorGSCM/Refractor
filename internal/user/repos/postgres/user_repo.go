@@ -22,8 +22,10 @@ import (
 	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
+	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"time"
 )
 
 const opTag = "UserRepo.Postgres."
@@ -32,6 +34,7 @@ type userRepo struct {
 	db     *sql.DB
 	logger *zap.Logger
 	qb     domain.QueryBuilder
+	cache  *gocache.Cache
 }
 
 func NewUserRepo(db *sql.DB, log *zap.Logger) domain.UserMetaRepo {
@@ -39,6 +42,7 @@ func NewUserRepo(db *sql.DB, log *zap.Logger) domain.UserMetaRepo {
 		db:     db,
 		logger: log,
 		qb:     psqlqb.NewPostgresQueryBuilder(),
+		cache:  gocache.New(time.Hour*1, time.Hour*1),
 	}
 }
 
@@ -139,6 +143,34 @@ func (r *userRepo) Update(ctx context.Context, id string, args domain.UpdateArgs
 	}
 
 	return updatedMeta, nil
+}
+
+func (r *userRepo) Deactivate(ctx context.Context, userID string) error {
+	const op = opTag + "Deactivate"
+
+	args := domain.UpdateArgs{
+		"Deactivated": true,
+	}
+
+	if _, err := r.Update(ctx, userID, args); err != nil {
+		return errors.Wrap(err, op)
+	}
+
+	return nil
+}
+
+func (r *userRepo) Reactivate(ctx context.Context, userID string) error {
+	const op = opTag + "Reactivate"
+
+	args := domain.UpdateArgs{
+		"Deactivated": false,
+	}
+
+	if _, err := r.Update(ctx, userID, args); err != nil {
+		return errors.Wrap(err, op)
+	}
+
+	return nil
 }
 
 // Scan helpers

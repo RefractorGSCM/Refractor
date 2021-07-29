@@ -127,3 +127,21 @@ func (s *userService) getUserInfo(ctx context.Context, authUser *domain.AuthUser
 
 	return newUser, nil
 }
+
+func (s *userService) DeactivateUser(c context.Context, userID string) error {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	// TODO: Check permissions
+
+	return s.metaRepo.Deactivate(ctx, userID)
+}
+
+func (s *userService) ReactivateUser(c context.Context, userID string) error {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	// TODO: Check permissions
+
+	return s.metaRepo.Reactivate(ctx, userID)
+}

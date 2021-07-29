@@ -42,9 +42,13 @@ type UserMetaRepo interface {
 	Store(ctx context.Context, userInfo *UserMeta) error
 	GetByID(ctx context.Context, userID string) (*UserMeta, error)
 	Update(ctx context.Context, userID string, args UpdateArgs) (*UserMeta, error)
+	Deactivate(ctx context.Context, userID string) error
+	Reactivate(ctx context.Context, userID string) error
 }
 
 type UserService interface {
 	GetAllUsers(c context.Context) ([]*User, error)
 	GetByID(c context.Context, userID string) (*User, error)
+	DeactivateUser(c context.Context, userID string) error
+	ReactivateUser(c context.Context, userID string) error
 }
