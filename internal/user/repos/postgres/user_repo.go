@@ -104,6 +104,14 @@ func (r *userRepo) Store(ctx context.Context, meta *domain.UserMeta) error {
 func (r *userRepo) GetByID(ctx context.Context, userID string) (*domain.UserMeta, error) {
 	const op = opTag + "GetByID"
 
+	// If the user meta is cached, pull it from cache and return it.
+	cachedUser, isCached := r.cache.Get(userID)
+	if isCached {
+		foundUser := cachedUser.(*domain.UserMeta)
+		return foundUser, nil
+	}
+
+	// Otherwise, fetch it from the database and then cache it
 	query := "SELECT * FROM UserMeta WHERE UserID = $1;"
 
 	results, err := r.fetch(ctx, query, userID)
@@ -113,16 +121,20 @@ func (r *userRepo) GetByID(ctx context.Context, userID string) (*domain.UserMeta
 	}
 
 	if len(results) > 0 {
-		return results[0], nil
+		result := results[0]
+
+		r.cache.SetDefault(userID, result)
+
+		return result, nil
 	}
 
 	return nil, errors.Wrap(domain.ErrNotFound, op)
 }
 
-func (r *userRepo) Update(ctx context.Context, id string, args domain.UpdateArgs) (*domain.UserMeta, error) {
+func (r *userRepo) Update(ctx context.Context, userID string, args domain.UpdateArgs) (*domain.UserMeta, error) {
 	const op = opTag + "Update"
 
-	query, values := r.qb.BuildUpdateQuery("UserMeta", id, "UserID", args)
+	query, values := r.qb.BuildUpdateQuery("UserMeta", userID, "UserID", args)
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
@@ -141,6 +153,9 @@ func (r *userRepo) Update(ctx context.Context, id string, args domain.UpdateArgs
 		r.logger.Error("Could not scan updated meta", zap.Error(err))
 		return nil, errors.Wrap(err, op)
 	}
+
+	// Update cache
+	r.cache.SetDefault(userID, updatedMeta)
 
 	return updatedMeta, nil
 }

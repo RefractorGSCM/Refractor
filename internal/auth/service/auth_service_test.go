@@ -26,6 +26,7 @@ import (
 	. "github.com/onsi/gomega"
 	kratos "github.com/ory/kratos-client-go"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
 	"testing"
 	"time"
 )
@@ -48,7 +49,7 @@ func Test(t *testing.T) {
 			repo = new(mocks.AuthRepo)
 			metaRepo = new(mocks.UserMetaRepo)
 			mailService = new(mocks.MailService)
-			service = NewAuthService(repo, metaRepo, mailService, time.Second*2)
+			service = NewAuthService(repo, metaRepo, mailService, time.Second*2, zap.NewNop())
 
 			newUserTraits = &domain.Traits{
 				Email:    "test@test.com",
