@@ -19,16 +19,19 @@ package postgres
 
 import (
 	"Refractor/domain"
+	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
 	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/franela/goblin"
 	. "github.com/onsi/gomega"
+	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"regexp"
 	"testing"
+	"time"
 )
 
 func Test(t *testing.T) {
@@ -41,7 +44,7 @@ func Test(t *testing.T) {
 	cols := []string{"UserID", "InitialUsername", "Username", "Deactivated"}
 
 	g.Describe("User Repo", func() {
-		var repo domain.UserMetaRepo
+		var repo *userRepo
 		var mock sqlmock.Sqlmock
 		var db *sql.DB
 
@@ -53,7 +56,12 @@ func Test(t *testing.T) {
 				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
 			}
 
-			repo = NewUserRepo(db, zap.NewNop())
+			repo = &userRepo{
+				db:     db,
+				logger: zap.NewNop(),
+				qb:     psqlqb.NewPostgresQueryBuilder(),
+				cache:  gocache.New(time.Minute*1, time.Minute*1),
+			}
 		})
 
 		g.After(func() {
@@ -101,48 +109,69 @@ func Test(t *testing.T) {
 		})
 
 		g.Describe("GetByID()", func() {
-			g.Describe("A result was found", func() {
-				var meta *domain.UserMeta
-				var rows *sqlmock.Rows
+			g.Describe("The user's metadata is not cached", func() {
+				g.Describe("A result was found", func() {
+					var meta *domain.UserMeta
+					var rows *sqlmock.Rows
 
-				g.BeforeEach(func() {
-					meta = &domain.UserMeta{
-						ID:              "userid",
-						InitialUsername: "initial",
-						Username:        "initial",
-						Deactivated:     false,
-					}
+					g.BeforeEach(func() {
+						meta = &domain.UserMeta{
+							ID:              "userid",
+							InitialUsername: "initial",
+							Username:        "initial",
+							Deactivated:     false,
+						}
 
-					rows = sqlmock.NewRows(cols).
-						AddRow(meta.ID, meta.InitialUsername, meta.Username, meta.Deactivated)
+						rows = sqlmock.NewRows(cols).
+							AddRow(meta.ID, meta.InitialUsername, meta.Username, meta.Deactivated)
 
-					mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM UserMeta")).WillReturnRows(rows)
+						mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM UserMeta")).WillReturnRows(rows)
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := repo.GetByID(ctx, meta.ID)
+
+						Expect(err).To(BeNil())
+						Expect(mock.ExpectationsWereMet()).To(BeNil())
+					})
+
+					g.It("Should return the correct row scanned into a UserMeta struct", func() {
+						scanned, _ := repo.GetByID(ctx, meta.ID)
+
+						Expect(scanned).To(Equal(meta))
+						Expect(mock.ExpectationsWereMet()).To(BeNil())
+					})
 				})
 
-				g.It("Should not return an error", func() {
-					_, err := repo.GetByID(ctx, meta.ID)
+				g.Describe("No result was found", func() {
+					g.BeforeEach(func() {
+						mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM UserMeta")).WillReturnRows(sqlmock.NewRows(cols))
+					})
 
-					Expect(err).To(BeNil())
-					Expect(mock.ExpectationsWereMet()).To(BeNil())
-				})
+					g.It("Should return domain.ErrNotFound error", func() {
+						_, err := repo.GetByID(ctx, "notfound-userid")
 
-				g.It("Should return the correct row scanned into a UserMeta struct", func() {
-					scanned, _ := repo.GetByID(ctx, meta.ID)
-
-					Expect(scanned).To(Equal(meta))
-					Expect(mock.ExpectationsWereMet()).To(BeNil())
+						Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					})
 				})
 			})
 
-			g.Describe("No result was found", func() {
-				g.BeforeEach(func() {
-					mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM UserMeta")).WillReturnRows(sqlmock.NewRows(cols))
-				})
+			g.Describe("The user's metadata is cached", func() {
+				g.It("Should return the cached user without interacting with the database", func() {
+					meta := &domain.UserMeta{
+						ID:              "userid",
+						InitialUsername: "cached",
+						Username:        "cached",
+						Deactivated:     false,
+					}
 
-				g.It("Should return domain.ErrNotFound error", func() {
-					_, err := repo.GetByID(ctx, "notfound-userid")
+					repo.cache.SetDefault("userid", meta)
 
-					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					cached, err := repo.GetByID(ctx, "userid")
+
+					Expect(err).To(BeNil())
+					Expect(cached).To(Equal(meta))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
 				})
 			})
 		})
@@ -187,6 +216,17 @@ func Test(t *testing.T) {
 					Expect(err).To(BeNil())
 					Expect(updated).To(Equal(updatedMeta))
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should update the user's cached metadata", func() {
+					updated, err := repo.Update(context.TODO(), updatedMeta.ID, updateArgs)
+
+					Expect(err).To(BeNil())
+					Expect(updated).To(Equal(updatedMeta))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+
+					cached, _ := repo.cache.Get(updatedMeta.ID)
+					Expect(cached).To(Equal(updated))
 				})
 			})
 
