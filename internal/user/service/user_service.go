@@ -134,7 +134,11 @@ func (s *userService) DeactivateUser(c context.Context, userID string) error {
 
 	// TODO: Check permissions
 
-	return s.metaRepo.Deactivate(ctx, userID)
+	_, err := s.metaRepo.Update(ctx, userID, domain.UpdateArgs{
+		"Deactivated": true,
+	})
+
+	return err
 }
 
 func (s *userService) ReactivateUser(c context.Context, userID string) error {
@@ -143,5 +147,9 @@ func (s *userService) ReactivateUser(c context.Context, userID string) error {
 
 	// TODO: Check permissions
 
-	return s.metaRepo.Reactivate(ctx, userID)
+	_, err := s.metaRepo.Update(ctx, userID, domain.UpdateArgs{
+		"Deactivated": false,
+	})
+
+	return err
 }
