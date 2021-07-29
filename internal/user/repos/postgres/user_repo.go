@@ -145,34 +145,6 @@ func (r *userRepo) Update(ctx context.Context, id string, args domain.UpdateArgs
 	return updatedMeta, nil
 }
 
-func (r *userRepo) Deactivate(ctx context.Context, userID string) error {
-	const op = opTag + "Deactivate"
-
-	args := domain.UpdateArgs{
-		"Deactivated": true,
-	}
-
-	if _, err := r.Update(ctx, userID, args); err != nil {
-		return errors.Wrap(err, op)
-	}
-
-	return nil
-}
-
-func (r *userRepo) Reactivate(ctx context.Context, userID string) error {
-	const op = opTag + "Reactivate"
-
-	args := domain.UpdateArgs{
-		"Deactivated": false,
-	}
-
-	if _, err := r.Update(ctx, userID, args); err != nil {
-		return errors.Wrap(err, op)
-	}
-
-	return nil
-}
-
 // Scan helpers
 func (r *userRepo) scanRow(row *sql.Row, meta *domain.UserMeta) error {
 	return row.Scan(&meta.ID, &meta.InitialUsername, &meta.Username, &meta.Deactivated)
