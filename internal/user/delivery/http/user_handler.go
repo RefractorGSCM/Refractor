@@ -23,6 +23,7 @@ import (
 	"Refractor/params"
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
+	"context"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -58,6 +59,8 @@ func ApplyUserHandler(apiGroup *echo.Group, s domain.UserService, as domain.Auth
 	userGroup.GET("/", handler.GetAllUsers, enforcer.CheckAuth(authcheckers.RequireAdmin))
 	userGroup.GET("/me", handler.GetOwnInfo)
 	userGroup.POST("/", handler.CreateUser, enforcer.CheckAuth(authcheckers.RequireAdmin))
+	userGroup.PATCH("/deactivate/:id", handler.ChangeUserActivation(false))
+	userGroup.PATCH("/reactivate/:id", handler.ChangeUserActivation(true))
 }
 
 func (h *userHandler) GetAllUsers(c echo.Context) error {
@@ -131,4 +134,50 @@ func (h *userHandler) CreateUser(c echo.Context) error {
 		Message: "User created",
 		Payload: userInfo,
 	})
+}
+
+func (h *userHandler) ChangeUserActivation(shouldBeActivated bool) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		targetUserID := c.Param("id")
+
+		user, ok := c.Get("user").(*domain.AuthUser)
+		if !ok {
+			return fmt.Errorf("could not cast user to *domain.AuthUser")
+		}
+
+		ctx := c.Request().Context()
+		ctx = context.WithValue(ctx, "userids", map[string]string{
+			"Setter": user.Identity.Id,
+			"Target": targetUserID,
+		})
+
+		var message string
+
+		if shouldBeActivated {
+			if err := h.service.ReactivateUser(ctx, targetUserID); err != nil {
+				return err
+			}
+
+			h.logger.Info("User account reactivated",
+				zap.String("Reactivated UserID", targetUserID),
+				zap.String("Reactivated By", user.Identity.Id))
+
+			message = "User account reactivated"
+		} else {
+			if err := h.service.DeactivateUser(ctx, targetUserID); err != nil {
+				return err
+			}
+
+			h.logger.Info("User account deactivated",
+				zap.String("Deactivated UserID", targetUserID),
+				zap.String("Deactivated By", user.Identity.Id))
+
+			message = "User account deactivated"
+		}
+
+		return c.JSON(http.StatusOK, &domain.Response{
+			Success: true,
+			Message: message,
+		})
+	}
 }
