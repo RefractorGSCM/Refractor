@@ -19,10 +19,12 @@ package service
 
 import (
 	"Refractor/domain"
+	"Refractor/pkg/perms"
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"net/http"
 	"time"
 )
 
@@ -128,13 +130,92 @@ func (s *userService) getUserInfo(ctx context.Context, authUser *domain.AuthUser
 	return newUser, nil
 }
 
+func (s *userService) canChangeUserActivation(ctx context.Context) (bool, error) {
+	// Extract setter and target user IDs from context
+	userIDs, ok := ctx.Value("userids").(map[string]string)
+	if !ok {
+		return false, errors.New("userids map[string]string not found in context")
+	}
+
+	// Make sure that both the setter and target user IDs are present
+	setterID := userIDs["Setter"]
+	if setterID == "" {
+		return false, errors.New("setter userID was not found in context")
+	}
+
+	targetID := userIDs["Target"]
+	if targetID == "" {
+		return false, errors.New("target userID was not found in context")
+	}
+
+	// A user can only change the activation status of an account if:
+	// 1. They are a super admin
+	// OR
+	// 1. They are an admin
+	// 2. The target user is not an admin or super admin
+
+	// 1. Check if the user is a super admin
+	setterPerms, err := s.authorizer.GetPermissions(ctx, domain.AuthScope{Type: domain.AuthObjRefractor}, setterID)
+	if err != nil {
+		s.logger.Error("Could not get setter perms", zap.Error(err))
+		return false, err
+	}
+
+	if setterPerms.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {
+		s.logger.Info("User was granted access to change activation status for an account",
+			zap.String("Setter User ID", setterID),
+			zap.String("Target User ID", targetID),
+			zap.String("Reason", "Setter was a super admin"),
+		)
+		return true, nil
+	}
+
+	// ALT PATH:
+	// 1. Check if the setting user is an admin
+	setterIsAdmin := setterPerms.CheckFlag(perms.GetFlag(perms.FlagAdministrator))
+
+	if !setterIsAdmin {
+		s.logActivationChangeDenyMsg(setterID, targetID, "The setter user is not an administrator")
+		return false, nil
+	}
+
+	// 2. Check if the target user is not an admin or super admin
+	targetPerms, err := s.authorizer.GetPermissions(ctx, domain.AuthScope{Type: domain.AuthObjRefractor}, targetID)
+	if err != nil {
+		s.logger.Error("Could not get setter perms", zap.Error(err))
+		return false, err
+	}
+
+	targetIsAdmin := targetPerms.CheckFlag(perms.GetFlag(perms.FlagAdministrator))
+	targetIsSuperAdmin := targetPerms.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin))
+
+	if targetIsAdmin {
+		s.logActivationChangeDenyMsg(setterID, targetID, "The target user is an admin and the setter is not a super admin")
+		return false, nil
+	} else if targetIsSuperAdmin {
+		s.logActivationChangeDenyMsg(setterID, targetID, "The target user is a super admin")
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (s *userService) DeactivateUser(c context.Context, userID string) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	// TODO: Check permissions
+	// Note: context contains setter and target user IDs
+	canChange, err := s.canChangeUserActivation(c)
+	if err != nil {
+		return err
+	}
 
-	_, err := s.metaRepo.Update(ctx, userID, domain.UpdateArgs{
+	if !canChange {
+		return domain.NewHTTPError(nil, http.StatusUnauthorized,
+			"You do not have permission to deactivate that user account.")
+	}
+
+	_, err = s.metaRepo.Update(ctx, userID, domain.UpdateArgs{
 		"Deactivated": true,
 	})
 
@@ -145,11 +226,29 @@ func (s *userService) ReactivateUser(c context.Context, userID string) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	// TODO: Check permissions
+	// Note: context contains setter and target user IDs
+	canChange, err := s.canChangeUserActivation(c)
+	if err != nil {
+		return err
+	}
 
-	_, err := s.metaRepo.Update(ctx, userID, domain.UpdateArgs{
+	if !canChange {
+		return domain.NewHTTPError(nil, http.StatusUnauthorized,
+			"You do not have permission to deactivate that user account.")
+	}
+
+	_, err = s.metaRepo.Update(ctx, userID, domain.UpdateArgs{
 		"Deactivated": false,
 	})
 
 	return err
+}
+
+// logActivationChangeDenyMsg is a helper function to reduce repetition of logging activation status change permission deny messages.
+func (s *userService) logActivationChangeDenyMsg(setterID, targetID, reason string) {
+	s.logger.Info("User was denied access to change activation status of a user account",
+		zap.String("Setter User ID", setterID),
+		zap.String("Target User ID", targetID),
+		zap.String("Reason", reason),
+	)
 }

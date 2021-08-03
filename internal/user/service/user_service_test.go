@@ -21,6 +21,7 @@ import (
 	"Refractor/domain"
 	"Refractor/domain/mocks"
 	"Refractor/pkg/bitperms"
+	"Refractor/pkg/perms"
 	"context"
 	"fmt"
 	"github.com/franela/goblin"
@@ -45,14 +46,21 @@ func Test(t *testing.T) {
 		var groupRepo *mocks.GroupRepo
 		var authRepo *mocks.AuthRepo
 		var authorizer *mocks.Authorizer
-		var service domain.UserService
+		var service *userService
 
 		g.BeforeEach(func() {
 			metaRepo = new(mocks.UserMetaRepo)
 			groupRepo = new(mocks.GroupRepo)
 			authRepo = new(mocks.AuthRepo)
 			authorizer = new(mocks.Authorizer)
-			service = NewUserService(metaRepo, authRepo, groupRepo, authorizer, time.Second*2, zap.NewNop())
+			service = &userService{
+				metaRepo:   metaRepo,
+				authRepo:   authRepo,
+				groupRepo:  groupRepo,
+				authorizer: authorizer,
+				timeout:    time.Second * 2,
+				logger:     zap.NewNop(),
+			}
 		})
 
 		g.Describe("GetAllUsers()", func() {
@@ -272,6 +280,147 @@ func Test(t *testing.T) {
 						authorizer.AssertExpectations(t)
 						groupRepo.AssertExpectations(t)
 						metaRepo.AssertExpectations(t)
+					})
+				})
+			})
+		})
+
+		g.Describe("canChangeUserActivation()", func() {
+			var ctx context.Context
+			var setterID string
+			var targetID string
+			var superAdminPerms *bitperms.Permissions
+
+			g.BeforeEach(func() {
+				setterID = "userid1"
+				targetID = "userid2"
+				ctx = context.WithValue(context.TODO(), "userids", map[string]string{
+					"Setter": setterID,
+					"Target": targetID,
+				})
+
+				superAdminPerms = bitperms.NewPermissionBuilder().
+					AddFlag(perms.GetFlag(perms.FlagSuperAdmin)).
+					GetPermission()
+			})
+
+			g.Describe("Context is missing userids map", func() {
+				g.It("Should return false", func() {
+					canChange, _ := service.canChangeUserActivation(context.TODO())
+
+					Expect(canChange).To(BeFalse())
+				})
+
+				g.It("Should return an error", func() {
+					_, err := service.canChangeUserActivation(context.TODO())
+
+					Expect(err).ToNot(BeNil())
+				})
+			})
+
+			g.Describe("Context is missing userIDs", func() {
+				var ctx context.Context
+
+				g.BeforeEach(func() {
+					ctx = context.WithValue(context.TODO(), "userids", map[string]string{})
+				})
+
+				g.Describe("Missing setter userID", func() {
+					g.It("Should return false", func() {
+						canChange, _ := service.canChangeUserActivation(ctx)
+
+						Expect(canChange).To(BeFalse())
+					})
+
+					g.It("Should return an error", func() {
+						_, err := service.canChangeUserActivation(ctx)
+
+						Expect(err).ToNot(BeNil())
+					})
+				})
+			})
+
+			g.Describe("The setting user is a super admin", func() {
+				g.BeforeEach(func() {
+					authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(superAdminPerms, nil)
+				})
+
+				g.It("Should return true", func() {
+					hasPermission, err := service.canChangeUserActivation(ctx)
+
+					Expect(err).To(BeNil())
+					Expect(hasPermission).To(BeTrue())
+				})
+			})
+
+			g.Describe("The setting user is not a super admin", func() {
+				g.Describe("The setting user is not an admin", func() {
+					g.BeforeEach(func() {
+						nonAdminPerms := bitperms.NewPermissionBuilder().
+							AddFlag(perms.GetFlag(perms.FlagViewServers)).
+							GetPermission()
+
+						authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(nonAdminPerms, nil)
+					})
+
+					g.It("Should return false", func() {
+						canChange, _ := service.canChangeUserActivation(ctx)
+
+						Expect(canChange).To(BeFalse())
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := service.canChangeUserActivation(ctx)
+
+						Expect(err).To(BeNil())
+					})
+				})
+
+				g.Describe("The setting user is an admin", func() {
+					var adminPerms *bitperms.Permissions
+
+					g.BeforeEach(func() {
+						adminPerms = bitperms.NewPermissionBuilder().
+							AddFlag(perms.GetFlag(perms.FlagAdministrator)).
+							GetPermission()
+
+						authorizer.On("GetPermissions", mock.Anything, mock.Anything, setterID).Return(adminPerms, nil)
+					})
+
+					g.Describe("The target user is an admin", func() {
+						g.BeforeEach(func() {
+							authorizer.On("GetPermissions", mock.Anything, mock.Anything, targetID).Return(adminPerms, nil)
+						})
+
+						g.It("Should return false", func() {
+							canChange, _ := service.canChangeUserActivation(ctx)
+
+							Expect(canChange).To(BeFalse())
+						})
+
+						g.It("Should not return an error", func() {
+							_, err := service.canChangeUserActivation(ctx)
+
+							Expect(err).To(BeNil())
+						})
+					})
+
+					g.Describe("The target user is a super admin", func() {
+						g.BeforeEach(func() {
+							authorizer.On("GetPermissions", mock.Anything, mock.Anything, targetID).Return(superAdminPerms, nil)
+						})
+
+						g.It("Should return false", func() {
+							canChange, _ := service.canChangeUserActivation(ctx)
+
+							Expect(canChange).To(BeFalse())
+						})
+
+						g.It("Should not return an error", func() {
+							_, err := service.canChangeUserActivation(ctx)
+
+							Expect(err).To(BeNil())
+						})
 					})
 				})
 			})
