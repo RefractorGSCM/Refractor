@@ -37,7 +37,7 @@ var unauthorized = &res{
 	Message: "Unauthorized",
 }
 
-func NewBrowserProtectMiddleware(config *conf.Config) echo.MiddlewareFunc {
+func NewBrowserProtectMiddleware(config *conf.Config, repo domain.UserMetaRepo) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			sessionCookie, err := c.Cookie("ory_kratos_session")
@@ -80,17 +80,29 @@ func NewBrowserProtectMiddleware(config *conf.Config) echo.MiddlewareFunc {
 				return err
 			}
 
-			c.Set("user", &domain.AuthUser{
+			user := &domain.AuthUser{
 				Traits:  traits,
 				Session: session,
-			})
+			}
+
+			// If this user is deactivated, deny access.
+			isDeactivated, err := repo.IsDeactivated(c.Request().Context(), user.Identity.Id)
+			if err != nil {
+				return err
+			}
+
+			if isDeactivated {
+				return c.HTML(http.StatusOK, "<html><body><h1>Unauthorized</h1></body></html>")
+			}
+
+			c.Set("user", user)
 
 			return next(c)
 		}
 	}
 }
 
-func NewAPIProtectMiddleware(config *conf.Config) echo.MiddlewareFunc {
+func NewAPIProtectMiddleware(config *conf.Config, repo domain.UserMetaRepo) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			cookiePresent := false
@@ -166,10 +178,22 @@ func NewAPIProtectMiddleware(config *conf.Config) echo.MiddlewareFunc {
 				return err
 			}
 
-			c.Set("user", &domain.AuthUser{
+			user := &domain.AuthUser{
 				Traits:  traits,
 				Session: session,
-			})
+			}
+
+			// If this user is deactivated, deny access.
+			isDeactivated, err := repo.IsDeactivated(c.Request().Context(), user.Identity.Id)
+			if err != nil {
+				return err
+			}
+
+			if isDeactivated {
+				return c.JSON(http.StatusUnauthorized, unauthorized)
+			}
+
+			c.Set("user", user)
 
 			return next(c)
 		}
