@@ -160,6 +160,20 @@ func (r *userRepo) Update(ctx context.Context, userID string, args domain.Update
 	return updatedMeta, nil
 }
 
+func (r *userRepo) IsDeactivated(ctx context.Context, userID string) (bool, error) {
+	const op = opTag + "IsDeactivated"
+
+	query := "SELECT EXISTS(SELECT 1 FROM UserMeta WHERE Deactivated = TRUE AND UserID = $1);"
+
+	isDeactivated := false
+	if err := r.db.QueryRowContext(ctx, query, userID).Scan(&isDeactivated); err != nil {
+		r.logger.Error("Could not scan row", zap.Error(err))
+		return false, errors.Wrap(err, op)
+	}
+
+	return isDeactivated, nil
+}
+
 // Scan helpers
 func (r *userRepo) scanRow(row *sql.Row, meta *domain.UserMeta) error {
 	return row.Scan(&meta.ID, &meta.InitialUsername, &meta.Username, &meta.Deactivated)
