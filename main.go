@@ -85,7 +85,10 @@ func main() {
 
 	kratosClient := setupKratos(config)
 
-	authServer, err := setupEchoPages(logger, kratosClient, config)
+	// Set up application components
+	userMetaRepo := _userRepo.NewUserRepo(db, logger)
+
+	authServer, err := setupEchoPages(logger, kratosClient, config, userMetaRepo)
 	if err != nil {
 		log.Fatalf("Could not set up auth webserver. Error: %v", err)
 	}
@@ -95,9 +98,7 @@ func main() {
 		log.Fatalf("Could not set up mail service. Error: %v", err)
 	}
 
-	// Set up application components
 	authRepo := _authRepo.NewAuthRepo(config)
-	userMetaRepo := _userRepo.NewUserRepo(db, logger)
 	authService := _authService.NewAuthService(authRepo, userMetaRepo, mailService, time.Second*2, logger)
 
 	groupRepo, err := _groupRepo.NewGroupRepo(db, logger)
@@ -119,7 +120,7 @@ func main() {
 		log.Printf("Initial superadmin user (%s) has been created!", config.InitialUserUsername)
 	}
 
-	protectMiddleware := middleware.NewAPIProtectMiddleware(config)
+	protectMiddleware := middleware.NewAPIProtectMiddleware(config, userMetaRepo)
 
 	authorizer := _authorizer.NewAuthorizer(groupRepo, logger)
 
@@ -241,21 +242,21 @@ func setupEchoAPI(logger *zap.Logger, config *conf.Config) (*echo.Echo, error) {
 	e.Use(echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
 		AllowOrigins:     []string{"*"},
 		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
-		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
+		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.PATCH},
 		AllowCredentials: true,
 	}))
 
 	return e, nil
 }
 
-func setupEchoPages(logger *zap.Logger, client *kratos.APIClient, config *conf.Config) (*echo.Echo, error) {
+func setupEchoPages(logger *zap.Logger, client *kratos.APIClient, config *conf.Config, metaRepo domain.UserMetaRepo) (*echo.Echo, error) {
 	e := echo.New()
 	e.HTTPErrorHandler = api.GetEchoErrorHandler(logger)
 
 	// Set up rendering of server side pages
 	e.Renderer = tmpl.NewRenderer("./auth/templates/*.html", true)
 
-	protect := middleware.NewBrowserProtectMiddleware(config)
+	protect := middleware.NewBrowserProtectMiddleware(config, metaRepo)
 
 	pagesHandler := auth.NewPublicHandlers(client, config)
 
