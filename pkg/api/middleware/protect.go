@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	kratos "github.com/ory/kratos-client-go"
+	"github.com/pkg/errors"
 	"net/http"
 )
 
@@ -85,12 +86,13 @@ func NewBrowserProtectMiddleware(config *conf.Config, repo domain.UserMetaRepo) 
 				Session: session,
 			}
 
-			// If this user is deactivated, deny access.
+			// Check if the user is deactivated
 			isDeactivated, err := repo.IsDeactivated(c.Request().Context(), user.Identity.Id)
 			if err != nil {
 				return err
 			}
 
+			// If they are deactivated, deny access.
 			if isDeactivated {
 				return c.HTML(http.StatusOK, "<html><body><h1>Unauthorized</h1></body></html>")
 			}
@@ -102,7 +104,33 @@ func NewBrowserProtectMiddleware(config *conf.Config, repo domain.UserMetaRepo) 
 	}
 }
 
-func NewAPIProtectMiddleware(config *conf.Config, repo domain.UserMetaRepo) echo.MiddlewareFunc {
+// NewActivationMiddleware returns a middleware function which enforces account activation by denying access to users
+// whose accounts are deactivated. Must be placed in the chain after the top layer protect middleware since the auth user
+// is pulled from the echo context.
+func NewActivationMiddleware(repo domain.UserMetaRepo) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			user, ok := c.Get("user").(*domain.AuthUser)
+			if !ok {
+				return errors.New("could not cast user to *domain.AuthUser")
+			}
+
+			// If this user is deactivated, deny access.
+			isDeactivated, err := repo.IsDeactivated(c.Request().Context(), user.Identity.Id)
+			if err != nil {
+				return err
+			}
+
+			if isDeactivated {
+				return c.JSON(http.StatusUnauthorized, unauthorized)
+			}
+
+			return next(c)
+		}
+	}
+}
+
+func NewAPIProtectMiddleware(config *conf.Config) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			cookiePresent := false
@@ -181,16 +209,6 @@ func NewAPIProtectMiddleware(config *conf.Config, repo domain.UserMetaRepo) echo
 			user := &domain.AuthUser{
 				Traits:  traits,
 				Session: session,
-			}
-
-			// If this user is deactivated, deny access.
-			isDeactivated, err := repo.IsDeactivated(c.Request().Context(), user.Identity.Id)
-			if err != nil {
-				return err
-			}
-
-			if isDeactivated {
-				return c.JSON(http.StatusUnauthorized, unauthorized)
 			}
 
 			c.Set("user", user)

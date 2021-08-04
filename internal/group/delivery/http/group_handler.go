@@ -38,7 +38,7 @@ type groupHandler struct {
 	logger     *zap.Logger
 }
 
-func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Authorizer, protect echo.MiddlewareFunc, log *zap.Logger) {
+func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Authorizer, mware domain.Middleware, log *zap.Logger) {
 	handler := &groupHandler{
 		service:    s,
 		authorizer: a,
@@ -46,22 +46,24 @@ func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Aut
 	}
 
 	// Create the routing group
-	groupGroup := apiGroup.Group("/groups", protect)
+	groupGroup := apiGroup.Group("/groups", mware.ProtectMiddleware)
+
+	act := mware.ActivationMiddleware
 
 	// Create an enforcer to authorize the user on the various endpoints
 	enforcer := middleware.NewEnforcer(a, domain.AuthScope{
 		Type: domain.AuthObjRefractor,
 	}, log)
 
-	groupGroup.POST("/", handler.CreateGroup, enforcer.CheckAuth(authcheckers.DenyAll))
-	groupGroup.GET("/", handler.GetGroups)
+	groupGroup.POST("/", handler.CreateGroup, act, enforcer.CheckAuth(authcheckers.DenyAll))
+	groupGroup.GET("/", handler.GetGroups, act)
 	groupGroup.GET("/permissions", handler.GetPermissions)
-	groupGroup.DELETE("/:id", handler.DeleteGroup, enforcer.CheckAuth(authcheckers.DenyAll))
-	groupGroup.PUT("/:id", handler.UpdateGroup, enforcer.CheckAuth(authcheckers.DenyAll))
-	groupGroup.PUT("/base", handler.UpdateBaseGroup, enforcer.CheckAuth(authcheckers.DenyAll))
-	groupGroup.PUT("/order", handler.ReorderGroups, enforcer.CheckAuth(authcheckers.DenyAll))
-	groupGroup.PUT("/users/add", handler.SetUserGroup(true), enforcer.CheckAuth(authcheckers.RequireAdmin))
-	groupGroup.PUT("/users/remove", handler.SetUserGroup(false), enforcer.CheckAuth(authcheckers.RequireAdmin))
+	groupGroup.DELETE("/:id", handler.DeleteGroup, act, enforcer.CheckAuth(authcheckers.DenyAll))
+	groupGroup.PUT("/:id", handler.UpdateGroup, act, enforcer.CheckAuth(authcheckers.DenyAll))
+	groupGroup.PUT("/base", handler.UpdateBaseGroup, act, enforcer.CheckAuth(authcheckers.DenyAll))
+	groupGroup.PUT("/order", handler.ReorderGroups, act, enforcer.CheckAuth(authcheckers.DenyAll))
+	groupGroup.PUT("/users/add", handler.SetUserGroup(true), act, enforcer.CheckAuth(authcheckers.RequireAdmin))
+	groupGroup.PUT("/users/remove", handler.SetUserGroup(false), act, enforcer.CheckAuth(authcheckers.RequireAdmin))
 }
 
 type resPermission struct {

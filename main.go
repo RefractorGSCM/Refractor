@@ -120,22 +120,25 @@ func main() {
 		log.Printf("Initial superadmin user (%s) has been created!", config.InitialUserUsername)
 	}
 
-	protectMiddleware := middleware.NewAPIProtectMiddleware(config, userMetaRepo)
+	middlewareBundle := domain.Middleware{
+		ProtectMiddleware:    middleware.NewAPIProtectMiddleware(config),
+		ActivationMiddleware: middleware.NewActivationMiddleware(userMetaRepo),
+	}
 
 	authorizer := _authorizer.NewAuthorizer(groupRepo, logger)
 
 	groupService := _groupService.NewGroupService(groupRepo, authorizer, time.Second*2, logger)
-	_groupHandler.ApplyGroupHandler(apiGroup, groupService, authorizer, protectMiddleware, logger)
+	_groupHandler.ApplyGroupHandler(apiGroup, groupService, authorizer, middlewareBundle, logger)
 
 	gameService := _gameService.NewGameService()
 	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
 
 	serverRepo := _postgresServerRepo.NewServerRepo(db, logger)
 	serverService := _serverService.NewServerService(serverRepo, time.Second*2)
-	_serverHandler.ApplyServerHandler(apiGroup, serverService, authorizer, protectMiddleware)
+	_serverHandler.ApplyServerHandler(apiGroup, serverService, authorizer, middlewareBundle)
 
 	userService := _userService.NewUserService(userMetaRepo, authRepo, groupRepo, authorizer, time.Second*2, logger)
-	_userHandler.ApplyUserHandler(apiGroup, userService, authService, authorizer, protectMiddleware, logger)
+	_userHandler.ApplyUserHandler(apiGroup, userService, authService, authorizer, middlewareBundle, logger)
 
 	// Setup complete. Begin serving requests.
 	logger.Info("Setup complete!")

@@ -26,15 +26,15 @@ type serverHandler struct {
 	service domain.ServerService
 }
 
-func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, authorizer domain.Authorizer, protect echo.MiddlewareFunc) {
+func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, authorizer domain.Authorizer, mware domain.Middleware) {
 	handler := &serverHandler{
 		service: s,
 	}
 
 	// Create the server routing group
-	serverGroup := apiGroup.Group("/servers")
+	serverGroup := apiGroup.Group("/servers", mware.ProtectMiddleware, mware.ActivationMiddleware)
 
-	serverGroup.GET("/", handler.GetServers, protect)
+	serverGroup.GET("/", handler.GetServers)
 }
 
 // GetServers is the route handler for /api/v1/servers
