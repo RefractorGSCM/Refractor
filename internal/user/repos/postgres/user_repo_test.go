@@ -256,5 +256,49 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("IsDeactivated()", func() {
+			g.Describe("User is deactivated", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT EXISTS(SELECT 1 FROM UserMeta")).WillReturnRows(
+						sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.IsDeactivated(ctx, "userid")
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return true", func() {
+					isDeactivated, _ := repo.IsDeactivated(ctx, "userid")
+
+					Expect(isDeactivated).To(BeTrue())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("User is not deactivated", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT EXISTS(SELECT 1 FROM UserMeta")).WillReturnRows(
+						sqlmock.NewRows([]string{"exists"}).AddRow(false))
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.IsDeactivated(ctx, "userid")
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return false", func() {
+					isDeactivated, _ := repo.IsDeactivated(ctx, "userid")
+
+					Expect(isDeactivated).To(BeFalse())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
 	})
 }

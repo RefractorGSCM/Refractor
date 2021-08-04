@@ -42,6 +42,7 @@ type UserMetaRepo interface {
 	Store(ctx context.Context, userInfo *UserMeta) error
 	GetByID(ctx context.Context, userID string) (*UserMeta, error)
 	Update(ctx context.Context, userID string, args UpdateArgs) (*UserMeta, error)
+	IsDeactivated(ctx context.Context, userID string) (bool, error)
 }
 
 type UserService interface {
