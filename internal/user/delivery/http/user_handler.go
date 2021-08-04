@@ -38,7 +38,7 @@ type userHandler struct {
 }
 
 func ApplyUserHandler(apiGroup *echo.Group, s domain.UserService, as domain.AuthService, a domain.Authorizer,
-	protect echo.MiddlewareFunc, log *zap.Logger) {
+	mware domain.Middleware, log *zap.Logger) {
 
 	handler := &userHandler{
 		service:     s,
@@ -48,7 +48,7 @@ func ApplyUserHandler(apiGroup *echo.Group, s domain.UserService, as domain.Auth
 	}
 
 	// Create the routing group
-	userGroup := apiGroup.Group("/users", protect)
+	userGroup := apiGroup.Group("/users", mware.ProtectMiddleware)
 
 	// Create an enforcer to authorize users on the various endpoints
 	enforcer := middleware.NewEnforcer(a, domain.AuthScope{
@@ -56,11 +56,11 @@ func ApplyUserHandler(apiGroup *echo.Group, s domain.UserService, as domain.Auth
 	}, log)
 
 	// Map routes to handlers
-	userGroup.GET("/", handler.GetAllUsers, enforcer.CheckAuth(authcheckers.RequireAdmin))
+	userGroup.GET("/", handler.GetAllUsers, mware.ActivationMiddleware, enforcer.CheckAuth(authcheckers.RequireAdmin))
 	userGroup.GET("/me", handler.GetOwnInfo)
-	userGroup.POST("/", handler.CreateUser, enforcer.CheckAuth(authcheckers.RequireAdmin))
-	userGroup.PATCH("/deactivate/:id", handler.ChangeUserActivation(false))
-	userGroup.PATCH("/reactivate/:id", handler.ChangeUserActivation(true))
+	userGroup.POST("/", handler.CreateUser, mware.ActivationMiddleware, enforcer.CheckAuth(authcheckers.RequireAdmin))
+	userGroup.PATCH("/deactivate/:id", handler.ChangeUserActivation(false), mware.ActivationMiddleware)
+	userGroup.PATCH("/reactivate/:id", handler.ChangeUserActivation(true), mware.ActivationMiddleware)
 }
 
 func (h *userHandler) GetAllUsers(c echo.Context) error {
