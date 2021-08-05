@@ -58,7 +58,7 @@ func (r *serverRepo) fetch(ctx context.Context, query string, args ...interface{
 
 	results := make([]*domain.Server, 0)
 	for rows.Next() {
-		server := &domain.Server{}
+		server := &domain.DBServer{}
 
 		if err := r.scanRows(rows, server); err != nil {
 			if err == sql.ErrNoRows {
@@ -68,7 +68,7 @@ func (r *serverRepo) fetch(ctx context.Context, query string, args ...interface{
 			return nil, errors.Wrap(err, op)
 		}
 
-		results = append(results, server)
+		results = append(results, server.Server())
 	}
 
 	return results, nil
@@ -131,10 +131,10 @@ func (r *serverRepo) GetAll(ctx context.Context) ([]*domain.Server, error) {
 }
 
 // Scan helpers
-func (r *serverRepo) scanRow(row *sql.Row, server *domain.Server) error {
+func (r *serverRepo) scanRow(row *sql.Row, server *domain.DBServer) error {
 	return row.Scan(&server.ID, &server.Game, &server.Name, &server.Address, &server.RCONPort, &server.RCONPassword, &server.CreatedAt, &server.ModifiedAt)
 }
 
-func (r *serverRepo) scanRows(rows *sql.Rows, server *domain.Server) error {
+func (r *serverRepo) scanRows(rows *sql.Rows, server *domain.DBServer) error {
 	return rows.Scan(&server.ID, &server.Game, &server.Name, &server.Address, &server.RCONPort, &server.RCONPassword, &server.CreatedAt, &server.ModifiedAt)
 }

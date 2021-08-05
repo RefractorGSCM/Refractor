@@ -19,6 +19,7 @@ package domain
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -31,6 +32,38 @@ type Server struct {
 	RCONPassword string    `json:"-"`
 	CreatedAt    time.Time `json:"created_at"`
 	ModifiedAt   time.Time `json:"modified_at"`
+}
+
+type DBServer struct {
+	ID           int64
+	Game         string
+	Name         string
+	Address      string
+	RCONPort     string
+	RCONPassword string
+	CreatedAt    sql.NullTime
+	ModifiedAt   sql.NullTime
+}
+
+func (dbs DBServer) Server() *Server {
+	s := &Server{
+		ID:           dbs.ID,
+		Game:         dbs.Game,
+		Name:         dbs.Name,
+		Address:      dbs.Address,
+		RCONPort:     dbs.RCONPort,
+		RCONPassword: dbs.RCONPassword,
+	}
+
+	if dbs.CreatedAt.Valid {
+		s.CreatedAt = dbs.CreatedAt.Time
+	}
+
+	if dbs.ModifiedAt.Valid {
+		s.ModifiedAt = dbs.ModifiedAt.Time
+	}
+
+	return s
 }
 
 type ServerRepo interface {
