@@ -77,7 +77,7 @@ func Test(t *testing.T) {
 					Game:         "Test Game",
 					Name:         "Test Server",
 					Address:      "127.0.0.1",
-					RCONPort:     4372,
+					RCONPort:     "4372",
 					RCONPassword: "sjghjuwfxgdwfhij",
 					CreatedAt:    time.Time{},
 					ModifiedAt:   time.Time{},

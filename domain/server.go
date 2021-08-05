@@ -27,7 +27,7 @@ type Server struct {
 	Game         string    `json:"game"`
 	Name         string    `json:"string"`
 	Address      string    `json:"address"`
-	RCONPort     uint16    `json:"-"`
+	RCONPort     string    `json:"-"`
 	RCONPassword string    `json:"-"`
 	CreatedAt    time.Time `json:"created_at"`
 	ModifiedAt   time.Time `json:"modified_at"`

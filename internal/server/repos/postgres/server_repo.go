@@ -79,7 +79,7 @@ func (r *serverRepo) fetch(ctx context.Context, query string, args ...interface{
 func (r *serverRepo) Store(ctx context.Context, server *domain.Server) error {
 	const op = opTag + "Store"
 
-	query := "INSERT INTO Servers (Game, Name, Address, RCONPort, RCONPassword) VALUES ($1, $2, $3, $4, $5);"
+	query := "INSERT INTO Servers (Game, Name, Address, RCONPort, RCONPassword) VALUES ($1, $2, $3, $4, $5) RETURNING ServerID;"
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
@@ -87,15 +87,11 @@ func (r *serverRepo) Store(ctx context.Context, server *domain.Server) error {
 		return errors.Wrap(err, op)
 	}
 
-	res, err := stmt.ExecContext(ctx, server.Game, server.Name, server.Address, server.RCONPort, server.RCONPassword)
-	if err != nil {
-		r.logger.Error("Could not execute prepared statement", zap.String("query", query), zap.Error(err))
-		return errors.Wrap(err, op)
-	}
+	row := stmt.QueryRowContext(ctx, server.Game, server.Name, server.Address, server.RCONPort, server.RCONPassword)
 
-	id, err := res.LastInsertId()
-	if err != nil {
-		r.logger.Error("Could not get ID of newly inserted community", zap.Error(err))
+	var id int64
+	if err := row.Scan(&id); err != nil {
+		r.logger.Error("Could not scan ServerID from row", zap.Error(err))
 		return errors.Wrap(err, op)
 	}
 
