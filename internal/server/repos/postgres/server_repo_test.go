@@ -65,7 +65,7 @@ func Test(t *testing.T) {
 			})
 
 			g.It("Should not return an error", func() {
-				mock.ExpectExec("INSERT INTO Servers").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectQuery("INSERT INTO Servers").WillReturnRows(sqlmock.NewRows([]string{"ServerID"}).AddRow(int64(1)))
 
 				server := &domain.Server{Name: "Test"}
 				err := repo.Store(context.TODO(), server)
@@ -75,7 +75,7 @@ func Test(t *testing.T) {
 			})
 
 			g.It("Should update the server to have the new ID", func() {
-				mock.ExpectExec("INSERT INTO Servers").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectQuery("INSERT INTO Servers").WillReturnRows(sqlmock.NewRows([]string{"ServerID"}).AddRow(int64(1)))
 
 				server := &domain.Server{Name: "Test"}
 				_ = repo.Store(context.TODO(), server)
@@ -105,7 +105,7 @@ func Test(t *testing.T) {
 			})
 
 			g.It("Should return an error on SQL error", func() {
-				mock.ExpectExec("INSERT INTO Servers").WillReturnError(fmt.Errorf(""))
+				mock.ExpectQuery("INSERT INTO Servers").WillReturnError(fmt.Errorf(""))
 
 				server := &domain.Server{Name: "Test"}
 				err := repo.Store(context.TODO(), server)
@@ -146,7 +146,7 @@ func Test(t *testing.T) {
 					Game:         "Mock",
 					Name:         "Mock Server",
 					Address:      "127.0.0.1",
-					RCONPort:     25575,
+					RCONPort:     "25575",
 					RCONPassword: "password",
 					CreatedAt:    time.Time{},
 					ModifiedAt:   time.Time{},

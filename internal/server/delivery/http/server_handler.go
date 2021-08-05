@@ -18,26 +18,41 @@
 package http
 
 import (
+	"Refractor/authcheckers"
 	"Refractor/domain"
+	"Refractor/params"
+	"Refractor/pkg/api"
+	"Refractor/pkg/api/middleware"
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 	"net/http"
 	"time"
 )
 
 type serverHandler struct {
-	service domain.ServerService
+	service    domain.ServerService
+	authorizer domain.Authorizer
+	logger     *zap.Logger
 }
 
-func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, authorizer domain.Authorizer, mware domain.Middleware) {
+func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, a domain.Authorizer, mware domain.Middleware, log *zap.Logger) {
 	handler := &serverHandler{
-		service: s,
+		service:    s,
+		authorizer: a,
+		logger:     log,
 	}
 
 	// Create the server routing group
 	serverGroup := apiGroup.Group("/servers", mware.ProtectMiddleware, mware.ActivationMiddleware)
 
+	// Create an enforcer to authorize the user on the various endpoints
+	enforcer := middleware.NewEnforcer(a, domain.AuthScope{
+		Type: domain.AuthObjRefractor,
+	}, log)
+
 	serverGroup.GET("/", handler.GetServers)
+	serverGroup.POST("/", handler.CreateServer, enforcer.CheckAuth(authcheckers.RequireAdmin))
 }
 
 type resServer struct {
@@ -47,6 +62,47 @@ type resServer struct {
 	Address    string    `json:"address"`
 	CreatedAt  time.Time `json:"created_at"`
 	ModifiedAt time.Time `json:"modified_at"`
+}
+
+func (h *serverHandler) CreateServer(c echo.Context) error {
+	// Validate request body
+	var body params.CreateServerParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	// Create the new server
+	newServer := &domain.Server{
+		Game:         body.Game,
+		Name:         body.Name,
+		Address:      body.Address,
+		RCONPort:     body.RCONPort,
+		RCONPassword: body.RCONPassword,
+	}
+
+	if err := h.service.Store(c.Request().Context(), newServer); err != nil {
+		return err
+	}
+
+	h.logger.Info("Server created",
+		zap.Int64("Server ID", newServer.ID),
+		zap.String("Created By", user.Identity.Id),
+	)
+
+	return c.JSON(http.StatusCreated, &domain.Response{
+		Success: true,
+		Message: "Server created",
+		Payload: newServer,
+	})
 }
 
 // GetServers is the route handler for /api/v1/servers

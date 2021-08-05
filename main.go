@@ -135,7 +135,7 @@ func main() {
 
 	serverRepo := _postgresServerRepo.NewServerRepo(db, logger)
 	serverService := _serverService.NewServerService(serverRepo, time.Second*2)
-	_serverHandler.ApplyServerHandler(apiGroup, serverService, authorizer, middlewareBundle)
+	_serverHandler.ApplyServerHandler(apiGroup, serverService, authorizer, middlewareBundle, logger)
 
 	userService := _userService.NewUserService(userMetaRepo, authRepo, groupRepo, authorizer, time.Second*2, logger)
 	_userHandler.ApplyUserHandler(apiGroup, userService, authService, authorizer, middlewareBundle, logger)
