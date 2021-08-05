@@ -48,3 +48,17 @@ func (s *serverService) GetByID(c context.Context, id int64) (*domain.Server, er
 
 	return s.repo.GetByID(ctx, id)
 }
+
+func (s *serverService) GetAll(c context.Context) ([]*domain.Server, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	allServers, err := s.repo.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: filter out servers the user does not have access to (permission checks)
+
+	return allServers, nil
+}
