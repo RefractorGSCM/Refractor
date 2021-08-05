@@ -121,6 +121,19 @@ func (r *serverRepo) GetByID(ctx context.Context, id int64) (*domain.Server, err
 	return nil, errors.Wrap(domain.ErrNotFound, op)
 }
 
+func (r *serverRepo) GetAll(ctx context.Context) ([]*domain.Server, error) {
+	const op = opTag + "GetAll"
+
+	query := "SELECT * FROM Servers;"
+
+	results, err := r.fetch(ctx, query)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	return results, nil
+}
+
 // Scan helpers
 func (r *serverRepo) scanRow(row *sql.Row, server *domain.Server) error {
 	return row.Scan(&server.ID, &server.Game, &server.Name, &server.Address, &server.RCONPort, &server.RCONPassword, &server.CreatedAt, &server.ModifiedAt)

@@ -19,7 +19,10 @@ package http
 
 import (
 	"Refractor/domain"
+	"fmt"
 	"github.com/labstack/echo/v4"
+	"net/http"
+	"time"
 )
 
 type serverHandler struct {
@@ -37,8 +40,40 @@ func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, authorizer
 	serverGroup.GET("/", handler.GetServers)
 }
 
+type resServer struct {
+	ID         int64     `json:"id"`
+	Game       string    `json:"game"`
+	Name       string    `json:"string"`
+	Address    string    `json:"address"`
+	CreatedAt  time.Time `json:"created_at"`
+	ModifiedAt time.Time `json:"modified_at"`
+}
+
 // GetServers is the route handler for /api/v1/servers
 // It returns a JSON array containing all servers which the requesting user has access to.
 func (h *serverHandler) GetServers(c echo.Context) error {
-	return c.String(200, "ok")
+	servers, err := h.service.GetAll(c.Request().Context())
+	if err != nil {
+		return err
+	}
+
+	var resServers []*resServer
+
+	// Transform servers into resServers
+	for _, server := range servers {
+		resServers = append(resServers, &resServer{
+			ID:         server.ID,
+			Game:       server.Game,
+			Name:       server.Name,
+			Address:    server.Address,
+			CreatedAt:  server.CreatedAt,
+			ModifiedAt: server.ModifiedAt,
+		})
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: fmt.Sprintf("Fetched %d servers", len(resServers)),
+		Payload: resServers,
+	})
 }
