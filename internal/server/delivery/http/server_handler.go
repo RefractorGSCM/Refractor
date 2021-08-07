@@ -58,7 +58,7 @@ func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, a domain.A
 type resServer struct {
 	ID         int64     `json:"id"`
 	Game       string    `json:"game"`
-	Name       string    `json:"string"`
+	Name       string    `json:"name"`
 	Address    string    `json:"address"`
 	CreatedAt  time.Time `json:"created_at"`
 	ModifiedAt time.Time `json:"modified_at"`
