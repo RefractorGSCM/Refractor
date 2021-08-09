@@ -92,4 +92,19 @@ func Test(t *testing.T) {
 			})
 		})
 	})
+
+	g.Describe("Delete()", func() {
+		g.Describe("Target server found", func() {
+			g.BeforeEach(func() {
+				mockRepo.On("Delete", mock.Anything, mock.AnythingOfType("int64")).Return(nil)
+			})
+
+			g.It("Should not return an error", func() {
+				err := service.Delete(context.TODO(), 1)
+
+				Expect(err).To(BeNil())
+				mockRepo.AssertExpectations(t)
+			})
+		})
+	})
 }
