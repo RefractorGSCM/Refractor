@@ -55,15 +55,6 @@ func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, a domain.A
 	serverGroup.POST("/", handler.CreateServer, enforcer.CheckAuth(authcheckers.RequireAdmin))
 }
 
-type resServer struct {
-	ID         int64     `json:"id"`
-	Game       string    `json:"game"`
-	Name       string    `json:"name"`
-	Address    string    `json:"address"`
-	CreatedAt  time.Time `json:"created_at"`
-	ModifiedAt time.Time `json:"modified_at"`
-}
-
 func (h *serverHandler) CreateServer(c echo.Context) error {
 	// Validate request body
 	var body params.CreateServerParams
@@ -105,6 +96,18 @@ func (h *serverHandler) CreateServer(c echo.Context) error {
 	})
 }
 
+type resServer struct {
+	ID            int64     `json:"id"`
+	Game          string    `json:"game"`
+	Name          string    `json:"name"`
+	Address       string    `json:"address"`
+	RCONPort      string    `json:"rcon_port"`
+	CreatedAt     time.Time `json:"created_at"`
+	ModifiedAt    time.Time `json:"modified_at"`
+	OnlinePlayers int       `json:"online_players"`
+	Status        string    `json:"status"`
+}
+
 // GetServers is the route handler for /api/v1/servers
 // It returns a JSON array containing all servers which the requesting user has access to.
 func (h *serverHandler) GetServers(c echo.Context) error {
@@ -122,6 +125,7 @@ func (h *serverHandler) GetServers(c echo.Context) error {
 			Game:       server.Game,
 			Name:       server.Name,
 			Address:    server.Address,
+			RCONPort:   server.RCONPort,
 			CreatedAt:  server.CreatedAt,
 			ModifiedAt: server.ModifiedAt,
 		})
