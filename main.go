@@ -243,7 +243,7 @@ func setupEchoAPI(logger *zap.Logger, config *conf.Config) (*echo.Echo, error) {
 	e.HTTPErrorHandler = api.GetEchoErrorHandler(logger)
 
 	e.Use(echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{"*"}, // TODO: make this dynamically switchable
 		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
 		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.PATCH},
 		AllowCredentials: true,

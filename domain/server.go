@@ -30,6 +30,7 @@ type Server struct {
 	Address      string    `json:"address"`
 	RCONPort     string    `json:"rcon_port"`
 	RCONPassword string    `json:"-"`
+	Deactivated  bool      `json:"deactivated"`
 	CreatedAt    time.Time `json:"created_at"`
 	ModifiedAt   time.Time `json:"modified_at"`
 }
@@ -41,6 +42,7 @@ type DBServer struct {
 	Address      string
 	RCONPort     string
 	RCONPassword string
+	Deactivated  bool
 	CreatedAt    sql.NullTime
 	ModifiedAt   sql.NullTime
 }
@@ -53,6 +55,7 @@ func (dbs DBServer) Server() *Server {
 		Address:      dbs.Address,
 		RCONPort:     dbs.RCONPort,
 		RCONPassword: dbs.RCONPassword,
+		Deactivated:  dbs.Deactivated,
 	}
 
 	if dbs.CreatedAt.Valid {
@@ -70,12 +73,12 @@ type ServerRepo interface {
 	Store(ctx context.Context, server *Server) error
 	GetByID(ctx context.Context, id int64) (*Server, error)
 	GetAll(ctx context.Context) ([]*Server, error)
-	Delete(ctx context.Context, id int64) error
+	Deactivate(ctx context.Context, id int64) error
 }
 
 type ServerService interface {
 	Store(c context.Context, server *Server) error
 	GetByID(c context.Context, id int64) (*Server, error)
 	GetAll(c context.Context) ([]*Server, error)
-	Delete(c context.Context, id int64) error
+	Deactivate(c context.Context, id int64) error
 }

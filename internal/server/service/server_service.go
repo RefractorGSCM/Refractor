@@ -63,9 +63,9 @@ func (s *serverService) GetAll(c context.Context) ([]*domain.Server, error) {
 	return allServers, nil
 }
 
-func (s *serverService) Delete(c context.Context, id int64) error {
+func (s *serverService) Deactivate(c context.Context, id int64) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.Delete(ctx, id)
+	return s.repo.Deactivate(ctx, id)
 }

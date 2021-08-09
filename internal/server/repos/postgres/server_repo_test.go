@@ -148,14 +148,15 @@ func Test(t *testing.T) {
 					Address:      "127.0.0.1",
 					RCONPort:     "25575",
 					RCONPassword: "password",
+					Deactivated:  false,
 					CreatedAt:    time.Time{},
 					ModifiedAt:   time.Time{},
 				}
 
 				mockRows = sqlmock.NewRows(
-					[]string{"ServerID", "Game", "Name", "Address", "RCONPort", "RCONPassword", "CreatedAt", "ModifiedAt"}).
+					[]string{"ServerID", "Game", "Name", "Address", "RCONPort", "RCONPassword", "Deactivated", "CreatedAt", "ModifiedAt"}).
 					AddRow(mockServer.ID, mockServer.Game, mockServer.Name, mockServer.Address, mockServer.RCONPort,
-						mockServer.RCONPassword, mockServer.CreatedAt, mockServer.ModifiedAt)
+						mockServer.RCONPassword, mockServer.Deactivated, mockServer.CreatedAt, mockServer.ModifiedAt)
 			})
 
 			g.It("Should not return an error", func() {
@@ -180,7 +181,7 @@ func Test(t *testing.T) {
 		g.Describe("No result found", func() {
 			g.It("Should return domain.ErrNotFound if no results were found", func() {
 				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers")).WillReturnRows(sqlmock.NewRows(
-					[]string{"ServerID", "Game", "Name", "Address", "RCONPort", "RCONPassword", "CreatedAt", "ModifiedAt"}))
+					[]string{"ServerID", "Game", "Name", "Address", "RCONPort", "RCONPassword", "Deactivated", "CreatedAt", "ModifiedAt"}))
 
 				_, err := repo.GetByID(context.TODO(), 1)
 
@@ -190,7 +191,7 @@ func Test(t *testing.T) {
 		})
 	})
 
-	g.Describe("Delete()", func() {
+	g.Describe("Deactivate()", func() {
 		var repo domain.ServerRepo
 		var mock sqlmock.Sqlmock
 		var db *sql.DB
@@ -208,11 +209,11 @@ func Test(t *testing.T) {
 
 		g.Describe("Target server exists", func() {
 			g.BeforeEach(func() {
-				mock.ExpectExec("DELETE FROM Servers").WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectExec("UPDATE Servers SET Deactivated = TRUE").WillReturnResult(sqlmock.NewResult(0, 1))
 			})
 
 			g.It("Should not return an error", func() {
-				err := repo.Delete(context.TODO(), 1)
+				err := repo.Deactivate(context.TODO(), 1)
 
 				Expect(err).To(BeNil())
 			})
@@ -220,11 +221,11 @@ func Test(t *testing.T) {
 
 		g.Describe("Target server does not exist", func() {
 			g.BeforeEach(func() {
-				mock.ExpectExec("DELETE FROM Servers").WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectExec("UPDATE Servers SET Deactivated = TRUE").WillReturnResult(sqlmock.NewResult(0, 0))
 			})
 
 			g.It("Should return the error domain.ErrNotFound", func() {
-				err := repo.Delete(context.TODO(), 1)
+				err := repo.Deactivate(context.TODO(), 1)
 
 				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
 			})
