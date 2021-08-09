@@ -69,11 +69,13 @@ func (dbs DBServer) Server() *Server {
 type ServerRepo interface {
 	Store(ctx context.Context, server *Server) error
 	GetByID(ctx context.Context, id int64) (*Server, error)
-	GetAll(c context.Context) ([]*Server, error)
+	GetAll(ctx context.Context) ([]*Server, error)
+	Delete(ctx context.Context, id int64) error
 }
 
 type ServerService interface {
 	Store(c context.Context, server *Server) error
 	GetByID(c context.Context, id int64) (*Server, error)
 	GetAll(c context.Context) ([]*Server, error)
+	Delete(c context.Context, id int64) error
 }
