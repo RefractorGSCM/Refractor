@@ -130,10 +130,10 @@ func (r *serverRepo) GetAll(ctx context.Context) ([]*domain.Server, error) {
 	return results, nil
 }
 
-func (r *serverRepo) Delete(ctx context.Context, id int64) error {
-	const op = opTag + "Delete"
+func (r *serverRepo) Deactivate(ctx context.Context, id int64) error {
+	const op = opTag + "Deactivate"
 
-	query := "DELETE FROM Servers WHERE ServerID = $1;"
+	query := "UPDATE Servers SET Deactivated = TRUE WHERE ServerID = $1;"
 
 	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
@@ -156,9 +156,9 @@ func (r *serverRepo) Delete(ctx context.Context, id int64) error {
 
 // Scan helpers
 func (r *serverRepo) scanRow(row *sql.Row, server *domain.DBServer) error {
-	return row.Scan(&server.ID, &server.Game, &server.Name, &server.Address, &server.RCONPort, &server.RCONPassword, &server.CreatedAt, &server.ModifiedAt)
+	return row.Scan(&server.ID, &server.Game, &server.Name, &server.Address, &server.RCONPort, &server.RCONPassword, &server.Deactivated, &server.CreatedAt, &server.ModifiedAt)
 }
 
 func (r *serverRepo) scanRows(rows *sql.Rows, server *domain.DBServer) error {
-	return rows.Scan(&server.ID, &server.Game, &server.Name, &server.Address, &server.RCONPort, &server.RCONPassword, &server.CreatedAt, &server.ModifiedAt)
+	return rows.Scan(&server.ID, &server.Game, &server.Name, &server.Address, &server.RCONPort, &server.RCONPassword, &server.Deactivated, &server.CreatedAt, &server.ModifiedAt)
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -53,6 +54,7 @@ func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, a domain.A
 
 	serverGroup.GET("/", handler.GetServers)
 	serverGroup.POST("/", handler.CreateServer, enforcer.CheckAuth(authcheckers.RequireAdmin))
+	serverGroup.PATCH("/deactivate/:id", handler.DeactivateServer, enforcer.CheckAuth(authcheckers.RequireAdmin))
 }
 
 func (h *serverHandler) CreateServer(c echo.Context) error {
@@ -102,6 +104,7 @@ type resServer struct {
 	Name          string    `json:"name"`
 	Address       string    `json:"address"`
 	RCONPort      string    `json:"rcon_port"`
+	Deactivated   bool      `json:"deactivated"`
 	CreatedAt     time.Time `json:"created_at"`
 	ModifiedAt    time.Time `json:"modified_at"`
 	OnlinePlayers int       `json:"online_players"`
@@ -121,13 +124,14 @@ func (h *serverHandler) GetServers(c echo.Context) error {
 	// Transform servers into resServers
 	for _, server := range servers {
 		resServers = append(resServers, &resServer{
-			ID:         server.ID,
-			Game:       server.Game,
-			Name:       server.Name,
-			Address:    server.Address,
-			RCONPort:   server.RCONPort,
-			CreatedAt:  server.CreatedAt,
-			ModifiedAt: server.ModifiedAt,
+			ID:          server.ID,
+			Game:        server.Game,
+			Name:        server.Name,
+			Address:     server.Address,
+			RCONPort:    server.RCONPort,
+			Deactivated: server.Deactivated,
+			CreatedAt:   server.CreatedAt,
+			ModifiedAt:  server.ModifiedAt,
 		})
 	}
 
@@ -135,5 +139,35 @@ func (h *serverHandler) GetServers(c echo.Context) error {
 		Success: true,
 		Message: fmt.Sprintf("Fetched %d servers", len(resServers)),
 		Payload: resServers,
+	})
+}
+
+func (h *serverHandler) DeactivateServer(c echo.Context) error {
+	serverIDString := c.Param("id")
+
+	serverID, err := strconv.ParseInt(serverIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid server id"), http.StatusBadRequest, "")
+	}
+
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	// Deactivate the server
+	if err := h.service.Deactivate(c.Request().Context(), serverID); err != nil {
+		return err
+	}
+
+	h.logger.Info(
+		"A server has been deactivated",
+		zap.Int64("Server ID", serverID),
+		zap.String("Deactivated By", user.Identity.Id),
+	)
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Server deactivated",
 	})
 }

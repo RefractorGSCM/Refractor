@@ -14,8 +14,8 @@ type ServerRepo struct {
 	mock.Mock
 }
 
-// Delete provides a mock function with given fields: ctx, id
-func (_m *ServerRepo) Delete(ctx context.Context, id int64) error {
+// Deactivate provides a mock function with given fields: ctx, id
+func (_m *ServerRepo) Deactivate(ctx context.Context, id int64) error {
 	ret := _m.Called(ctx, id)
 
 	var r0 error
