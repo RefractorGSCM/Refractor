@@ -25,5 +25,6 @@ CREATE TABLE IF NOT EXISTS Groups(
     ModifiedAt TIMESTAMP
 );
 
+DROP TRIGGER IF EXISTS update_groups_modat ON Groups;
 CREATE TRIGGER update_groups_modat BEFORE UPDATE ON Groups
     FOR EACH ROW EXECUTE PROCEDURE update_modified_at_column();

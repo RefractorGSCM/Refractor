@@ -22,9 +22,11 @@ CREATE TABLE IF NOT EXISTS Servers(
     Address VARCHAR(15) NOT NULL,
     RCONPort VARCHAR(5) NOT NULL,
     RCONPassword VARCHAR(128) NOT NULL,
+    Deactivated BOOLEAN DEFAULT FALSE,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ModifiedAt TIMESTAMP
 );
 
+DROP TRIGGER IF EXISTS update_servers_modat ON Groups;
 CREATE TRIGGER update_servers_modat BEFORE UPDATE ON Servers
     FOR EACH ROW EXECUTE PROCEDURE update_modified_at_column();
