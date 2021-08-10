@@ -73,6 +73,13 @@ func (s *serverService) Deactivate(c context.Context, id int64) error {
 	return s.repo.Deactivate(ctx, id)
 }
 
+func (s *serverService) Update(c context.Context, id int64, args domain.UpdateArgs) (*domain.Server, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.Update(ctx, id, args)
+}
+
 func (s *serverService) CreateServerData(id int64) error {
 	s.serverData[id] = &domain.ServerData{
 		NeedsUpdate:   true,

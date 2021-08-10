@@ -87,3 +87,26 @@ func (_m *ServerRepo) Store(ctx context.Context, server *domain.Server) error {
 
 	return r0
 }
+
+// Update provides a mock function with given fields: ctx, id, args
+func (_m *ServerRepo) Update(ctx context.Context, id int64, args domain.UpdateArgs) (*domain.Server, error) {
+	ret := _m.Called(ctx, id, args)
+
+	var r0 *domain.Server
+	if rf, ok := ret.Get(0).(func(context.Context, int64, domain.UpdateArgs) *domain.Server); ok {
+		r0 = rf(ctx, id, args)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Server)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int64, domain.UpdateArgs) error); ok {
+		r1 = rf(ctx, id, args)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
