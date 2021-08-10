@@ -46,3 +46,21 @@ func (body CreateServerParams) Validate() error {
 		validation.Field(&body.RCONPassword, validation.Required, validation.Length(1, 128)),
 	)
 }
+
+type UpdateServerParams struct {
+	Game         *string `json:"game" form:"game"`
+	Name         *string `json:"name" form:"name"`
+	Address      *string `json:"address" form:"address"`
+	RCONPort     *string `json:"rcon_port" form:"rcon_port"`
+	RCONPassword *string `json:"rcon_password" form:"rcon_password"`
+}
+
+func (body UpdateServerParams) Validate() error {
+	return ValidateStruct(&body,
+		validation.Field(&body.Game, validation.Length(1, 32)),
+		validation.Field(&body.Name, validation.Length(1, 20)),
+		validation.Field(&body.Address, is.IPv4),
+		validation.Field(&body.RCONPort, is.Port),
+		validation.Field(&body.RCONPassword, validation.Length(1, 128)),
+	)
+}
