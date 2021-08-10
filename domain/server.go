@@ -26,7 +26,7 @@ import (
 type Server struct {
 	ID           int64     `json:"id"`
 	Game         string    `json:"game"`
-	Name         string    `json:"string"`
+	Name         string    `json:"name"`
 	Address      string    `json:"address"`
 	RCONPort     string    `json:"rcon_port"`
 	RCONPassword string    `json:"-"`

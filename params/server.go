@@ -57,10 +57,10 @@ type UpdateServerParams struct {
 
 func (body UpdateServerParams) Validate() error {
 	return ValidateStruct(&body,
-		validation.Field(&body.Game, validation.Length(1, 32)),
-		validation.Field(&body.Name, validation.Length(1, 20)),
-		validation.Field(&body.Address, is.IPv4),
-		validation.Field(&body.RCONPort, is.Port),
-		validation.Field(&body.RCONPassword, validation.Length(1, 128)),
+		validation.Field(&body.Game, validation.By(stringPointerNotEmpty), validation.Length(1, 32)),
+		validation.Field(&body.Name, validation.By(stringPointerNotEmpty), validation.Length(1, 20)),
+		validation.Field(&body.Address, validation.By(stringPointerNotEmpty), is.IPv4),
+		validation.Field(&body.RCONPort, validation.By(stringPointerNotEmpty), is.Port),
+		validation.Field(&body.RCONPassword, validation.By(stringPointerNotEmpty), validation.Length(1, 128)),
 	)
 }
