@@ -19,6 +19,7 @@ package postgres
 
 import (
 	"Refractor/domain"
+	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
 	"github.com/pkg/errors"
@@ -30,12 +31,14 @@ const opTag = "ServerRepo.Postgres."
 type serverRepo struct {
 	db     *sql.DB
 	logger *zap.Logger
+	qb     domain.QueryBuilder
 }
 
 func NewServerRepo(db *sql.DB, logger *zap.Logger) domain.ServerRepo {
 	return &serverRepo{
 		db:     db,
 		logger: logger,
+		qb:     psqlqb.NewPostgresQueryBuilder(),
 	}
 }
 
@@ -152,6 +155,32 @@ func (r *serverRepo) Deactivate(ctx context.Context, id int64) error {
 	}
 
 	return nil
+}
+
+func (r *serverRepo) Update(ctx context.Context, id int64, args domain.UpdateArgs) (*domain.Server, error) {
+	const op = opTag + "Update"
+
+	query, values := r.qb.BuildUpdateQuery("Servers", id, "ServerID", args)
+
+	stmt, err := r.db.PrepareContext(ctx, query)
+	if err != nil {
+		r.logger.Error("Could not prepare statement", zap.String("query", query), zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	row := stmt.QueryRowContext(ctx, values...)
+
+	updatedServer := &domain.DBServer{}
+	if err := r.scanRow(row, updatedServer); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Wrap(domain.ErrNotFound, op)
+		}
+
+		r.logger.Error("Could not scan updated server", zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	return updatedServer.Server(), nil
 }
 
 // Scan helpers

@@ -107,4 +107,44 @@ func Test(t *testing.T) {
 			})
 		})
 	})
+
+	g.Describe("Update()", func() {
+		var updatedServer *domain.Server
+
+		g.BeforeEach(func() {
+			updatedServer = &domain.Server{
+				ID:           1,
+				Game:         "Mock",
+				Name:         "Updated Name",
+				Address:      "127.0.0.1",
+				RCONPort:     "25575",
+				RCONPassword: "password",
+				Deactivated:  false,
+				CreatedAt:    time.Time{},
+				ModifiedAt:   time.Time{},
+			}
+		})
+
+		g.Describe("Target server found", func() {
+			g.BeforeEach(func() {
+				mockRepo.On("Update", mock.Anything, mock.AnythingOfType("int64"),
+					mock.AnythingOfType("domain.UpdateArgs")).Return(updatedServer, nil)
+			})
+
+			g.It("Should not return an error", func() {
+				_, err := service.Update(ctx, 1, domain.UpdateArgs{})
+
+				Expect(err).To(BeNil())
+				mockRepo.AssertExpectations(t)
+			})
+
+			g.It("Should return the updated server", func() {
+				updated, err := service.Update(ctx, 1, domain.UpdateArgs{})
+
+				Expect(err).To(BeNil())
+				Expect(updated).To(Equal(updatedServer))
+				mockRepo.AssertExpectations(t)
+			})
+		})
+	})
 }

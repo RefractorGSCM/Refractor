@@ -82,6 +82,7 @@ type ServerRepo interface {
 	GetByID(ctx context.Context, id int64) (*Server, error)
 	GetAll(ctx context.Context) ([]*Server, error)
 	Deactivate(ctx context.Context, id int64) error
+	Update(ctx context.Context, id int64, args UpdateArgs) (*Server, error)
 }
 
 type ServerService interface {
@@ -92,4 +93,5 @@ type ServerService interface {
 	CreateServerData(id int64) error
 	GetAllServerData() ([]*ServerData, error)
 	GetServerData(id int64) (*ServerData, error)
+	Update(c context.Context, id int64, args UpdateArgs) (*Server, error)
 }
