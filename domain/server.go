@@ -70,6 +70,7 @@ func (dbs DBServer) Server() *Server {
 }
 
 type ServerData struct {
+	NeedsUpdate   bool
 	ServerID      int64
 	Status        string
 	PlayerCount   int
@@ -88,4 +89,7 @@ type ServerService interface {
 	GetByID(c context.Context, id int64) (*Server, error)
 	GetAll(c context.Context) ([]*Server, error)
 	Deactivate(c context.Context, id int64) error
+	CreateServerData(id int64) error
+	GetAllServerData() ([]*ServerData, error)
+	GetServerData(id int64) (*ServerData, error)
 }

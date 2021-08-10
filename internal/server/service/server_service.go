@@ -20,18 +20,21 @@ package service
 import (
 	"Refractor/domain"
 	"context"
+	"fmt"
 	"time"
 )
 
 type serverService struct {
-	repo    domain.ServerRepo
-	timeout time.Duration
+	repo       domain.ServerRepo
+	timeout    time.Duration
+	serverData map[int64]*domain.ServerData
 }
 
 func NewServerService(repo domain.ServerRepo, timeout time.Duration) domain.ServerService {
 	return &serverService{
-		repo:    repo,
-		timeout: timeout,
+		repo:       repo,
+		timeout:    timeout,
+		serverData: map[int64]*domain.ServerData{},
 	}
 }
 
@@ -68,4 +71,35 @@ func (s *serverService) Deactivate(c context.Context, id int64) error {
 	defer cancel()
 
 	return s.repo.Deactivate(ctx, id)
+}
+
+func (s *serverService) CreateServerData(id int64) error {
+	s.serverData[id] = &domain.ServerData{
+		NeedsUpdate:   true,
+		ServerID:      id,
+		PlayerCount:   0,
+		OnlinePlayers: map[string]*domain.Player{},
+	}
+
+	return nil
+}
+
+func (s *serverService) GetAllServerData() ([]*domain.ServerData, error) {
+	var allData []*domain.ServerData
+
+	for _, data := range s.serverData {
+		allData = append(allData, data)
+	}
+
+	return allData, nil
+}
+
+func (s *serverService) GetServerData(id int64) (*domain.ServerData, error) {
+	data := s.serverData[id]
+
+	if data == nil {
+		return nil, fmt.Errorf("server data not found")
+	}
+
+	return data, nil
 }
