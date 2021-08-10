@@ -20,8 +20,10 @@ package params
 import (
 	"Refractor/domain"
 	"encoding/json"
+	"fmt"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"net/http"
+	"strings"
 )
 
 // ValidateStruct is a wrapper function which calls the wrapError function around validation.ValidateStruct.
@@ -56,4 +58,21 @@ func wrapError(err error) error {
 	}
 
 	return httpError
+}
+
+// stringPointerNotEmpty is a custom validation rule which first checks if the string pointer is nil. If it is, it does
+// not return an error since this is expected behaviour. If it's not nil, it checks if it's empty. If it isn't empty, it
+// does not return an error. If it is empty, it returns an error.
+func stringPointerNotEmpty(val interface{}) error {
+	str, _ := val.(*string)
+
+	if str == nil {
+		return nil
+	}
+
+	if strings.TrimSpace(*str) == "" {
+		return fmt.Errorf("cannot be an empty string")
+	}
+
+	return nil
 }
