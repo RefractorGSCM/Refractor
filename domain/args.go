@@ -17,5 +17,35 @@
 
 package domain
 
+import (
+	"fmt"
+	"strings"
+)
+
 type UpdateArgs map[string]interface{}
 type FindArgs map[string]interface{}
+
+func (args UpdateArgs) FilterEmptyStrings() UpdateArgs {
+	for key, val := range args {
+		fmt.Println(key, val)
+		var value string
+
+		// Check if this value is a string or a string pointer. If it isn't, skip it.
+		str, ok := val.(string)
+		if ok {
+			value = str
+		} else {
+			strPtr, ok := val.(*string)
+			if ok {
+				value = *strPtr
+			}
+		}
+
+		// If this value is a string, check if it's empty. If it is, remove it from the map.
+		if strings.TrimSpace(value) == "" {
+			delete(args, key)
+		}
+	}
+
+	return args
+}

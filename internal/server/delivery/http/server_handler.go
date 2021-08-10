@@ -23,6 +23,7 @@ import (
 	"Refractor/params"
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
+	"Refractor/pkg/structutils"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -55,6 +56,7 @@ func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, a domain.A
 	serverGroup.GET("/", handler.GetServers)
 	serverGroup.POST("/", handler.CreateServer, enforcer.CheckAuth(authcheckers.RequireAdmin))
 	serverGroup.PATCH("/deactivate/:id", handler.DeactivateServer, enforcer.CheckAuth(authcheckers.RequireAdmin))
+	serverGroup.PATCH("/:id", handler.UpdateServer, enforcer.CheckAuth(authcheckers.RequireAdmin))
 }
 
 func (h *serverHandler) CreateServer(c echo.Context) error {
@@ -169,5 +171,61 @@ func (h *serverHandler) DeactivateServer(c echo.Context) error {
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
 		Message: "Server deactivated",
+	})
+}
+
+func (h *serverHandler) UpdateServer(c echo.Context) error {
+	serverIDString := c.Param("id")
+
+	serverID, err := strconv.ParseInt(serverIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid server id"), http.StatusBadRequest, "")
+	}
+
+	// Validate request body
+	var body params.UpdateServerParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	// Get update args
+	updateArgs, err := structutils.GetNonNilFieldMap(body)
+	if err != nil {
+		return err
+	}
+
+	if len(updateArgs) < 1 {
+		return c.JSON(http.StatusBadRequest, &domain.Response{
+			Success: false,
+			Message: "No update fields provided",
+		})
+	}
+
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	// Update the server
+	updated, err := h.service.Update(c.Request().Context(), serverID, updateArgs)
+	if err != nil {
+		return err
+	}
+
+	h.logger.Info(
+		"A server has been updated",
+		zap.Int64("Server ID", serverID),
+		zap.Any("Update Args", updateArgs),
+		zap.String("Updated By", user.Identity.Id),
+	)
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Server updated",
+		Payload: updated,
 	})
 }
