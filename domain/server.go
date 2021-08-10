@@ -69,6 +69,13 @@ func (dbs DBServer) Server() *Server {
 	return s
 }
 
+type ServerData struct {
+	ServerID      int64
+	Status        string
+	PlayerCount   int
+	OnlinePlayers map[string]*Player
+}
+
 type ServerRepo interface {
 	Store(ctx context.Context, server *Server) error
 	GetByID(ctx context.Context, id int64) (*Server, error)
