@@ -55,10 +55,10 @@ type UpdateGroupParams struct {
 
 func (body UpdateGroupParams) Validate() error {
 	return ValidateStruct(&body,
-		validation.Field(&body.Name, validation.Length(1, 20)),
+		validation.Field(&body.Name, validation.By(stringPointerNotEmpty), validation.Length(1, 20)),
 		validation.Field(&body.Color, validation.Min(0), validation.Max(maxColor)),
 		validation.Field(&body.Position, validation.Min(1), validation.Max(math.MaxInt32)),
-		validation.Field(&body.Permissions, validation.Match(permissionsPattern)),
+		validation.Field(&body.Permissions, validation.By(stringPointerNotEmpty), validation.Match(permissionsPattern)),
 	)
 }
 

@@ -59,9 +59,9 @@ func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Aut
 	groupGroup.GET("/", handler.GetGroups, act)
 	groupGroup.GET("/permissions", handler.GetPermissions)
 	groupGroup.DELETE("/:id", handler.DeleteGroup, act, enforcer.CheckAuth(authcheckers.DenyAll))
-	groupGroup.PUT("/:id", handler.UpdateGroup, act, enforcer.CheckAuth(authcheckers.DenyAll))
-	groupGroup.PUT("/base", handler.UpdateBaseGroup, act, enforcer.CheckAuth(authcheckers.DenyAll))
-	groupGroup.PUT("/order", handler.ReorderGroups, act, enforcer.CheckAuth(authcheckers.DenyAll))
+	groupGroup.PATCH("/:id", handler.UpdateGroup, act, enforcer.CheckAuth(authcheckers.DenyAll))
+	groupGroup.PATCH("/base", handler.UpdateBaseGroup, act, enforcer.CheckAuth(authcheckers.DenyAll))
+	groupGroup.PATCH("/order", handler.ReorderGroups, act, enforcer.CheckAuth(authcheckers.DenyAll))
 	groupGroup.PUT("/users/add", handler.SetUserGroup(true), act, enforcer.CheckAuth(authcheckers.RequireAdmin))
 	groupGroup.PUT("/users/remove", handler.SetUserGroup(false), act, enforcer.CheckAuth(authcheckers.RequireAdmin))
 }
@@ -198,7 +198,6 @@ func (h *groupHandler) UpdateGroup(c echo.Context) error {
 
 	// Get update args
 	updateArgs, err := structutils.GetNonNilFieldMap(body)
-
 	if err != nil {
 		return err
 	}
