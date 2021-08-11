@@ -18,7 +18,7 @@ require (
 	github.com/ory/kratos-client-go v0.7.0-alpha.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/refractorgscm/rcon v0.1.2
+	github.com/refractorgscm/rcon v0.1.3
 	github.com/rumblefrog/go-a2s v1.0.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.18.1

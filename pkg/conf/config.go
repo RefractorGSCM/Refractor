@@ -19,6 +19,7 @@ package conf
 
 import (
 	"Refractor/pkg/env"
+	"fmt"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -35,6 +36,7 @@ type Config struct {
 	InitialUserEmail    string `mapstructure:"INITIAL_USER_EMAIL"`
 	InitialUserUsername string `mapstructure:"INITIAL_USER_USERNAME"`
 	SmtpConnectionUri   string `mapstructure:"SMTP_CONNECTION_URI"`
+	EncryptionKey       string `mapstructure:"ENCRYPTION_KEY"`
 }
 
 // LoadConfig reads configuration from a file or environment variables.
@@ -48,6 +50,7 @@ func LoadConfig() (*Config, error) {
 		RequireEnv("KRATOS_PUBLIC_ROOT").
 		RequireEnv("KRATOS_ADMIN_ROOT").
 		RequireEnv("SMTP_CONNECTION_URI").
+		RequireEnv("ENCRYPTION_KEY").
 		RequireEnv("INITIAL_USER_EMAIL").
 		RequireEnv("INITIAL_USER_USERNAME").
 		GetError()
@@ -63,6 +66,11 @@ func LoadConfig() (*Config, error) {
 		InitialUserEmail:    os.Getenv("INITIAL_USER_EMAIL"),
 		InitialUserUsername: os.Getenv("INITIAL_USER_USERNAME"),
 		SmtpConnectionUri:   os.Getenv("SMTP_CONNECTION_URI"),
+		EncryptionKey:       os.Getenv("ENCRYPTION_KEY"),
+	}
+
+	if len(config.EncryptionKey) != 32 {
+		return nil, fmt.Errorf("encryption key must be 32 bytes")
 	}
 
 	if os.Getenv("MODE") == "dev" {
