@@ -15,25 +15,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package domain
+package regexutils
 
-import "github.com/refractorgscm/rcon"
+import "regexp"
 
-type ClientCreator interface {
-	GetClientFromConfig(gameConfig *GameConfig, server *Server) (RCONClient, error)
-}
+func MapNamedMatches(pattern *regexp.Regexp, data string) map[string]string {
+	matches := pattern.FindStringSubmatch(data)
 
-type RCONClient interface {
-	ExecCommand(string) (string, error)
-	Connect() error
-	ListenForBroadcasts([]string, chan error)
-	SetBroadcastHandler(handlerFunc rcon.BroadcastHandlerFunc)
-	SetDisconnectHandler(handlerFunc rcon.DisconnectHandlerFunc)
-}
+	if len(matches) < 1 {
+		return nil
+	}
 
-type RCONService interface {
-	CreateClient(server *Server) error
-	GetClients() map[int64]RCONClient
-	DeleteClient(serverID int64)
-	GetServerClient(serverID int64) RCONClient
+	matches = matches[1:] // skip first match since it's the entire match, not just the submatches
+
+	namedMatches := map[string]string{}
+
+	for i, name := range pattern.SubexpNames() {
+		// skip the first global match
+		if i == 0 {
+			continue
+		}
+
+		namedMatches[name] = matches[i-1]
+	}
+
+	return namedMatches
 }

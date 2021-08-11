@@ -41,7 +41,7 @@ func NewMordhauGame(platform domain.Platform) domain.Game {
 		},
 		platform: platform,
 		cmdOutputPatterns: &domain.CommandOutputPatterns{
-			PlayerList: regexp.MustCompile("(?P<PlayFabID>[0-9A-Z]+),\\\\s(?P<Name>[\\\\S ]+),\\\\s(?P<Ping>\\\\d{1,4})\\\\sms,\\\\steam\\\\s(?P<Team>[0-9-]+)"),
+			PlayerList: regexp.MustCompile("(?P<PlayerID>[0-9A-Z]+),\\\\s(?P<Name>[\\\\S ]+),\\\\s(?P<Ping>\\\\d{1,4})\\\\sms,\\\\steam\\\\s(?P<Team>[0-9-]+)"),
 		},
 	}
 }
