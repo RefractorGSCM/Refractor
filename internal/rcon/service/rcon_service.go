@@ -110,6 +110,9 @@ func (s *rconService) getBroadcastHandler(serverID int64, gameConfig *domain.Gam
 func (s *rconService) getDisconnectHandler(serverID int64) func(error, bool) {
 	return func(err error, expected bool) {
 		s.logger.Warn("RCON client disconnected", zap.Int64("Server", serverID), zap.Bool("Expected", expected), zap.Error(err))
+
+		// Delete the client from the list of clients. Reconnection attempts will be made in the watchdog.
+		s.DeleteClient(serverID)
 	}
 }
 

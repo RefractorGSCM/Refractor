@@ -38,6 +38,9 @@ func NewMordhauGame(platform domain.Platform) domain.Game {
 			PlayerListPollingInterval: time.Hour * 1,
 			EnableChat:                true,
 			BroadcastPatterns:         map[string]*regexp.Regexp{},
+			IgnoredBroadcastPatterns: []*regexp.Regexp{
+				regexp.MustCompile("Keeping client alive for another [0-9]+ seconds"),
+			},
 		},
 		platform: platform,
 		cmdOutputPatterns: &domain.CommandOutputPatterns{

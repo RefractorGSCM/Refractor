@@ -29,6 +29,7 @@ import (
 	_groupRepo "Refractor/internal/group/repos/postgres"
 	_groupService "Refractor/internal/group/service"
 	"Refractor/internal/mail/service"
+	_rconService "Refractor/internal/rcon/service"
 	_serverHandler "Refractor/internal/server/delivery/http"
 	_postgresServerRepo "Refractor/internal/server/repos/postgres"
 	_serverService "Refractor/internal/server/service"
@@ -139,6 +140,13 @@ func main() {
 
 	userService := _userService.NewUserService(userMetaRepo, authRepo, groupRepo, authorizer, time.Second*2, logger)
 	_userHandler.ApplyUserHandler(apiGroup, userService, authService, authorizer, middlewareBundle, logger)
+
+	rconService := _rconService.NewRCONService(logger, gameService)
+
+	// Connect RCON clients for all existing servers
+	if err := SetupServerClients(rconService, serverService, logger); err != nil {
+		log.Fatalf("Could not set up RCON server clients. Error: %v", err)
+	}
 
 	// Setup complete. Begin serving requests.
 	logger.Info("Setup complete!")
@@ -292,6 +300,33 @@ func SetupInitialUser(authService domain.AuthService, groupRepo domain.GroupRepo
 		DenyOverrides:  "0",
 	}); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func SetupServerClients(rconService domain.RCONService, serverService domain.ServerService, log *zap.Logger) error {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*10)
+	defer cancel()
+
+	allServers, err := serverService.GetAll(ctx)
+	if err != nil {
+		log.Error("Could not get all servers", zap.Error(err))
+		return err
+	}
+
+	for _, server := range allServers {
+		if err := serverService.CreateServerData(server.ID); err != nil {
+			log.Error("Could not create server data", zap.Int64("Server", server.ID), zap.Error(err))
+			continue
+		}
+
+		if err := rconService.CreateClient(server); err != nil {
+			log.Warn("Could not connect RCON client", zap.Int64("Server", server.ID), zap.Error(err))
+			continue
+		}
+
+		log.Info("RCON client connected", zap.Int64("Server", server.ID))
 	}
 
 	return nil
