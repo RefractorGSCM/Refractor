@@ -19,6 +19,8 @@ package postgres
 
 import (
 	"Refractor/domain"
+	"Refractor/pkg/aeshelper"
+	"Refractor/pkg/conf"
 	"context"
 	"database/sql"
 	"fmt"
@@ -28,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 )
@@ -38,9 +41,19 @@ func Test(t *testing.T) {
 	// Special hook for gomega
 	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
 
+	var config = &conf.Config{
+		EncryptionKey: strings.Repeat("a", 32),
+	}
+
+	var password = "password"
+	var passwordEncrypted string
+	encrypted, _ := aeshelper.Encrypt([]byte("password"), config.EncryptionKey)
+	passwordEncrypted = string(encrypted)
+
 	g.Describe("Store()", func() {
 		var repo domain.ServerRepo
 		var mock sqlmock.Sqlmock
+		var mockServer *domain.Server
 		var db *sql.DB
 
 		g.BeforeEach(func() {
@@ -51,7 +64,19 @@ func Test(t *testing.T) {
 				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
 			}
 
-			repo = NewServerRepo(db, zap.NewNop())
+			repo = NewServerRepo(db, zap.NewNop(), config)
+
+			mockServer = &domain.Server{
+				ID:           1,
+				Game:         "Mock",
+				Name:         "Mock Server",
+				Address:      "127.0.0.1",
+				RCONPort:     "25575",
+				RCONPassword: password,
+				Deactivated:  false,
+				CreatedAt:    time.Time{},
+				ModifiedAt:   time.Time{},
+			}
 		})
 
 		g.After(func() {
@@ -67,8 +92,7 @@ func Test(t *testing.T) {
 			g.It("Should not return an error", func() {
 				mock.ExpectQuery("INSERT INTO Servers").WillReturnRows(sqlmock.NewRows([]string{"ServerID"}).AddRow(int64(1)))
 
-				server := &domain.Server{Name: "Test"}
-				err := repo.Store(context.TODO(), server)
+				err := repo.Store(context.TODO(), mockServer)
 
 				Expect(err).To(BeNil())
 				Expect(mock.ExpectationsWereMet()).To(BeNil())
@@ -77,10 +101,9 @@ func Test(t *testing.T) {
 			g.It("Should update the server to have the new ID", func() {
 				mock.ExpectQuery("INSERT INTO Servers").WillReturnRows(sqlmock.NewRows([]string{"ServerID"}).AddRow(int64(1)))
 
-				server := &domain.Server{Name: "Test"}
-				_ = repo.Store(context.TODO(), server)
+				_ = repo.Store(context.TODO(), mockServer)
 
-				Expect(server.ID).To(Equal(int64(1)))
+				Expect(mockServer.ID).To(Equal(int64(1)))
 				Expect(mock.ExpectationsWereMet()).To(BeNil())
 			})
 		})
@@ -98,7 +121,7 @@ func Test(t *testing.T) {
 					t.Fatalf("Could not create new sqlmocker. Error: %v", err)
 				}
 
-				repo = NewServerRepo(db, zap.NewNop())
+				repo = NewServerRepo(db, zap.NewNop(), config)
 
 				// All tests will call Prepare so we can set this here to avoid duplication
 				mock.ExpectPrepare("INSERT INTO Servers")
@@ -107,8 +130,7 @@ func Test(t *testing.T) {
 			g.It("Should return an error on SQL error", func() {
 				mock.ExpectQuery("INSERT INTO Servers").WillReturnError(fmt.Errorf(""))
 
-				server := &domain.Server{Name: "Test"}
-				err := repo.Store(context.TODO(), server)
+				err := repo.Store(context.TODO(), mockServer)
 
 				Expect(err).ToNot(BeNil())
 				Expect(mock.ExpectationsWereMet()).To(BeNil())
@@ -119,6 +141,7 @@ func Test(t *testing.T) {
 	g.Describe("GetByID()", func() {
 		var repo domain.ServerRepo
 		var mock sqlmock.Sqlmock
+		var mockServer *domain.Server
 		var db *sql.DB
 
 		g.BeforeEach(func() {
@@ -129,7 +152,19 @@ func Test(t *testing.T) {
 				t.Fatalf("Could not create new sqlmocker. Error: %v", err)
 			}
 
-			repo = NewServerRepo(db, zap.NewNop())
+			repo = NewServerRepo(db, zap.NewNop(), config)
+
+			mockServer = &domain.Server{
+				ID:           1,
+				Game:         "Mock",
+				Name:         "Mock Server",
+				Address:      "127.0.0.1",
+				RCONPort:     "25575",
+				RCONPassword: password,
+				Deactivated:  false,
+				CreatedAt:    time.Time{},
+				ModifiedAt:   time.Time{},
+			}
 		})
 
 		g.After(func() {
@@ -137,26 +172,13 @@ func Test(t *testing.T) {
 		})
 
 		g.Describe("A result was found", func() {
-			var mockServer *domain.Server
 			var mockRows *sqlmock.Rows
 
 			g.BeforeEach(func() {
-				mockServer = &domain.Server{
-					ID:           1,
-					Game:         "Mock",
-					Name:         "Mock Server",
-					Address:      "127.0.0.1",
-					RCONPort:     "25575",
-					RCONPassword: "password",
-					Deactivated:  false,
-					CreatedAt:    time.Time{},
-					ModifiedAt:   time.Time{},
-				}
-
 				mockRows = sqlmock.NewRows(
 					[]string{"ServerID", "Game", "Name", "Address", "RCONPort", "RCONPassword", "Deactivated", "CreatedAt", "ModifiedAt"}).
 					AddRow(mockServer.ID, mockServer.Game, mockServer.Name, mockServer.Address, mockServer.RCONPort,
-						mockServer.RCONPassword, mockServer.Deactivated, mockServer.CreatedAt, mockServer.ModifiedAt)
+						passwordEncrypted, mockServer.Deactivated, mockServer.CreatedAt, mockServer.ModifiedAt)
 			})
 
 			g.It("Should not return an error", func() {
@@ -170,8 +192,9 @@ func Test(t *testing.T) {
 			g.It("Should return the correct rows scanned to a server object", func() {
 				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers")).WillReturnRows(mockRows)
 
-				server, _ := repo.GetByID(context.TODO(), mockServer.ID)
+				server, err := repo.GetByID(context.TODO(), mockServer.ID)
 
+				Expect(err).To(BeNil())
 				Expect(server).ToNot(BeNil())
 				Expect(server).To(Equal(mockServer))
 				Expect(mock.ExpectationsWereMet()).To(BeNil())
@@ -204,7 +227,7 @@ func Test(t *testing.T) {
 				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
 			}
 
-			repo = NewServerRepo(db, zap.NewNop())
+			repo = NewServerRepo(db, zap.NewNop(), config)
 		})
 
 		g.Describe("Target server exists", func() {
@@ -245,7 +268,7 @@ func Test(t *testing.T) {
 				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
 			}
 
-			repo = NewServerRepo(db, zap.NewNop())
+			repo = NewServerRepo(db, zap.NewNop(), config)
 
 			mock.ExpectPrepare("UPDATE Servers SET")
 		})
@@ -261,7 +284,7 @@ func Test(t *testing.T) {
 					Name:         "Updated Name",
 					Address:      "127.0.0.1",
 					RCONPort:     "25575",
-					RCONPassword: "password",
+					RCONPassword: password,
 					Deactivated:  false,
 					CreatedAt:    time.Time{},
 					ModifiedAt:   time.Time{},
@@ -276,7 +299,7 @@ func Test(t *testing.T) {
 				mockRows := sqlmock.NewRows(
 					[]string{"ServerID", "Game", "Name", "Address", "RCONPort", "RCONPassword", "Deactivated", "CreatedAt", "ModifiedAt"}).
 					AddRow(us.ID, us.Game, us.Name, us.Address, us.RCONPort,
-						us.RCONPassword, us.Deactivated, us.CreatedAt, us.ModifiedAt)
+						passwordEncrypted, us.Deactivated, us.CreatedAt, us.ModifiedAt)
 
 				mock.ExpectQuery("UPDATE Servers SET").WillReturnRows(mockRows)
 			})
