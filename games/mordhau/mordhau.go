@@ -24,8 +24,9 @@ import (
 )
 
 type mordhau struct {
-	config   *domain.GameConfig
-	platform domain.Platform
+	config            *domain.GameConfig
+	platform          domain.Platform
+	cmdOutputPatterns *domain.CommandOutputPatterns
 }
 
 func NewMordhauGame(platform domain.Platform) domain.Game {
@@ -39,6 +40,9 @@ func NewMordhauGame(platform domain.Platform) domain.Game {
 			BroadcastPatterns:         map[string]*regexp.Regexp{},
 		},
 		platform: platform,
+		cmdOutputPatterns: &domain.CommandOutputPatterns{
+			PlayerList: regexp.MustCompile("(?P<PlayFabID>[0-9A-Z]+),\\\\s(?P<Name>[\\\\S ]+),\\\\s(?P<Ping>\\\\d{1,4})\\\\sms,\\\\steam\\\\s(?P<Team>[0-9-]+)"),
+		},
 	}
 }
 
@@ -56,4 +60,8 @@ func (g *mordhau) GetPlatform() domain.Platform {
 
 func (g *mordhau) GetPlayerListCommand() string {
 	return "PlayerList"
+}
+
+func (g *mordhau) GetCommandOutputPatterns() *domain.CommandOutputPatterns {
+	return g.cmdOutputPatterns
 }

@@ -28,6 +28,11 @@ type Game interface {
 	GetConfig() *GameConfig
 	GetPlatform() Platform
 	GetPlayerListCommand() string
+	GetCommandOutputPatterns() *CommandOutputPatterns
+}
+
+type CommandOutputPatterns struct {
+	PlayerList *regexp.Regexp // required
 }
 
 type GameConfig struct {
