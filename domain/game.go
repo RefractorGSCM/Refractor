@@ -27,6 +27,7 @@ type Game interface {
 	GetName() string
 	GetConfig() *GameConfig
 	GetPlatform() Platform
+	GetPlayerListCommand() string
 }
 
 type GameConfig struct {
@@ -44,6 +45,10 @@ type GameConfig struct {
 	// parse data inside the broadcasts. If EnableBroadcasts is false, this can safely be set to nil or unset.
 	BroadcastPatterns map[string]*regexp.Regexp
 
+	// IgnoredBroadcastPatterns is a slice containing the regex patterns of messages which could come over the broadcast
+	// handler which should be ignored.
+	IgnoredBroadcastPatterns []*regexp.Regexp
+
 	// EnableLiveChat enables live chat for this game if set to true.
 	EnableChat bool
 
@@ -52,7 +57,23 @@ type GameConfig struct {
 	// For broadcast enabled games, setting this interval to 1 hour should be plenty sufficient. If the game's
 	// broadcast system is very stable then you may not need this at all. If EnableBroadcasts is set to false, you
 	// must set PlayListPollingInterval or else the player list will never be updated!
-	PlayListPollingInterval time.Duration
+	PlayerListPollingInterval time.Duration
+}
+
+func (gc GameConfig) AlivePingEnabled() bool {
+	if gc.AlivePingInterval != 0 {
+		return true
+	}
+
+	return false
+}
+
+func (gc GameConfig) PlayerListPollingEnabled() bool {
+	if gc.PlayerListPollingInterval != 0 {
+		return true
+	}
+
+	return false
 }
 
 type GameService interface {

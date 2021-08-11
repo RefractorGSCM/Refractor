@@ -31,12 +31,12 @@ type mordhau struct {
 func NewMordhauGame(platform domain.Platform) domain.Game {
 	return &mordhau{
 		config: &domain.GameConfig{
-			UseRCON:                 true,
-			AlivePingInterval:       time.Second * 30,
-			EnableBroadcasts:        true,
-			PlayListPollingInterval: time.Hour * 1,
-			EnableChat:              true,
-			BroadcastPatterns:       map[string]*regexp.Regexp{},
+			UseRCON:                   true,
+			AlivePingInterval:         time.Second * 30,
+			EnableBroadcasts:          true,
+			PlayerListPollingInterval: time.Hour * 1,
+			EnableChat:                true,
+			BroadcastPatterns:         map[string]*regexp.Regexp{},
 		},
 		platform: platform,
 	}
@@ -52,4 +52,8 @@ func (g *mordhau) GetConfig() *domain.GameConfig {
 
 func (g *mordhau) GetPlatform() domain.Platform {
 	return g.platform
+}
+
+func (g *mordhau) GetPlayerListCommand() string {
+	return "PlayerList"
 }
