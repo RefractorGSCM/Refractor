@@ -19,6 +19,8 @@ package postgres
 
 import (
 	"Refractor/domain"
+	"Refractor/pkg/aeshelper"
+	"Refractor/pkg/conf"
 	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
@@ -32,13 +34,15 @@ type serverRepo struct {
 	db     *sql.DB
 	logger *zap.Logger
 	qb     domain.QueryBuilder
+	conf   *conf.Config
 }
 
-func NewServerRepo(db *sql.DB, logger *zap.Logger) domain.ServerRepo {
+func NewServerRepo(db *sql.DB, logger *zap.Logger, conf *conf.Config) domain.ServerRepo {
 	return &serverRepo{
 		db:     db,
 		logger: logger,
 		qb:     psqlqb.NewPostgresQueryBuilder(),
+		conf:   conf,
 	}
 }
 
@@ -90,7 +94,14 @@ func (r *serverRepo) Store(ctx context.Context, server *domain.Server) error {
 		return errors.Wrap(err, op)
 	}
 
-	row := stmt.QueryRowContext(ctx, server.Game, server.Name, server.Address, server.RCONPort, server.RCONPassword)
+	// Encrypt the server's RCON password
+	encrypted, err := aeshelper.Encrypt([]byte(server.RCONPassword), r.conf.EncryptionKey)
+	if err != nil {
+		r.logger.Error("Could not encrypt server RCON password", zap.Error(err))
+		return errors.Wrap(err, op)
+	}
+
+	row := stmt.QueryRowContext(ctx, server.Game, server.Name, server.Address, server.RCONPort, encrypted)
 
 	var id int64
 	if err := row.Scan(&id); err != nil {
@@ -160,6 +171,17 @@ func (r *serverRepo) Deactivate(ctx context.Context, id int64) error {
 func (r *serverRepo) Update(ctx context.Context, id int64, args domain.UpdateArgs) (*domain.Server, error) {
 	const op = opTag + "Update"
 
+	// If the RCON password is being updated, encrypt it.
+	if args["RCONPassword"] != nil {
+		encrypted, err := aeshelper.Encrypt([]byte(*args["RCONPassword"].(*string)), r.conf.EncryptionKey)
+		if err != nil {
+			r.logger.Error("Could not encrypt server RCON password", zap.Error(err))
+			return nil, errors.Wrap(err, op)
+		}
+
+		args["RCONPassword"] = encrypted
+	}
+
 	query, values := r.qb.BuildUpdateQuery("Servers", id, "ServerID", args)
 
 	stmt, err := r.db.PrepareContext(ctx, query)
@@ -185,9 +207,35 @@ func (r *serverRepo) Update(ctx context.Context, id int64, args domain.UpdateArg
 
 // Scan helpers
 func (r *serverRepo) scanRow(row *sql.Row, server *domain.DBServer) error {
-	return row.Scan(&server.ID, &server.Game, &server.Name, &server.Address, &server.RCONPort, &server.RCONPassword, &server.Deactivated, &server.CreatedAt, &server.ModifiedAt)
+	err := row.Scan(&server.ID, &server.Game, &server.Name, &server.Address, &server.RCONPort, &server.RCONPassword, &server.Deactivated, &server.CreatedAt, &server.ModifiedAt)
+	if err != nil {
+		return err
+	}
+
+	// Decrypt the server's RCON password
+	decrypted, err := aeshelper.Decrypt([]byte(server.RCONPassword), r.conf.EncryptionKey)
+	if err != nil {
+		r.logger.Error("Could not decrypt server RCON password", zap.Error(err))
+		return err
+	}
+
+	server.RCONPassword = string(decrypted)
+	return nil
 }
 
 func (r *serverRepo) scanRows(rows *sql.Rows, server *domain.DBServer) error {
-	return rows.Scan(&server.ID, &server.Game, &server.Name, &server.Address, &server.RCONPort, &server.RCONPassword, &server.Deactivated, &server.CreatedAt, &server.ModifiedAt)
+	err := rows.Scan(&server.ID, &server.Game, &server.Name, &server.Address, &server.RCONPort, &server.RCONPassword, &server.Deactivated, &server.CreatedAt, &server.ModifiedAt)
+	if err != nil {
+		return err
+	}
+
+	// Decrypt the server's RCON password
+	decrypted, err := aeshelper.Decrypt([]byte(server.RCONPassword), r.conf.EncryptionKey)
+	if err != nil {
+		r.logger.Error("Could not decrypt server RCON password", zap.Error(err))
+		return err
+	}
+
+	server.RCONPassword = string(decrypted)
+	return nil
 }

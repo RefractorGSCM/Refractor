@@ -134,7 +134,7 @@ func main() {
 	gameService := _gameService.NewGameService()
 	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
 
-	serverRepo := _postgresServerRepo.NewServerRepo(db, logger)
+	serverRepo := _postgresServerRepo.NewServerRepo(db, logger, config)
 	serverService := _serverService.NewServerService(serverRepo, time.Second*2)
 	_serverHandler.ApplyServerHandler(apiGroup, serverService, authorizer, middlewareBundle, logger)
 
