@@ -36,4 +36,5 @@ type RCONService interface {
 	GetClients() map[int64]RCONClient
 	DeleteClient(serverID int64)
 	GetServerClient(serverID int64) RCONClient
+	StartReconnectRoutine(server *Server, data *ServerData)
 }

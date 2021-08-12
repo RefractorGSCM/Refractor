@@ -70,11 +70,12 @@ func (dbs DBServer) Server() *Server {
 }
 
 type ServerData struct {
-	NeedsUpdate   bool
-	ServerID      int64
-	Status        string
-	PlayerCount   int
-	OnlinePlayers map[string]*Player
+	NeedsUpdate         bool
+	ServerID            int64
+	Status              string
+	PlayerCount         int
+	OnlinePlayers       map[string]*Player
+	ReconnectInProgress bool
 }
 
 type ServerRepo interface {

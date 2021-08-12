@@ -36,6 +36,7 @@ import (
 	_userHandler "Refractor/internal/user/delivery/http"
 	_userRepo "Refractor/internal/user/repos/postgres"
 	_userService "Refractor/internal/user/service"
+	"Refractor/internal/watchdog"
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/conf"
@@ -147,6 +148,14 @@ func main() {
 	if err := SetupServerClients(rconService, serverService, logger); err != nil {
 		log.Fatalf("Could not set up RCON server clients. Error: %v", err)
 	}
+
+	// Start watchdog
+	go func() {
+		err := watchdog.StartRCONServerWatchdog(rconService, serverService, logger)
+		if err != nil {
+			log.Fatalf("Could not start RCON server watchdog. Error: %v", err)
+		}
+	}()
 
 	// Setup complete. Begin serving requests.
 	logger.Info("Setup complete!")
