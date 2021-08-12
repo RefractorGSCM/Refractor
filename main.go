@@ -37,6 +37,8 @@ import (
 	_userRepo "Refractor/internal/user/repos/postgres"
 	_userService "Refractor/internal/user/service"
 	"Refractor/internal/watchdog"
+	_websocketHandler "Refractor/internal/websocket/delivery/http"
+	_websocketService "Refractor/internal/websocket/service"
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/conf"
@@ -143,6 +145,10 @@ func main() {
 	_userHandler.ApplyUserHandler(apiGroup, userService, authService, authorizer, middlewareBundle, logger)
 
 	rconService := _rconService.NewRCONService(logger, gameService)
+
+	websocketService := _websocketService.NewWebsocketService(logger)
+	go websocketService.StartPool()
+	_websocketHandler.ApplyWebsocketHandler(apiServer, websocketService, middlewareBundle, logger)
 
 	// Connect RCON clients for all existing servers
 	if err := SetupServerClients(rconService, serverService, logger); err != nil {
