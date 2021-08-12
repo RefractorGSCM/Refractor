@@ -22,6 +22,8 @@ import (
 	"Refractor/internal/rcon/clientcreator"
 	"Refractor/pkg/regexutils"
 	"go.uber.org/zap"
+	"net"
+	"time"
 )
 
 type rconService struct {
@@ -90,7 +92,7 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 }
 
 func (s *rconService) GetClients() map[int64]domain.RCONClient {
-	panic("implement me")
+	return s.clients
 }
 
 func (s *rconService) GetServerClient(serverID int64) domain.RCONClient {
@@ -151,4 +153,58 @@ func (s *rconService) getOnlinePlayers(serverID int64, game domain.Game) ([]*onl
 	}
 
 	return onlinePlayers, nil
+}
+
+func (s *rconService) StartReconnectRoutine(server *domain.Server, data *domain.ServerData) {
+	var delay = time.Second * 5
+
+	for {
+		time.Sleep(delay)
+
+		if err := s.CreateClient(server); err != nil {
+			switch errType := err.(type) {
+			case *net.OpError:
+				// If this error is a dial error, we don't log it. If it isn't, we do want to log it.
+				// We disregard dial errors because we can assume this means that the server is offline (in most cases).
+				if errType.Op != "dial" {
+					s.logger.Warn(
+						"An RCON reconnect routine connection error has occurred",
+						zap.Int64("Server", server.ID),
+						zap.Error(err),
+					)
+				}
+				break
+			default:
+				s.logger.Error(
+					"RCON reconnect routine could not create a new client for server",
+					zap.Int64("Server", server.ID),
+					zap.Error(err),
+				)
+				continue
+			}
+		} else {
+			s.logger.Info(
+				"RCON connection established to server",
+				zap.Int64("Server", server.ID),
+			)
+
+			data.ReconnectInProgress = false
+			break
+		}
+
+		if delay < time.Minute*2 {
+			delay += delay / 2
+		} else {
+			delay = time.Minute * 2
+		}
+
+		delay = delay.Round(time.Second)
+		s.logger.Info(
+			"Could not establish connection to server. Retrying later.",
+			zap.Int64("Server", server.ID),
+			zap.Duration("Retrying In", delay),
+		)
+	}
+
+	s.logger.Info("Reconnect routine terminated", zap.Int64("Server", server.ID))
 }
