@@ -348,6 +348,156 @@ func TestAuthorizer(t *testing.T) {
 			})
 		})
 
+		g.Describe("computePermissionsServer()", func() {
+			var repo *mocks.GroupRepo
+			var a *authorizer
+
+			g.BeforeEach(func() {
+				repo = &mocks.GroupRepo{}
+
+				a = &authorizer{
+					groupRepo: repo,
+				}
+			})
+
+			g.Describe("Permissions computed successfully", func() {
+				var baseGroup *domain.Group
+				var userGroups []*domain.Group
+				var serverID int64
+
+				g.BeforeEach(func() {
+					serverID = 1
+
+					// base group (everyone) setup
+					baseGroupPerms := bitperms.NewPermissionBuilder().
+						AddFlag(bitperms.GetFlag(0)).
+						AddFlag(bitperms.GetFlag(7)).
+						GetPermission()
+
+					baseGroup = &domain.Group{
+						ID:          1, // BASE GROUP MUST BE ID 1
+						Name:        "Everyone",
+						Color:       1234,
+						Position:    math.MaxInt32,
+						Permissions: baseGroupPerms.String(),
+					}
+
+					repo.On("GetBaseGroup", mock.Anything).Return(baseGroup, nil)
+
+					// extra groups setup
+					groupPerms := bitperms.NewPermissionBuilder().
+						AddFlag(bitperms.GetFlag(0)).
+						AddFlag(bitperms.GetFlag(1)).
+						GetPermission()
+
+					userGroups = []*domain.Group{}
+					userGroups = append(userGroups, &domain.Group{
+						ID:          2,
+						Name:        "Group 2",
+						Color:       1234,
+						Position:    4,
+						Permissions: groupPerms.String(),
+					})
+
+					groupPerms = bitperms.NewPermissionBuilder().
+						AddFlag(bitperms.GetFlag(1)).
+						AddFlag(bitperms.GetFlag(3)).
+						AddFlag(bitperms.GetFlag(4)).
+						AddFlag(bitperms.GetFlag(5)).
+						GetPermission()
+
+					userGroups = append(userGroups, &domain.Group{
+						ID:          3,
+						Name:        "Group 3",
+						Color:       1234,
+						Position:    3,
+						Permissions: groupPerms.String(),
+					})
+
+					repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(userGroups, nil)
+
+					// group server overrides setup
+					groupOverrides := map[int64]*domain.Overrides{
+						userGroups[0].ID: &domain.Overrides{
+							AllowOverrides: bitperms.NewPermissionBuilder().
+								AddFlag(bitperms.GetFlag(1)).
+								AddFlag(bitperms.GetFlag(5)).
+								AddFlag(bitperms.GetFlag(6)).
+								GetPermission().String(),
+							DenyOverrides: bitperms.NewPermissionBuilder().
+								AddFlag(bitperms.GetFlag(5)).
+								AddFlag(bitperms.GetFlag(6)).
+								AddFlag(bitperms.GetFlag(0)).
+								AddFlag(bitperms.GetFlag(7)).
+								GetPermission().String(),
+						},
+					}
+
+					repo.On("GetServerOverrides", mock.Anything, serverID, userGroups[0].ID).Return(groupOverrides[userGroups[0].ID], nil)
+					repo.On("GetServerOverrides", mock.Anything, serverID, userGroups[1].ID).Return(nil, nil)
+
+					// user overrides setup
+					denyOverPerms := bitperms.NewPermissionBuilder().
+						AddFlag(bitperms.GetFlag(2)).
+						AddFlag(bitperms.GetFlag(3)).
+						GetPermission()
+
+					allowOverPerms := bitperms.NewPermissionBuilder().
+						AddFlag(bitperms.GetFlag(1)).
+						AddFlag(bitperms.GetFlag(2)).
+						AddFlag(bitperms.GetFlag(5)).
+						GetPermission()
+
+					_userOverrides = &domain.Overrides{
+						AllowOverrides: allowOverPerms.String(),
+						DenyOverrides:  denyOverPerms.String(),
+					}
+
+					repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
+
+					// Here is a visual representation of the changes made to the computed permissions at each step of
+					// the server scoped permission computation.
+					// 1 means that a flag is on. If it goes from 1 to 0, it means the current step turned it off.
+					//                    |            Flags              |
+					// Step               | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+					// ----------------------------------------------------
+					// Base group perms   | 1 |   |   |   |   |   |   | 1 |
+					// Group 2 perms      | 1 | 1 |   |   |   |   |   | 1 |
+					// Group 3 perms      | 1 | 1 |   | 1 | 1 | 1 |   | 1 |
+					// Group 2 deny ovr.  | 0 | 1 |   | 1 | 1 | 0 |   | 0 |
+					// Group 2 allow ovr. |   | 1 |   | 1 | 1 | 1 | 1 |   |
+					// User deny ovr.     |   | 1 |   | 0 | 1 | 1 | 1 |   |
+					// User allow ovr.    |   | 1 | 1 |   | 1 | 1 | 1 |   |
+					// ----------------------------------------------------
+					// Final on flags:          1   2       4   5   6
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := a.computePermissionsServer(context.TODO(), "userid", serverID)
+
+					Expect(err).To(BeNil())
+					repo.AssertExpectations(t)
+				})
+
+				g.It("Should return the properly computed permissions value", func() {
+					computed, _ := a.computePermissionsServer(context.TODO(), "userid", serverID)
+
+					expected := bitperms.NewPermissionBuilder().
+						AddFlag(bitperms.GetFlag(1)).
+						AddFlag(bitperms.GetFlag(2)).
+						AddFlag(bitperms.GetFlag(4)).
+						AddFlag(bitperms.GetFlag(5)).
+						AddFlag(bitperms.GetFlag(6)).
+						GetPermission().Value()
+
+					fmt.Printf("Computed Value: %.12b\n", computed.Value())
+					fmt.Printf("Expected Value: %.12b\n", expected)
+
+					Expect(computed.Value()).To(Equal(expected))
+				})
+			})
+		})
+
 		g.Describe("hasPermissionRefractor()", func() {
 			var repo *mocks.GroupRepo
 			var a *authorizer
