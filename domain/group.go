@@ -96,8 +96,6 @@ type GroupRepo interface {
 	GetAll(ctx context.Context) ([]*Group, error)
 	GetByID(ctx context.Context, id int64) (*Group, error)
 	GetUserGroups(ctx context.Context, userID string) ([]*Group, error)
-	GetUserOverrides(ctx context.Context, userID string) (*Overrides, error)
-	SetUserOverrides(ctx context.Context, userID string, overrides *Overrides) error
 	GetBaseGroup(ctx context.Context) (*Group, error)
 	SetBaseGroup(ctx context.Context, group *Group) error
 	Delete(ctx context.Context, id int64) error
@@ -105,6 +103,10 @@ type GroupRepo interface {
 	Reorder(ctx context.Context, newPositions []*GroupReorderInfo) error
 	AddUserGroup(ctx context.Context, userID string, groupID int64) error
 	RemoveUserGroup(ctx context.Context, userID string, groupID int64) error
+	GetUserOverrides(ctx context.Context, userID string) (*Overrides, error)
+	SetUserOverrides(ctx context.Context, userID string, overrides *Overrides) error
+	GetServerOverrides(ctx context.Context, serverID int64, groupID int64) (*Overrides, error)
+	SetServerOverrides(ctx context.Context, serverID int64, groupID int64, overrides *Overrides) error
 }
 
 type GroupSetContext struct {

@@ -170,43 +170,6 @@ func (r *groupRepo) GetUserGroups(ctx context.Context, userID string) ([]*domain
 	return nil, domain.ErrNotFound
 }
 
-func (r *groupRepo) SetUserOverrides(ctx context.Context, userID string, overrides *domain.Overrides) error {
-	const op = opTag + "SetUserOverrides"
-
-	query := `INSERT INTO UserOverrides (UserID, AllowOverrides, DenyOverrides) VALUES ($1, $2, $3)
-				ON CONFLICT (UserID) DO UPDATE SET AllowOverrides = $4, DenyOverrides = $5;`
-
-	_, err := r.db.ExecContext(ctx, query, userID, overrides.AllowOverrides, overrides.DenyOverrides,
-		overrides.AllowOverrides, overrides.DenyOverrides)
-	if err != nil {
-		r.logger.Error("Could not execute query", zap.String("query", query), zap.Error(err))
-		return errors.Wrap(err, op)
-	}
-
-	return nil
-}
-
-func (r *groupRepo) GetUserOverrides(ctx context.Context, userID string) (*domain.Overrides, error) {
-	const op = opTag + "GetUserOverrides"
-
-	query := "SELECT AllowOverrides, DenyOverrides FROM UserOverrides WHERE UserID = $1 LIMIT 1;"
-
-	row := r.db.QueryRowContext(ctx, query, userID)
-
-	overrides := &domain.Overrides{}
-
-	if err := row.Scan(&overrides.AllowOverrides, &overrides.DenyOverrides); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.Wrap(domain.ErrNotFound, op)
-		}
-
-		r.logger.Error("Could not scan user overrides", zap.Error(err))
-		return nil, errors.Wrap(err, op)
-	}
-
-	return overrides, nil
-}
-
 var defaultDefaultGroup = &domain.Group{
 	ID:          -1,
 	Name:        "Everyone",
@@ -401,6 +364,80 @@ func (r *groupRepo) RemoveUserGroup(ctx context.Context, userID string, groupID 
 	}
 
 	return nil
+}
+
+func (r *groupRepo) SetUserOverrides(ctx context.Context, userID string, overrides *domain.Overrides) error {
+	const op = opTag + "SetUserOverrides"
+
+	query := `INSERT INTO UserOverrides (UserID, AllowOverrides, DenyOverrides) VALUES ($1, $2, $3)
+				ON CONFLICT (UserID) DO UPDATE SET AllowOverrides = $4, DenyOverrides = $5;`
+
+	_, err := r.db.ExecContext(ctx, query, userID, overrides.AllowOverrides, overrides.DenyOverrides,
+		overrides.AllowOverrides, overrides.DenyOverrides)
+	if err != nil {
+		r.logger.Error("Could not execute query", zap.String("query", query), zap.Error(err))
+		return errors.Wrap(err, op)
+	}
+
+	return nil
+}
+
+func (r *groupRepo) GetUserOverrides(ctx context.Context, userID string) (*domain.Overrides, error) {
+	const op = opTag + "GetUserOverrides"
+
+	query := "SELECT AllowOverrides, DenyOverrides FROM UserOverrides WHERE UserID = $1 LIMIT 1;"
+
+	row := r.db.QueryRowContext(ctx, query, userID)
+
+	overrides := &domain.Overrides{}
+
+	if err := row.Scan(&overrides.AllowOverrides, &overrides.DenyOverrides); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Wrap(domain.ErrNotFound, op)
+		}
+
+		r.logger.Error("Could not scan user overrides", zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	return overrides, nil
+}
+
+func (r *groupRepo) SetServerOverrides(ctx context.Context, serverID int64, groupID int64, overrides *domain.Overrides) error {
+	const op = opTag + "SetServerOverrides"
+
+	query := `INSERT INTO ServerGroups (ServerID, GroupID, AllowOverrides, DenyOverrides) VALUES ($1, $2, $3)
+				ON CONFLICT (ServerID, GroupID) DO UPDATE SET AllowOverrides = $4, DenyOverrides = $5;`
+
+	_, err := r.db.ExecContext(ctx, query, serverID, groupID, overrides.AllowOverrides, overrides.DenyOverrides,
+		overrides.AllowOverrides, overrides.DenyOverrides)
+	if err != nil {
+		r.logger.Error("Could not execute query", zap.String("query", query), zap.Error(err))
+		return errors.Wrap(err, op)
+	}
+
+	return nil
+}
+
+func (r *groupRepo) GetServerOverrides(ctx context.Context, serverID int64, groupID int64) (*domain.Overrides, error) {
+	const op = opTag + "GetServerOverrides"
+
+	query := "SELECT AllowOverrides, DenyOverrides FROM ServerGroups WHERE ServerID = $1 AND GroupID = $2 LIMIT 1;"
+
+	row := r.db.QueryRowContext(ctx, query, serverID, groupID)
+
+	overrides := &domain.Overrides{}
+
+	if err := row.Scan(&overrides.AllowOverrides, &overrides.DenyOverrides); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Wrap(domain.ErrNotFound, op)
+		}
+
+		r.logger.Error("Could not scan user overrides", zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	return overrides, nil
 }
 
 // Scan helpers

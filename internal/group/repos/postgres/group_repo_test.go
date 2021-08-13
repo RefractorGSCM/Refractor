@@ -424,6 +424,73 @@ func Test(t *testing.T) {
 		})
 	})
 
+	g.Describe("GetServerOverrides()", func() {
+		var repo domain.GroupRepo
+		var mock sqlmock.Sqlmock
+		var db *sql.DB
+		var cols []string
+
+		g.BeforeEach(func() {
+			var err error
+
+			db, mock, err = sqlmock.New()
+			if err != nil {
+				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
+			}
+
+			repo, _ = NewGroupRepo(db, zap.NewNop())
+
+			cols = []string{"AllowOverrides", "DenyOverrides"}
+		})
+
+		g.Describe("NewUser overrides were found", func() {
+			g.BeforeEach(func() {
+				mock.ExpectQuery("SELECT AllowOverrides, DenyOverrides FROM ServerGroups").WillReturnRows(
+					sqlmock.NewRows(cols).AddRow("1234", "12345"))
+			})
+
+			g.It("Should not return an error", func() {
+				_, err := repo.GetServerOverrides(context.TODO(), 1, 1)
+
+				Expect(err).To(BeNil())
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+
+			g.It("Should return an Overrides struct with the scanned values", func() {
+				expected := &domain.Overrides{
+					AllowOverrides: "1234",
+					DenyOverrides:  "12345",
+				}
+
+				overrides, _ := repo.GetServerOverrides(context.TODO(), 1, 1)
+
+				Expect(overrides).To(Equal(expected))
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+		})
+
+		g.Describe("No overrides were found", func() {
+			g.BeforeEach(func() {
+				mock.ExpectQuery("SELECT AllowOverrides, DenyOverrides FROM ServerGroups").WillReturnRows(
+					sqlmock.NewRows(cols))
+			})
+
+			g.It("Should return domain.ErrNotFound", func() {
+				_, err := repo.GetServerOverrides(context.TODO(), 1, 1)
+
+				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+
+			g.It("Should return nil", func() {
+				overrides, _ := repo.GetServerOverrides(context.TODO(), 1, 1)
+
+				Expect(overrides).To(BeNil())
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+		})
+	})
+
 	g.Describe("Delete()", func() {
 		var repo domain.GroupRepo
 		var mock sqlmock.Sqlmock

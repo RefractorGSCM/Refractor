@@ -111,6 +111,29 @@ func (_m *GroupRepo) GetByID(ctx context.Context, id int64) (*domain.Group, erro
 	return r0, r1
 }
 
+// GetServerOverrides provides a mock function with given fields: ctx, serverID, groupID
+func (_m *GroupRepo) GetServerOverrides(ctx context.Context, serverID int64, groupID int64) (*domain.Overrides, error) {
+	ret := _m.Called(ctx, serverID, groupID)
+
+	var r0 *domain.Overrides
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) *domain.Overrides); ok {
+		r0 = rf(ctx, serverID, groupID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Overrides)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int64, int64) error); ok {
+		r1 = rf(ctx, serverID, groupID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetUserGroups provides a mock function with given fields: ctx, userID
 func (_m *GroupRepo) GetUserGroups(ctx context.Context, userID string) ([]*domain.Group, error) {
 	ret := _m.Called(ctx, userID)
@@ -192,6 +215,20 @@ func (_m *GroupRepo) SetBaseGroup(ctx context.Context, group *domain.Group) erro
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, *domain.Group) error); ok {
 		r0 = rf(ctx, group)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SetServerOverrides provides a mock function with given fields: ctx, serverID, groupID, overrides
+func (_m *GroupRepo) SetServerOverrides(ctx context.Context, serverID int64, groupID int64, overrides *domain.Overrides) error {
+	ret := _m.Called(ctx, serverID, groupID, overrides)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int64, *domain.Overrides) error); ok {
+		r0 = rf(ctx, serverID, groupID, overrides)
 	} else {
 		r0 = ret.Error(0)
 	}
