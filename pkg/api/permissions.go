@@ -24,7 +24,7 @@ import (
 	"context"
 )
 
-// CheckPermissions is a wrapper function which provides automatic checking of if a user is a superadmin.
+// CheckPermissions is a wrapper function which provides automatic checking of if a user is a super admin.
 func CheckPermissions(ctx context.Context, a domain.Authorizer, scope domain.AuthScope, userID string, authChecker domain.AuthChecker) (bool, error) {
 	hasPermission, err := a.HasPermission(ctx, scope, userID, func(permissions *bitperms.Permissions) (bool, error) {
 		if permissions.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {

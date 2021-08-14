@@ -24,6 +24,7 @@ import (
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/structutils"
+	"context"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -116,7 +117,13 @@ type resServer struct {
 // GetServers is the route handler for /api/v1/servers
 // It returns a JSON array containing all servers which the requesting user has access to.
 func (h *serverHandler) GetServers(c echo.Context) error {
-	servers, err := h.service.GetAll(c.Request().Context())
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	ctx := context.WithValue(c.Request().Context(), "user", user)
+	servers, err := h.service.GetAllAccessible(ctx)
 	if err != nil {
 		return err
 	}
