@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS ServerGroups(
     AllowOverrides VARCHAR(20) NOT NULL DEFAULT '0',
     DenyOverrides VARCHAR(20) NOT NULL DEFAULT '0',
 
+    PRIMARY KEY(ServerID, GroupID),
     FOREIGN KEY (ServerID) REFERENCES Servers(ServerID),
     FOREIGN KEY (GroupID) REFERENCES Groups(GroupID) ON DELETE CASCADE
 )
