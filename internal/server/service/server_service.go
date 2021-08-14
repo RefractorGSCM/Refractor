@@ -19,21 +19,28 @@ package service
 
 import (
 	"Refractor/domain"
+	"Refractor/pkg/bitperms"
+	"Refractor/pkg/perms"
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"time"
 )
 
 type serverService struct {
 	repo       domain.ServerRepo
+	authorizer domain.Authorizer
 	timeout    time.Duration
+	logger     *zap.Logger
 	serverData map[int64]*domain.ServerData
 }
 
-func NewServerService(repo domain.ServerRepo, timeout time.Duration) domain.ServerService {
+func NewServerService(repo domain.ServerRepo, a domain.Authorizer, timeout time.Duration, log *zap.Logger) domain.ServerService {
 	return &serverService{
 		repo:       repo,
+		authorizer: a,
 		timeout:    timeout,
+		logger:     log,
 		serverData: map[int64]*domain.ServerData{},
 	}
 }
@@ -61,9 +68,69 @@ func (s *serverService) GetAll(c context.Context) ([]*domain.Server, error) {
 		return nil, err
 	}
 
-	// TODO: filter out servers the user does not have access to (permission checks)
-
 	return allServers, nil
+}
+
+func (s *serverService) GetAllAccessible(c context.Context) ([]*domain.Server, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	user, ok := c.Value("user").(*domain.AuthUser)
+	if !ok || user == nil {
+		return nil, fmt.Errorf("no user or invalid user found in context")
+	}
+
+	allServers, err := s.repo.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*domain.Server
+
+	// Filter out servers the user does not have access to view
+	for _, server := range allServers {
+		hasPermission, err := s.authorizer.HasPermission(ctx, domain.AuthScope{
+			Type: domain.AuthObjServer,
+			ID:   server.ID,
+		}, user.Identity.Id, func(permissions *bitperms.Permissions) (bool, error) {
+			hasPerm := permissions.CheckFlag(perms.GetFlag(perms.FlagViewServers))
+			if hasPerm {
+				return hasPerm, nil
+			}
+
+			hasPerm = permissions.CheckFlag(perms.GetFlag(perms.FlagAdministrator))
+			if hasPerm {
+				return hasPerm, nil
+			}
+
+			hasPerm = permissions.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin))
+			if hasPerm {
+				return hasPerm, nil
+			}
+
+			return false, nil
+		})
+
+		if err != nil {
+			s.logger.Error(
+				"Could not check if user has permission to view server",
+				zap.String("User ID", user.Identity.Id),
+				zap.Int64("Server ID", server.ID),
+				zap.Error(err),
+			)
+			return nil, err
+		}
+
+		// If the user has permission, add it to the results slice
+		if hasPermission {
+			fmt.Println(user.Traits.Username, "had FlagViewServers")
+			results = append(results, server)
+		} else {
+			fmt.Println(user.Traits.Username, "did not have FlagViewServers")
+		}
+	}
+
+	return results, nil
 }
 
 func (s *serverService) Deactivate(c context.Context, id int64) error {
