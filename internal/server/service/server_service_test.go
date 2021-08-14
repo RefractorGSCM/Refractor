@@ -24,6 +24,7 @@ import (
 	"github.com/franela/goblin"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
 	"testing"
 	"time"
 )
@@ -35,13 +36,15 @@ func Test(t *testing.T) {
 	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
 
 	var mockRepo *mocks.ServerRepo
+	var authorizer *mocks.Authorizer
 	var service domain.ServerService
 	var ctx = context.TODO()
 
 	g.Describe("Store()", func() {
 		g.BeforeEach(func() {
 			mockRepo = new(mocks.ServerRepo)
-			service = NewServerService(mockRepo, time.Second*2)
+			authorizer = new(mocks.Authorizer)
+			service = NewServerService(mockRepo, authorizer, time.Second*2, zap.NewNop())
 		})
 
 		g.Describe("Server stored successfully", func() {
@@ -59,7 +62,8 @@ func Test(t *testing.T) {
 	g.Describe("GetByID()", func() {
 		g.BeforeEach(func() {
 			mockRepo = new(mocks.ServerRepo)
-			service = NewServerService(mockRepo, time.Second*2)
+			authorizer = new(mocks.Authorizer)
+			service = NewServerService(mockRepo, authorizer, time.Second*2, zap.NewNop())
 		})
 
 		g.Describe("Result fetched successfully", func() {
