@@ -90,6 +90,8 @@ type ServerService interface {
 	Store(c context.Context, server *Server) error
 	GetByID(c context.Context, id int64) (*Server, error)
 	GetAll(c context.Context) ([]*Server, error)
+	// GetAllAccessible returns all servers on which the requesting user has the permission flag ViewServers set.
+	GetAllAccessible(c context.Context) ([]*Server, error)
 	Deactivate(c context.Context, id int64) error
 	CreateServerData(id int64) error
 	GetAllServerData() ([]*ServerData, error)

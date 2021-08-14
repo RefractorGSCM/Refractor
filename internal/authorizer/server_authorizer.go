@@ -25,8 +25,15 @@ import (
 	"go.uber.org/zap"
 )
 
-func (a *authorizer) hasPermissionServer(ctx context.Context, userID string, serverID int64, comparator domain.AuthChecker) (bool, error) {
-	return false, nil
+func (a *authorizer) hasPermissionServer(ctx context.Context, userID string, serverID int64, checkAuth domain.AuthChecker) (bool, error) {
+	const op = opTag + "hasPermissionServer"
+
+	computedPerms, err := a.computePermissionsServer(ctx, userID, serverID)
+	if err != nil {
+		return false, errors.Wrap(err, op)
+	}
+
+	return checkAuth(computedPerms)
 }
 
 func (a *authorizer) computePermissionsServer(ctx context.Context, userID string, serverID int64) (*bitperms.Permissions, error) {
@@ -76,7 +83,7 @@ func (a *authorizer) computePermissionsServer(ctx context.Context, userID string
 
 	for _, group := range userGroups {
 		overrides, err := a.groupRepo.GetServerOverrides(ctx, serverID, group.ID)
-		if err != nil {
+		if err != nil && errors.Cause(err) != domain.ErrNotFound {
 			a.logger.Error(
 				"Could not get group server overrides",
 				zap.Int64("Server ID", serverID),
@@ -86,7 +93,9 @@ func (a *authorizer) computePermissionsServer(ctx context.Context, userID string
 			return nil, errors.Wrap(err, op)
 		}
 
-		groupOverrides[group.ID] = overrides
+		if overrides != nil {
+			groupOverrides[group.ID] = overrides
+		}
 	}
 
 	// 3. Compute server group deny overrides

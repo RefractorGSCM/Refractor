@@ -65,6 +65,29 @@ func (_m *ServerService) GetAll(c context.Context) ([]*domain.Server, error) {
 	return r0, r1
 }
 
+// GetAllAccessible provides a mock function with given fields: c
+func (_m *ServerService) GetAllAccessible(c context.Context) ([]*domain.Server, error) {
+	ret := _m.Called(c)
+
+	var r0 []*domain.Server
+	if rf, ok := ret.Get(0).(func(context.Context) []*domain.Server); ok {
+		r0 = rf(c)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*domain.Server)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(c)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetAllServerData provides a mock function with given fields:
 func (_m *ServerService) GetAllServerData() ([]*domain.ServerData, error) {
 	ret := _m.Called()
