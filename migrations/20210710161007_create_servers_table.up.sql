@@ -27,6 +27,6 @@ CREATE TABLE IF NOT EXISTS Servers(
     ModifiedAt TIMESTAMP
 );
 
-DROP TRIGGER IF EXISTS update_servers_modat ON Groups;
+DROP TRIGGER IF EXISTS update_servers_modat ON Servers;
 CREATE TRIGGER update_servers_modat BEFORE UPDATE ON Servers
     FOR EACH ROW EXECUTE PROCEDURE update_modified_at_column();
