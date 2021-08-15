@@ -37,3 +37,15 @@ func RequireAdmin(permissions *bitperms.Permissions) (bool, error) {
 
 	return false, nil
 }
+
+func CanViewServer(permissions *bitperms.Permissions) (bool, error) {
+	if permissions.CheckFlag(perms.GetFlag(perms.FlagViewServers)) {
+		return true, nil
+	}
+
+	if permissions.CheckFlag(perms.GetFlag(perms.FlagAdministrator)) {
+		return true, nil
+	}
+
+	return false, nil
+}

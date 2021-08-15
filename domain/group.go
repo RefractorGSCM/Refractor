@@ -81,6 +81,7 @@ func (dbg DBGroup) Group() *Group {
 }
 
 type Overrides struct {
+	GroupID        int64  `json:"group_id"`
 	AllowOverrides string `json:"allow_overrides"`
 	DenyOverrides  string `json:"deny_overrides"`
 }
@@ -107,6 +108,7 @@ type GroupRepo interface {
 	SetUserOverrides(ctx context.Context, userID string, overrides *Overrides) error
 	GetServerOverrides(ctx context.Context, serverID int64, groupID int64) (*Overrides, error)
 	SetServerOverrides(ctx context.Context, serverID int64, groupID int64, overrides *Overrides) error
+	GetServerOverridesAllGroups(ctx context.Context, serverID int64) ([]*Overrides, error)
 }
 
 type GroupSetContext struct {

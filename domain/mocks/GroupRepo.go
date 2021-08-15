@@ -134,6 +134,11 @@ func (_m *GroupRepo) GetServerOverrides(ctx context.Context, serverID int64, gro
 	return r0, r1
 }
 
+// GetServerOverridesAllGroups provides a mock function with given fields: ctx, serverID
+func (_m *GroupRepo) GetServerOverridesAllGroups(ctx context.Context, serverID int64) {
+	_m.Called(ctx, serverID)
+}
+
 // GetUserGroups provides a mock function with given fields: ctx, userID
 func (_m *GroupRepo) GetUserGroups(ctx context.Context, userID string) ([]*domain.Group, error) {
 	ret := _m.Called(ctx, userID)

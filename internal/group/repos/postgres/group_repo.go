@@ -440,6 +440,45 @@ func (r *groupRepo) GetServerOverrides(ctx context.Context, serverID int64, grou
 	return overrides, nil
 }
 
+func (r *groupRepo) GetServerOverridesAllGroups(ctx context.Context, serverID int64) ([]*domain.Overrides, error) {
+	const op = opTag + "GetServerOverrides"
+
+	query := "SELECT GroupID, AllowOverrides, DenyOverrides FROM ServerGroups WHERE ServerID = $1;"
+
+	rows, err := r.db.QueryContext(ctx, query, serverID, serverID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Wrap(domain.ErrNotFound, op)
+		}
+
+		r.logger.Error("Could not execute query", zap.String("Query", query), zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	var overrides []*domain.Overrides
+
+	for rows.Next() {
+		override := &domain.Overrides{}
+
+		if err := rows.Scan(&override.GroupID, &override.AllowOverrides, &override.DenyOverrides); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, errors.Wrap(domain.ErrNotFound, op)
+			}
+
+			r.logger.Error("Could not scan user overrides", zap.Error(err))
+			return nil, errors.Wrap(err, op)
+		}
+
+		overrides = append(overrides, override)
+	}
+
+	if len(overrides) == 0 {
+		return nil, errors.Wrap(domain.ErrNotFound, op)
+	}
+
+	return overrides, nil
+}
+
 // Scan helpers
 func (r *groupRepo) scanRow(row *sql.Row, group *domain.DBGroup) error {
 	return row.Scan(&group.ID, &group.Name, &group.Color, &group.Position, &group.Permissions, &group.CreatedAt, &group.ModifiedAt)
