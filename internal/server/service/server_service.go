@@ -123,10 +123,7 @@ func (s *serverService) GetAllAccessible(c context.Context) ([]*domain.Server, e
 
 		// If the user has permission, add it to the results slice
 		if hasPermission {
-			fmt.Println(user.Traits.Username, "had FlagViewServers")
 			results = append(results, server)
-		} else {
-			fmt.Println(user.Traits.Username, "did not have FlagViewServers")
 		}
 	}
 

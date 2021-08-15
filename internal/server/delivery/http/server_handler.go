@@ -50,14 +50,19 @@ func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, a domain.A
 	serverGroup := apiGroup.Group("/servers", mware.ProtectMiddleware, mware.ActivationMiddleware)
 
 	// Create an enforcer to authorize the user on the various endpoints
-	enforcer := middleware.NewEnforcer(a, domain.AuthScope{
+	rEnforcer := middleware.NewEnforcer(a, domain.AuthScope{
 		Type: domain.AuthObjRefractor,
 	}, log)
 
+	sEnforcer := middleware.NewEnforcer(a, domain.AuthScope{
+		Type: domain.AuthObjServer,
+	}, log)
+
 	serverGroup.GET("/", handler.GetServers)
-	serverGroup.POST("/", handler.CreateServer, enforcer.CheckAuth(authcheckers.RequireAdmin))
-	serverGroup.PATCH("/deactivate/:id", handler.DeactivateServer, enforcer.CheckAuth(authcheckers.RequireAdmin))
-	serverGroup.PATCH("/:id", handler.UpdateServer, enforcer.CheckAuth(authcheckers.RequireAdmin))
+	serverGroup.GET("/:id", handler.GetServerByID, sEnforcer.CheckAuth(authcheckers.CanViewServer))
+	serverGroup.POST("/", handler.CreateServer, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
+	serverGroup.PATCH("/deactivate/:id", handler.DeactivateServer, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
+	serverGroup.PATCH("/:id", handler.UpdateServer, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
 }
 
 func (h *serverHandler) CreateServer(c echo.Context) error {
@@ -148,6 +153,35 @@ func (h *serverHandler) GetServers(c echo.Context) error {
 		Success: true,
 		Message: fmt.Sprintf("Fetched %d servers", len(resServers)),
 		Payload: resServers,
+	})
+}
+
+func (h *serverHandler) GetServerByID(c echo.Context) error {
+	serverIDString := c.Param("id")
+
+	serverID, err := strconv.ParseInt(serverIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid server id"), http.StatusBadRequest, "")
+	}
+
+	server, err := h.service.GetByID(c.Request().Context(), serverID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Server fetched",
+		Payload: &resServer{
+			ID:          server.ID,
+			Game:        server.Game,
+			Name:        server.Name,
+			Address:     server.Address,
+			RCONPort:    server.RCONPort,
+			Deactivated: server.Deactivated,
+			CreatedAt:   server.CreatedAt,
+			ModifiedAt:  server.ModifiedAt,
+		},
 	})
 }
 
