@@ -550,10 +550,10 @@ func Test(t *testing.T) {
 					sqlmock.NewRows(cols))
 			})
 
-			g.It("Should return domain.ErrNotFound", func() {
+			g.It("Should not return an error", func() {
 				_, err := repo.GetServerOverridesAllGroups(context.TODO(), 1)
 
-				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+				Expect(err).To(BeNil())
 				Expect(mock.ExpectationsWereMet()).To(BeNil())
 			})
 

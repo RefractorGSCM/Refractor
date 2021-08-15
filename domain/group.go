@@ -127,4 +127,5 @@ type GroupService interface {
 	Reorder(c context.Context, newPositions []*GroupReorderInfo) error
 	AddUserGroup(c context.Context, groupctx GroupSetContext) error
 	RemoveUserGroup(c context.Context, groupctx GroupSetContext) error
+	GetServerOverridesAllGroups(c context.Context, serverID int64) ([]*Overrides, error)
 }

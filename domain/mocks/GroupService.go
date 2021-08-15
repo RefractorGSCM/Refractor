@@ -88,6 +88,29 @@ func (_m *GroupService) GetByID(c context.Context, id int64) (*domain.Group, err
 	return r0, r1
 }
 
+// GetServerOverridesAllGroups provides a mock function with given fields: c, serverID
+func (_m *GroupService) GetServerOverridesAllGroups(c context.Context, serverID int64) ([]*domain.Overrides, error) {
+	ret := _m.Called(c, serverID)
+
+	var r0 []*domain.Overrides
+	if rf, ok := ret.Get(0).(func(context.Context, int64) []*domain.Overrides); ok {
+		r0 = rf(c, serverID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*domain.Overrides)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
+		r1 = rf(c, serverID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // RemoveUserGroup provides a mock function with given fields: c, groupctx
 func (_m *GroupService) RemoveUserGroup(c context.Context, groupctx domain.GroupSetContext) error {
 	ret := _m.Called(c, groupctx)

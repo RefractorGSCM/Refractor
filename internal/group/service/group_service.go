@@ -296,3 +296,10 @@ func (s *groupService) logGroupSetDenyMsg(groupctx domain.GroupSetContext, roleA
 		zap.String("Reason", reason),
 	)
 }
+
+func (s *groupService) GetServerOverridesAllGroups(c context.Context, serverID int64) ([]*domain.Overrides, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.GetServerOverridesAllGroups(ctx, serverID)
+}
