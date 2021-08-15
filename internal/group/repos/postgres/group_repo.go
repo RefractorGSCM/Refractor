@@ -445,7 +445,7 @@ func (r *groupRepo) GetServerOverridesAllGroups(ctx context.Context, serverID in
 
 	query := "SELECT GroupID, AllowOverrides, DenyOverrides FROM ServerGroups WHERE ServerID = $1;"
 
-	rows, err := r.db.QueryContext(ctx, query, serverID, serverID)
+	rows, err := r.db.QueryContext(ctx, query, serverID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.Wrap(domain.ErrNotFound, op)
@@ -471,11 +471,6 @@ func (r *groupRepo) GetServerOverridesAllGroups(ctx context.Context, serverID in
 
 		overrides = append(overrides, override)
 	}
-
-	if len(overrides) == 0 {
-		return nil, errors.Wrap(domain.ErrNotFound, op)
-	}
-
 	return overrides, nil
 }
 

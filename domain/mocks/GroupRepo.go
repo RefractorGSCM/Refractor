@@ -135,8 +135,26 @@ func (_m *GroupRepo) GetServerOverrides(ctx context.Context, serverID int64, gro
 }
 
 // GetServerOverridesAllGroups provides a mock function with given fields: ctx, serverID
-func (_m *GroupRepo) GetServerOverridesAllGroups(ctx context.Context, serverID int64) {
-	_m.Called(ctx, serverID)
+func (_m *GroupRepo) GetServerOverridesAllGroups(ctx context.Context, serverID int64) ([]*domain.Overrides, error) {
+	ret := _m.Called(ctx, serverID)
+
+	var r0 []*domain.Overrides
+	if rf, ok := ret.Get(0).(func(context.Context, int64) []*domain.Overrides); ok {
+		r0 = rf(ctx, serverID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*domain.Overrides)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
+		r1 = rf(ctx, serverID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetUserGroups provides a mock function with given fields: ctx, userID

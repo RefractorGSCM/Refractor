@@ -64,6 +64,7 @@ func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Aut
 	groupGroup.PATCH("/order", handler.ReorderGroups, act, enforcer.CheckAuth(authcheckers.DenyAll))
 	groupGroup.PUT("/users/add", handler.SetUserGroup(true), act, enforcer.CheckAuth(authcheckers.RequireAdmin))
 	groupGroup.PUT("/users/remove", handler.SetUserGroup(false), act, enforcer.CheckAuth(authcheckers.RequireAdmin))
+	groupGroup.GET("/servers/:id", handler.GetServerOverrides, act, enforcer.CheckAuth(authcheckers.RequireAdmin))
 }
 
 type resPermission struct {
@@ -343,4 +344,25 @@ func (h *groupHandler) SetUserGroup(add bool) echo.HandlerFunc {
 			})
 		}
 	}
+}
+
+func (h *groupHandler) GetServerOverrides(c echo.Context) error {
+	// Parse target server ID
+	serverIDString := c.Param("id")
+
+	serverID, err := strconv.ParseInt(serverIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid group id"), http.StatusBadRequest, "")
+	}
+
+	overrides, err := h.service.GetServerOverridesAllGroups(c.Request().Context(), serverID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Overrides fetched",
+		Payload: overrides,
+	})
 }
