@@ -37,6 +37,26 @@ const (
 )
 
 type FlagName string
+type Scope string
+
+// The ScopeAny permission scope is used for permissions which can be applied anywhere. On the application (refractor)
+// level, or overridden on specific servers.
+const ScopeAny = Scope("any")
+
+// The ScopeApp permission scope is used for permissions which can only be applied on the application (refractor) level.
+// Permissions with their scope as ScopeApp cannot be overridden on specific servers.
+const ScopeApp = Scope("app")
+
+// The ScopeServer permission scope is used for permissions which can only be applied on the server level.
+const ScopeServer = Scope("server")
+
+func (s Scope) Matches(sc Scope) bool {
+	if s == ScopeAny || sc == ScopeAny {
+		return true
+	}
+
+	return s == sc
+}
 
 type Permission struct {
 	ID          int
@@ -44,6 +64,7 @@ type Permission struct {
 	DisplayName string
 	Description string
 	Flag        *big.Int
+	Scope       Scope
 }
 
 var permissions = map[FlagName]*Permission{}
@@ -65,6 +86,7 @@ func init() {
 			Description: `Grants full access to Refractor including management of admin users, roles, etc. This should
 						  NEVER be granted to anybody except for the initial user account in Refractor. No more than one
 						  user should have this permission at a time. Seriously, never manually set this permission!`,
+			Scope: ScopeApp,
 		},
 		{
 			Name:        FlagAdministrator,
@@ -72,29 +94,34 @@ func init() {
 			Description: `Grants full access to Refractor. Administrator is required to be able to add, edit and delete
 						  servers as well as modify admin level settings. Admins can not create or edit groups. Only give
 						  this Permission to people who absolutely need it.`,
+			Scope: ScopeApp,
 		},
 		{
 			Name:        FlagViewServers,
 			DisplayName: "View servers",
 			Description: "Allows viewing of servers.",
+			Scope:       ScopeAny,
 		},
 		{
 			Name:        FlagViewPlayerRecords,
 			DisplayName: "View player records",
 			Description: `Allows viewing of player records. This permissions can be overridden on the server level to
 						  allow or deny accessing player records for individual servers.`,
+			Scope: ScopeAny,
 		},
 		{
 			Name:        FlagViewInfractionRecords,
 			DisplayName: "View infraction records",
 			Description: `Allows viewing of infraction records. This permissions can be overridden on the server level to
 						  allow or deny accessing infraction records for individual servers.`,
+			Scope: ScopeAny,
 		},
 		{
 			Name:        FlagViewChatRecords,
 			DisplayName: "View chat records",
 			Description: `Allows viewing of chat records. This permissions can be overridden on the server level to
 						  allow or deny accessing chat records for individual servers.`,
+			Scope: ScopeAny,
 		},
 		// ADD NEW FLAGS HERE. Do not touch any of the above permissions!
 	})
@@ -119,6 +146,7 @@ func registerPermissions(newPerms []Permission) {
 			DisplayName: perm.DisplayName,
 			Description: perm.Description,
 			Flag:        next,
+			Scope:       perm.Scope,
 		}
 
 		permissions[perm.Name] = newPermission
@@ -147,4 +175,23 @@ func GetDescription(flag FlagName) string {
 
 func GetDefaultPermissions() *bitperms.Permissions {
 	return defaultPermissions
+}
+
+// FilterToScope removes any permission flags set on a *bitperms.Permissions instance which do not match the specified
+// scope. For example, if the specified scope was ScopeServer and FlagAdministrator was set, FlagAdministrator would
+// be unset since it does not match ScopeServer.
+func FilterToScope(permissions *bitperms.Permissions, s Scope) *bitperms.Permissions {
+	for _, p := range permissionsArr {
+		if !permissions.CheckFlag(p.Flag) {
+			// If permissions does not have this flag, continue to the next flag
+			continue
+		}
+
+		if !s.Matches(p.Scope) {
+			// If scopes don't match, unset this flag
+			permissions.UnsetFlag(p.Flag)
+		}
+	}
+
+	return permissions
 }
