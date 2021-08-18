@@ -542,5 +542,37 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("SetServerOverrides()", func() {
+			g.Describe("Success", func() {
+				g.BeforeEach(func() {
+					mockRepo.On("SetServerOverrides", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				})
+
+				g.It("Should not return an error", func() {
+					err := service.SetServerOverrides(ctx, 1, 1, &domain.Overrides{
+						AllowOverrides: "0",
+						DenyOverrides:  "0",
+					})
+
+					Expect(err).To(BeNil())
+				})
+			})
+
+			g.Describe("Repo error", func() {
+				g.BeforeEach(func() {
+					mockRepo.On("SetServerOverrides", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					err := service.SetServerOverrides(ctx, 1, 1, &domain.Overrides{
+						AllowOverrides: "0",
+						DenyOverrides:  "0",
+					})
+
+					Expect(err).ToNot(BeNil())
+				})
+			})
+		})
 	})
 }
