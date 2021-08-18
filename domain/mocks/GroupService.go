@@ -139,6 +139,20 @@ func (_m *GroupService) Reorder(c context.Context, newPositions []*domain.GroupR
 	return r0
 }
 
+// SetServerOverrides provides a mock function with given fields: c, serverID, groupID, overrides
+func (_m *GroupService) SetServerOverrides(c context.Context, serverID int64, groupID int64, overrides *domain.Overrides) error {
+	ret := _m.Called(c, serverID, groupID, overrides)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int64, *domain.Overrides) error); ok {
+		r0 = rf(c, serverID, groupID, overrides)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Store provides a mock function with given fields: c, group
 func (_m *GroupService) Store(c context.Context, group *domain.Group) error {
 	ret := _m.Called(c, group)
