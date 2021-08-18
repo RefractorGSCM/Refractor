@@ -73,6 +73,7 @@ type resPermission struct {
 	DisplayName string         `json:"display_name"`
 	Description string         `json:"description"`
 	Flag        string         `json:"flag"`
+	Scope       string         `json:"scope"`
 }
 
 func (h *groupHandler) GetPermissions(c echo.Context) error {
@@ -87,6 +88,7 @@ func (h *groupHandler) GetPermissions(c echo.Context) error {
 			DisplayName: perm.DisplayName,
 			Description: perms.GetDescription(perm.Name),
 			Flag:        perm.Flag.String(),
+			Scope:       string(perm.Scope),
 		})
 	}
 
