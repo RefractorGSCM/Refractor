@@ -195,3 +195,17 @@ func FilterToScope(permissions *bitperms.Permissions, s Scope) *bitperms.Permiss
 
 	return permissions
 }
+
+func Filter(permissions *bitperms.Permissions, filterFunc func(p *Permission) bool) *bitperms.Permissions {
+	for _, p := range permissionsArr {
+		if !permissions.CheckFlag(p.Flag) {
+			continue
+		}
+
+		if !filterFunc(p) {
+			permissions.UnsetFlag(p.Flag)
+		}
+	}
+
+	return permissions
+}
