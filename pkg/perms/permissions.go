@@ -99,8 +99,9 @@ func init() {
 		{
 			Name:        FlagViewServers,
 			DisplayName: "View servers",
-			Description: "Allows viewing of servers.",
-			Scope:       ScopeAny,
+			Description: `Allows viewing of servers. This permissions can be overridden on the server level to allow or
+						  deny access to specific servers.`,
+			Scope: ScopeAny,
 		},
 		{
 			Name:        FlagViewPlayerRecords,
