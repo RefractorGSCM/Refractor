@@ -117,3 +117,15 @@ func (body SetUserGroupParams) Validate() error {
 		validation.Field(&body.GroupID, validation.Required, validation.Min(1), validation.Max(math.MaxInt32)),
 	)
 }
+
+type SetServerOverrideParams struct {
+	DenyOverrides  string `json:"deny_overrides" form:"deny_overrides"`
+	AllowOverrides string `json:"allow_overrides" form:"allow_overrides"`
+}
+
+func (body SetServerOverrideParams) Validate() error {
+	return ValidateStruct(&body,
+		validation.Field(&body.DenyOverrides, validation.Required, validation.Match(permissionsPattern)),
+		validation.Field(&body.AllowOverrides, validation.Required, validation.Match(permissionsPattern)),
+	)
+}
