@@ -119,12 +119,14 @@ func (body SetUserGroupParams) Validate() error {
 }
 
 type SetServerOverrideParams struct {
+	GroupID        int64  `json:"group_id" form:"group_id"`
 	DenyOverrides  string `json:"deny_overrides" form:"deny_overrides"`
 	AllowOverrides string `json:"allow_overrides" form:"allow_overrides"`
 }
 
 func (body SetServerOverrideParams) Validate() error {
 	return ValidateStruct(&body,
+		validation.Field(&body.GroupID, validation.Required, validation.Min(1), validation.Max(math.MaxInt32)),
 		validation.Field(&body.DenyOverrides, validation.Required, validation.Match(permissionsPattern)),
 		validation.Field(&body.AllowOverrides, validation.Required, validation.Match(permissionsPattern)),
 	)
