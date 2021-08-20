@@ -189,7 +189,7 @@ func FilterToScope(permissions *bitperms.Permissions, s Scope) *bitperms.Permiss
 
 		if !s.Matches(p.Scope) {
 			// If scopes don't match, unset this flag
-			permissions.UnsetFlag(p.Flag)
+			permissions = permissions.UnsetFlag(p.Flag)
 		}
 	}
 
