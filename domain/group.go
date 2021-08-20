@@ -128,5 +128,5 @@ type GroupService interface {
 	AddUserGroup(c context.Context, groupctx GroupSetContext) error
 	RemoveUserGroup(c context.Context, groupctx GroupSetContext) error
 	GetServerOverridesAllGroups(c context.Context, serverID int64) ([]*Overrides, error)
-	SetServerOverrides(c context.Context, serverID, groupID int64, overrides *Overrides) error
+	SetServerOverrides(c context.Context, serverID, groupID int64, overrides *Overrides) (*Overrides, error)
 }

@@ -304,26 +304,27 @@ func (s *groupService) GetServerOverridesAllGroups(c context.Context, serverID i
 	return s.repo.GetServerOverridesAllGroups(ctx, serverID)
 }
 
-func (s *groupService) SetServerOverrides(c context.Context, serverID, groupID int64, overrides *domain.Overrides) error {
+func (s *groupService) SetServerOverrides(c context.Context, serverID, groupID int64, overrides *domain.Overrides) (*domain.Overrides, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
 	// Filter app scoped permissions out of the server overrides
 	denyPerms, err := bitperms.FromString(overrides.DenyOverrides)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	denyPerms = perms.FilterToScope(denyPerms, perms.ScopeServer)
 
 	allowPerms, err := bitperms.FromString(overrides.AllowOverrides)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	allowPerms = perms.FilterToScope(allowPerms, perms.ScopeServer)
 
 	// Update overrides in overrides struct
+	overrides.GroupID = groupID
 	overrides.DenyOverrides = denyPerms.String()
 	overrides.AllowOverrides = allowPerms.String()
 
-	return s.repo.SetServerOverrides(ctx, serverID, groupID, overrides)
+	return overrides, s.repo.SetServerOverrides(ctx, serverID, groupID, overrides)
 }

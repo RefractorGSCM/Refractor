@@ -390,15 +390,18 @@ func (h *groupHandler) SetServerOverrides(c echo.Context) error {
 	}
 
 	// Set the server overrides
-	if err := h.service.SetServerOverrides(c.Request().Context(), serverID, body.GroupID, &domain.Overrides{
+	overrides, err := h.service.SetServerOverrides(c.Request().Context(), serverID, body.GroupID, &domain.Overrides{
 		AllowOverrides: body.AllowOverrides,
 		DenyOverrides:  body.DenyOverrides,
-	}); err != nil {
+	})
+
+	if err != nil {
 		return err
 	}
 
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
 		Message: "Server overrides set",
+		Payload: overrides,
 	})
 }
