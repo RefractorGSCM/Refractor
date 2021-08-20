@@ -406,8 +406,8 @@ func (r *groupRepo) GetUserOverrides(ctx context.Context, userID string) (*domai
 func (r *groupRepo) SetServerOverrides(ctx context.Context, serverID int64, groupID int64, overrides *domain.Overrides) error {
 	const op = opTag + "SetServerOverrides"
 
-	query := `INSERT INTO ServerGroups (ServerID, GroupID, AllowOverrides, DenyOverrides) VALUES ($1, $2, $3)
-				ON CONFLICT (ServerID, GroupID) DO UPDATE SET AllowOverrides = $4, DenyOverrides = $5;`
+	query := `INSERT INTO ServerGroups (ServerID, GroupID, AllowOverrides, DenyOverrides) VALUES ($1, $2, $3, $4)
+				ON CONFLICT (ServerID, GroupID) DO UPDATE SET AllowOverrides = $5, DenyOverrides = $6;`
 
 	_, err := r.db.ExecContext(ctx, query, serverID, groupID, overrides.AllowOverrides, overrides.DenyOverrides,
 		overrides.AllowOverrides, overrides.DenyOverrides)
