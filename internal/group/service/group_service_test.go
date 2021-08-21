@@ -550,12 +550,33 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should not return an error", func() {
-					err := service.SetServerOverrides(ctx, 1, 1, &domain.Overrides{
+					_, err := service.SetServerOverrides(ctx, 1, 1, &domain.Overrides{
 						AllowOverrides: "0",
 						DenyOverrides:  "0",
 					})
 
 					Expect(err).To(BeNil())
+				})
+
+				g.Describe("Non server scoped permissions provided", func() {
+					g.It("Should not return an error", func() {
+						_, err := service.SetServerOverrides(ctx, 1, 1, &domain.Overrides{
+							AllowOverrides: "1",
+							DenyOverrides:  "2",
+						})
+
+						Expect(err).To(BeNil())
+					})
+
+					g.It("Should return overrides filtered by server scope", func() {
+						ovr, _ := service.SetServerOverrides(ctx, 1, 1, &domain.Overrides{
+							AllowOverrides: "1",
+							DenyOverrides:  "2",
+						})
+
+						Expect(ovr.AllowOverrides).To(Equal("0"))
+						Expect(ovr.DenyOverrides).To(Equal("0"))
+					})
 				})
 			})
 
@@ -565,7 +586,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return an error", func() {
-					err := service.SetServerOverrides(ctx, 1, 1, &domain.Overrides{
+					_, err := service.SetServerOverrides(ctx, 1, 1, &domain.Overrides{
 						AllowOverrides: "0",
 						DenyOverrides:  "0",
 					})
