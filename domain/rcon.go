@@ -17,7 +17,10 @@
 
 package domain
 
-import "github.com/refractorgscm/rcon"
+import (
+	"Refractor/pkg/broadcast"
+	"github.com/refractorgscm/rcon"
+)
 
 type ClientCreator interface {
 	GetClientFromConfig(gameConfig *GameConfig, server *Server) (RCONClient, error)
@@ -31,10 +34,13 @@ type RCONClient interface {
 	SetDisconnectHandler(handlerFunc rcon.DisconnectHandlerFunc)
 }
 
+type BroadcastSubscriber func(fields broadcast.Fields, serverID int64, game *Game)
+
 type RCONService interface {
 	CreateClient(server *Server) error
 	GetClients() map[int64]RCONClient
 	DeleteClient(serverID int64)
 	GetServerClient(serverID int64) RCONClient
 	StartReconnectRoutine(server *Server, data *ServerData)
+	SubscribeJoin(sub BroadcastSubscriber)
 }
