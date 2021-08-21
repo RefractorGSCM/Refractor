@@ -34,7 +34,7 @@ type RCONClient interface {
 	SetDisconnectHandler(handlerFunc rcon.DisconnectHandlerFunc)
 }
 
-type BroadcastSubscriber func(fields broadcast.Fields, serverID int64, game *Game)
+type BroadcastSubscriber func(fields broadcast.Fields, serverID int64, gameConfig *GameConfig)
 
 type RCONService interface {
 	CreateClient(server *Server) error

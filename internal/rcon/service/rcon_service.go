@@ -20,6 +20,7 @@ package service
 import (
 	"Refractor/domain"
 	"Refractor/internal/rcon/clientcreator"
+	"Refractor/pkg/broadcast"
 	"Refractor/pkg/regexutils"
 	"go.uber.org/zap"
 	"net"
@@ -111,6 +112,21 @@ func (s *rconService) DeleteClient(serverID int64) {
 func (s *rconService) getBroadcastHandler(serverID int64, gameConfig *domain.GameConfig) func(string) {
 	return func(message string) {
 		s.logger.Info("Broadcast received", zap.Int64("Server", serverID), zap.String("Message", message))
+
+		bcast := broadcast.GetBroadcastType(message, gameConfig.BroadcastPatterns)
+
+		switch bcast.Type {
+		case broadcast.TYPE_JOIN:
+			for _, sub := range s.joinSubs {
+				sub(bcast.Fields, serverID, gameConfig)
+			}
+			break
+		case broadcast.TYPE_QUIT:
+			for _, sub := range s.quitSubs {
+				sub(bcast.Fields, serverID, gameConfig)
+			}
+			break
+		}
 	}
 }
 
