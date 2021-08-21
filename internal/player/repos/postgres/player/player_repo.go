@@ -159,7 +159,7 @@ func (r *playerRepo) Exists(ctx context.Context, args domain.FindArgs) (bool, er
 func (r *playerRepo) Update(ctx context.Context, platform, id string, args domain.UpdateArgs) (*domain.Player, error) {
 	const op = opTag + "Update"
 
-	query, values := r.qb.BuildUpdateQuery("Players", id, "(PlayerID, Platform)", args)
+	query, values := r.qb.BuildUpdateQueryComposite("Players", []interface{}{id, platform}, []string{"PlayerID", "Platform"}, args)
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {

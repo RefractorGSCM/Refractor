@@ -47,7 +47,7 @@ func (r *playerNameRepo) Store(ctx context.Context, id, platform, name string) e
 	const op = opTag + "Store"
 
 	// Insert into PlayerNames
-	query := "INSERT INTO PlayerNames (PlayerID, Platform, Name) VALUES ($1, $2, $3);"
+	query := "INSERT INTO PlayerNames (PlayerID, Platform, Name, DateRecorded) VALUES ($1, $2, $3, $4);"
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
@@ -55,7 +55,7 @@ func (r *playerNameRepo) Store(ctx context.Context, id, platform, name string) e
 		return errors.Wrap(err, op)
 	}
 
-	if _, err := stmt.ExecContext(ctx, id, platform, name); err != nil {
+	if _, err := stmt.ExecContext(ctx, id, platform, name, time.Now()); err != nil {
 		r.logger.Error("Could not execute insert query", zap.String("query", query), zap.Error(err))
 		return errors.Wrap(err, op)
 	}

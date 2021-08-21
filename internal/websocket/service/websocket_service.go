@@ -52,10 +52,10 @@ func (s *websocketService) Broadcast(message *domain.WebsocketMessage) {
 	s.pool.Broadcast <- message
 }
 
-func (s *websocketService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, gameConfig *domain.GameConfig) {
+func (s *websocketService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
 	panic("implement me")
 }
 
-func (s *websocketService) HandlePlayerQuit(fields broadcast.Fields, serverID int64, gameConfig *domain.GameConfig) {
+func (s *websocketService) HandlePlayerQuit(fields broadcast.Fields, serverID int64, game domain.Game) {
 	panic("implement me")
 }

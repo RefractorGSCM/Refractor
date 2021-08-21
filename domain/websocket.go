@@ -36,6 +36,6 @@ type WebsocketService interface {
 	CreateClient(userID string, conn net.Conn)
 	StartPool()
 	Broadcast(message *WebsocketMessage)
-	HandlePlayerJoin(fields broadcast.Fields, serverID int64, gameConfig *GameConfig)
-	HandlePlayerQuit(fields broadcast.Fields, serverID int64, gameConfig *GameConfig)
+	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
+	HandlePlayerQuit(fields broadcast.Fields, serverID int64, game Game)
 }

@@ -26,14 +26,14 @@ func (_m *WebsocketService) CreateClient(userID string, conn net.Conn) {
 	_m.Called(userID, conn)
 }
 
-// HandlePlayerJoin provides a mock function with given fields: fields, serverID, gameConfig
-func (_m *WebsocketService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, gameConfig *domain.GameConfig) {
-	_m.Called(fields, serverID, gameConfig)
+// HandlePlayerJoin provides a mock function with given fields: fields, serverID, game
+func (_m *WebsocketService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
+	_m.Called(fields, serverID, game)
 }
 
-// HandlePlayerQuit provides a mock function with given fields: fields, serverID, gameConfig
-func (_m *WebsocketService) HandlePlayerQuit(fields broadcast.Fields, serverID int64, gameConfig *domain.GameConfig) {
-	_m.Called(fields, serverID, gameConfig)
+// HandlePlayerQuit provides a mock function with given fields: fields, serverID, game
+func (_m *WebsocketService) HandlePlayerQuit(fields broadcast.Fields, serverID int64, game domain.Game) {
+	_m.Called(fields, serverID, game)
 }
 
 // StartPool provides a mock function with given fields:

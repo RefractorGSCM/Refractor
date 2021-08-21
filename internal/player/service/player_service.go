@@ -21,21 +21,24 @@ import (
 	"Refractor/domain"
 	"Refractor/pkg/broadcast"
 	"context"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"time"
 )
 
 type playerService struct {
-	repo    domain.PlayerRepo
-	timeout time.Duration
-	logger  *zap.Logger
+	repo     domain.PlayerRepo
+	nameRepo domain.PlayerNameRepo
+	timeout  time.Duration
+	logger   *zap.Logger
 }
 
-func NewPlayerService(repo domain.PlayerRepo, to time.Duration, log *zap.Logger) domain.PlayerService {
+func NewPlayerService(repo domain.PlayerRepo, nameRepo domain.PlayerNameRepo, to time.Duration, log *zap.Logger) domain.PlayerService {
 	return &playerService{
-		repo:    repo,
-		timeout: to,
-		logger:  log,
+		repo:     repo,
+		nameRepo: nameRepo,
+		timeout:  to,
+		logger:   log,
 	}
 }
 
@@ -49,7 +52,7 @@ func (s *playerService) HandlePlayerJoin(fields broadcast.Fields, serverID int64
 
 	// Check if this player already exists
 	foundPlayer, err := s.repo.GetByID(ctx, platform, playerID)
-	if err != nil && err != domain.ErrNotFound {
+	if err != nil && errors.Cause(err) != domain.ErrNotFound {
 		s.logger.Error("Could not get player by id",
 			zap.String("PlayerID", playerID),
 			zap.String("Platform", platform),
@@ -85,8 +88,29 @@ func (s *playerService) HandlePlayerJoin(fields broadcast.Fields, serverID int64
 		s.logger.Info("Player name change detected",
 			zap.String("PlayerID", playerID),
 			zap.String("Platform", platform),
-			zap.String("Old Name", foundPlayer.CurrentName),
-			zap.String("New Name", name))
+			zap.String("CurrentName", foundPlayer.CurrentName),
+			zap.String("NewName", name))
+
+		if err := s.nameRepo.UpdateName(ctx, foundPlayer, name); err != nil {
+			s.logger.Error("Could not update player name",
+				zap.String("PlayerID", playerID),
+				zap.String("Platform", platform),
+				zap.String("CurrentName", foundPlayer.CurrentName),
+				zap.String("NewName", name),
+				zap.Error(err))
+			return
+		}
+	}
+
+	// Update their LastSeen field to the current time
+	if _, err := s.repo.Update(ctx, foundPlayer.Platform, foundPlayer.PlayerID, domain.UpdateArgs{
+		"LastSeen": time.Now(),
+	}); err != nil {
+		s.logger.Error("Could not update player last seen field",
+			zap.String("PlayerID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return
 	}
 }
 
