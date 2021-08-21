@@ -115,5 +115,37 @@ func (s *playerService) HandlePlayerJoin(fields broadcast.Fields, serverID int64
 }
 
 func (s *playerService) HandlePlayerQuit(fields broadcast.Fields, serverID int64, game domain.Game) {
-	panic("implement me")
+	ctx, cancel := context.WithTimeout(context.TODO(), s.timeout)
+	defer cancel()
+
+	playerID := fields["PlayerID"]
+	platform := game.GetPlatform().GetName()
+
+	// Check if this player already exists
+	foundPlayer, err := s.repo.GetByID(ctx, platform, playerID)
+	if err != nil && errors.Cause(err) != domain.ErrNotFound {
+		s.logger.Error("Could not get player by id",
+			zap.String("PlayerID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return
+	}
+
+	if foundPlayer == nil {
+		s.logger.Warn("Found player was nil",
+			zap.String("PlayerID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+	}
+
+	// Update their LastSeen field to the current time
+	if _, err := s.repo.Update(ctx, foundPlayer.Platform, foundPlayer.PlayerID, domain.UpdateArgs{
+		"LastSeen": time.Now(),
+	}); err != nil {
+		s.logger.Error("Could not update player last seen field",
+			zap.String("PlayerID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return
+	}
 }
