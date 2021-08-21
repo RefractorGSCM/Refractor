@@ -161,6 +161,7 @@ func main() {
 	//rconService.SubscribeJoin(websocketService.HandlePlayerJoin)
 	//rconService.SubscribeQuit(websocketService.HandlePlayerQuit)
 	rconService.SubscribeJoin(playerService.HandlePlayerJoin)
+	rconService.SubscribeQuit(playerService.HandlePlayerQuit)
 
 	// Connect RCON clients for all existing servers
 	if err := SetupServerClients(rconService, serverService, logger); err != nil {
