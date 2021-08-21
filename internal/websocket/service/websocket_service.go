@@ -19,6 +19,7 @@ package service
 
 import (
 	"Refractor/domain"
+	"Refractor/pkg/broadcast"
 	"Refractor/pkg/websocket"
 	"go.uber.org/zap"
 	"net"
@@ -49,4 +50,12 @@ func (s *websocketService) StartPool() {
 
 func (s *websocketService) Broadcast(message *domain.WebsocketMessage) {
 	s.pool.Broadcast <- message
+}
+
+func (s *websocketService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, gameConfig *domain.GameConfig) {
+	panic("implement me")
+}
+
+func (s *websocketService) HandlePlayerQuit(fields broadcast.Fields, serverID int64, gameConfig *domain.GameConfig) {
+	panic("implement me")
 }
