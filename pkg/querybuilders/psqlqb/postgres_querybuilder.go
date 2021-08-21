@@ -83,3 +83,38 @@ func (qb *qb) BuildUpdateQuery(table string, id interface{}, idName string, args
 
 	return query, values
 }
+
+func (qb *qb) BuildUpdateQueryComposite(table string, ids []interface{}, idNames []string, args map[string]interface{}) (string, []interface{}) {
+	var query = fmt.Sprintf("UPDATE %s SET ", table)
+	var values []interface{}
+
+	// Build query
+	var i = 1
+	for key, val := range args {
+		query += fmt.Sprintf("%s = $%d, ", key, i)
+		values = append(values, val)
+		i++
+	}
+
+	// Cut off trailing comma and space
+	query = query[:len(query)-2]
+
+	where := "WHERE "
+	for _, idn := range idNames {
+		where += fmt.Sprintf("%s = $%d", idn, i)
+		i++
+		where += " AND "
+	}
+
+	// Cut off trailing " AND "
+	where = where[:len(where)-5]
+
+	for _, id := range ids {
+		values = append(values, id)
+	}
+
+	// Add where and returning clauses
+	query = query + fmt.Sprintf(" %s RETURNING *;", where)
+
+	return query, values
+}
