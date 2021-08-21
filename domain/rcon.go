@@ -43,4 +43,5 @@ type RCONService interface {
 	GetServerClient(serverID int64) RCONClient
 	StartReconnectRoutine(server *Server, data *ServerData)
 	SubscribeJoin(sub BroadcastSubscriber)
+	SubscribeQuit(sub BroadcastSubscriber)
 }

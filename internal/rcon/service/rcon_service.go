@@ -31,6 +31,9 @@ type rconService struct {
 	clients       map[int64]domain.RCONClient
 	gameService   domain.GameService
 	clientCreator domain.ClientCreator
+
+	joinSubs []domain.BroadcastSubscriber
+	quitSubs []domain.BroadcastSubscriber
 }
 
 func NewRCONService(log *zap.Logger, gs domain.GameService) domain.RCONService {
@@ -39,6 +42,8 @@ func NewRCONService(log *zap.Logger, gs domain.GameService) domain.RCONService {
 		clients:       map[int64]domain.RCONClient{},
 		gameService:   gs,
 		clientCreator: clientcreator.NewClientCreator(),
+		joinSubs:      []domain.BroadcastSubscriber{},
+		quitSubs:      []domain.BroadcastSubscriber{},
 	}
 }
 
@@ -207,4 +212,12 @@ func (s *rconService) StartReconnectRoutine(server *domain.Server, data *domain.
 	}
 
 	s.logger.Info("Reconnect routine terminated", zap.Int64("Server", server.ID))
+}
+
+func (s *rconService) SubscribeJoin(sub domain.BroadcastSubscriber) {
+	s.joinSubs = append(s.joinSubs, sub)
+}
+
+func (s *rconService) SubscribeQuit(sub domain.BroadcastSubscriber) {
+	s.quitSubs = append(s.quitSubs, sub)
 }
