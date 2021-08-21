@@ -46,6 +46,10 @@ type GameConfig struct {
 	// notifications from the server of various events such as player join, player quit, etc.
 	EnableBroadcasts bool
 
+	// BroadcastInitCommands is a string slice containing commands which will be executed on the broadcast listener
+	// socket when connection is established.
+	BroadcastInitCommands []string
+
 	// BroadcastPatterns is a map containing the regex patterns of various broadcast types. These are used to
 	// parse data inside the broadcasts. If EnableBroadcasts is false, this can safely be set to nil or unset.
 	BroadcastPatterns map[string]*regexp.Regexp

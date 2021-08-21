@@ -62,7 +62,7 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 		return err
 	}
 
-	client.SetBroadcastHandler(s.getBroadcastHandler(server.ID, gameConfig))
+	client.SetBroadcastHandler(s.getBroadcastHandler(server.ID, game))
 	client.SetDisconnectHandler(s.getDisconnectHandler(server.ID))
 
 	// Connect the main socket
@@ -73,7 +73,7 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 	// Connect broadcast socket
 	if gameConfig.EnableBroadcasts {
 		errorChan := make(chan error)
-		go client.ListenForBroadcasts([]string{"login, chat"}, errorChan)
+		go client.ListenForBroadcasts(gameConfig.BroadcastInitCommands, errorChan)
 
 		go func() {
 			select {
@@ -109,21 +109,21 @@ func (s *rconService) DeleteClient(serverID int64) {
 	delete(s.clients, serverID)
 }
 
-func (s *rconService) getBroadcastHandler(serverID int64, gameConfig *domain.GameConfig) func(string) {
+func (s *rconService) getBroadcastHandler(serverID int64, game domain.Game) func(string) {
 	return func(message string) {
 		s.logger.Info("Broadcast received", zap.Int64("Server", serverID), zap.String("Message", message))
 
-		bcast := broadcast.GetBroadcastType(message, gameConfig.BroadcastPatterns)
+		bcast := broadcast.GetBroadcastType(message, game.GetConfig().BroadcastPatterns)
 
 		switch bcast.Type {
 		case broadcast.TYPE_JOIN:
 			for _, sub := range s.joinSubs {
-				sub(bcast.Fields, serverID, gameConfig)
+				sub(bcast.Fields, serverID, game)
 			}
 			break
 		case broadcast.TYPE_QUIT:
 			for _, sub := range s.quitSubs {
-				sub(bcast.Fields, serverID, gameConfig)
+				sub(bcast.Fields, serverID, game)
 			}
 			break
 		}

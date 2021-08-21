@@ -36,11 +36,12 @@ func NewMordhauGame(platform domain.Platform) domain.Game {
 			UseRCON:                   true,
 			AlivePingInterval:         time.Second * 30,
 			EnableBroadcasts:          true,
+			BroadcastInitCommands:     []string{"listen login"},
 			PlayerListPollingInterval: time.Hour * 1,
 			EnableChat:                true,
 			BroadcastPatterns: map[string]*regexp.Regexp{
-				broadcast.TYPE_JOIN: regexp.MustCompile("^Login: (?P<Date>[0-9\\.-]+): (?P<Name>.+) \\((?P<PlayFabID>[0-9a-fA-F]+)\\) logged in$"),
-				broadcast.TYPE_QUIT: regexp.MustCompile("^Login: (?P<Date>[0-9\\.-]+): (?P<Name>.+) \\((?P<PlayFabID>[0-9a-fA-F]+)\\) logged out$"),
+				broadcast.TYPE_JOIN: regexp.MustCompile("^Login: (?P<Date>[0-9\\.-]+): (?P<Name>.+) \\((?P<PlayerID>[0-9a-fA-F]+)\\) logged in$"),
+				broadcast.TYPE_QUIT: regexp.MustCompile("^Login: (?P<Date>[0-9\\.-]+): (?P<Name>.+) \\((?P<PlayerID>[0-9a-fA-F]+)\\) logged out$"),
 			},
 			IgnoredBroadcastPatterns: []*regexp.Regexp{
 				regexp.MustCompile("Keeping client alive for another [0-9]+ seconds"),

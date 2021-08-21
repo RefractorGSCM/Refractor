@@ -29,6 +29,9 @@ import (
 	_groupRepo "Refractor/internal/group/repos/postgres"
 	_groupService "Refractor/internal/group/service"
 	"Refractor/internal/mail/service"
+	"Refractor/internal/player/repos/postgres/player"
+	"Refractor/internal/player/repos/postgres/playername"
+	service2 "Refractor/internal/player/service"
 	_rconService "Refractor/internal/rcon/service"
 	_serverHandler "Refractor/internal/server/delivery/http"
 	_postgresServerRepo "Refractor/internal/server/repos/postgres"
@@ -150,9 +153,14 @@ func main() {
 	go websocketService.StartPool()
 	_websocketHandler.ApplyWebsocketHandler(apiServer, websocketService, middlewareBundle, logger)
 
+	playerNameRepo := playername.NewPlayerNameRepo(db, logger)
+	playerRepo := player.NewPlayerRepo(db, playerNameRepo, logger)
+	playerService := service2.NewPlayerService(playerRepo, playerNameRepo, time.Second*2, logger)
+
 	// Subscribe to events
-	rconService.SubscribeJoin(websocketService.HandlePlayerJoin)
-	rconService.SubscribeQuit(websocketService.HandlePlayerQuit)
+	//rconService.SubscribeJoin(websocketService.HandlePlayerJoin)
+	//rconService.SubscribeQuit(websocketService.HandlePlayerQuit)
+	rconService.SubscribeJoin(playerService.HandlePlayerJoin)
 
 	// Connect RCON clients for all existing servers
 	if err := SetupServerClients(rconService, serverService, logger); err != nil {
