@@ -17,7 +17,10 @@
 
 package domain
 
-import "net"
+import (
+	"Refractor/pkg/broadcast"
+	"net"
+)
 
 type WebsocketMessage struct {
 	Type string      `json:"type"`
@@ -33,4 +36,6 @@ type WebsocketService interface {
 	CreateClient(userID string, conn net.Conn)
 	StartPool()
 	Broadcast(message *WebsocketMessage)
+	HandlePlayerJoin(fields broadcast.Fields, serverID int64, gameConfig *GameConfig)
+	HandlePlayerQuit(fields broadcast.Fields, serverID int64, gameConfig *GameConfig)
 }

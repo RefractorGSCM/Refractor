@@ -18,6 +18,7 @@
 package domain
 
 import (
+	"context"
 	"database/sql"
 	"time"
 )
@@ -68,5 +69,11 @@ func (dbp DBPlayer) Player() *Player {
 	return player
 }
 
-type PlayerMeta struct {
+type PlayerRepo interface {
+	Store(ctx context.Context, player *Player) error
+	GetByID(ctx context.Context, platform, id string) (*Player, error)
+	Exists(ctx context.Context, args FindArgs) (bool, error)
+	UpdateName(ctx context.Context, player *Player, newName string) error
+	Update(ctx context.Context, platform, id string, args UpdateArgs) (*Player, error)
+	GetPlayerNames(ctx context.Context, id, platform string) (string, []string, error)
 }

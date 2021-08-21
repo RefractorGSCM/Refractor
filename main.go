@@ -150,6 +150,10 @@ func main() {
 	go websocketService.StartPool()
 	_websocketHandler.ApplyWebsocketHandler(apiServer, websocketService, middlewareBundle, logger)
 
+	// Subscribe to events
+	rconService.SubscribeJoin(websocketService.HandlePlayerJoin)
+	rconService.SubscribeQuit(websocketService.HandlePlayerQuit)
+
 	// Connect RCON clients for all existing servers
 	if err := SetupServerClients(rconService, serverService, logger); err != nil {
 		log.Fatalf("Could not set up RCON server clients. Error: %v", err)
