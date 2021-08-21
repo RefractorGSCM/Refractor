@@ -18,6 +18,7 @@
 package domain
 
 import (
+	"Refractor/pkg/broadcast"
 	"context"
 	"database/sql"
 	"time"
@@ -73,7 +74,16 @@ type PlayerRepo interface {
 	Store(ctx context.Context, player *Player) error
 	GetByID(ctx context.Context, platform, id string) (*Player, error)
 	Exists(ctx context.Context, args FindArgs) (bool, error)
-	UpdateName(ctx context.Context, player *Player, newName string) error
 	Update(ctx context.Context, platform, id string, args UpdateArgs) (*Player, error)
-	GetPlayerNames(ctx context.Context, id, platform string) (string, []string, error)
+}
+
+type PlayerNameRepo interface {
+	Store(ctx context.Context, id, platform, name string) error
+	GetNames(ctx context.Context, id, platform string) (string, []string, error)
+	UpdateName(ctx context.Context, player *Player, newName string) error
+}
+
+type PlayerService interface {
+	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
+	HandlePlayerQuit(fields broadcast.Fields, serverID int64, game Game)
 }

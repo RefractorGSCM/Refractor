@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package postgres
+package player
 
 import (
 	"Refractor/domain"
@@ -24,22 +24,23 @@ import (
 	"database/sql"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"time"
 )
 
 const opTag = "PlayerRepo.Postgres."
 
 type playerRepo struct {
-	db     *sql.DB
-	logger *zap.Logger
-	qb     domain.QueryBuilder
+	db       *sql.DB
+	logger   *zap.Logger
+	qb       domain.QueryBuilder
+	nameRepo domain.PlayerNameRepo
 }
 
-func NewPlayerRepo(db *sql.DB, logger *zap.Logger) domain.PlayerRepo {
+func NewPlayerRepo(db *sql.DB, nameRepo domain.PlayerNameRepo, logger *zap.Logger) domain.PlayerRepo {
 	return &playerRepo{
-		db:     db,
-		logger: logger,
-		qb:     psqlqb.NewPostgresQueryBuilder(),
+		db:       db,
+		logger:   logger,
+		qb:       psqlqb.NewPostgresQueryBuilder(),
+		nameRepo: nameRepo,
 	}
 }
 
@@ -69,6 +70,16 @@ func (r *playerRepo) fetch(ctx context.Context, query string, args ...interface{
 				return nil, errors.Wrap(domain.ErrNotFound, op)
 			}
 
+			return nil, errors.Wrap(err, op)
+		}
+
+		// Get player names
+		player.CurrentName, player.PreviousNames, err = r.nameRepo.GetNames(ctx, player.PlayerID, player.Platform)
+		if err != nil {
+			r.logger.Error("Could not get player names",
+				zap.String("PlayerID", player.PlayerID),
+				zap.String("Platform", player.Platform),
+				zap.Error(err))
 			return nil, errors.Wrap(err, op)
 		}
 
@@ -103,17 +114,9 @@ func (r *playerRepo) Store(ctx context.Context, player *domain.Player) error {
 		return errors.Wrap(err, op)
 	}
 
-	// Insert into PlayerNames
-	query = "INSERT INTO PlayerNames (PlayerID, Platform, Name) VALUES ($1, $2, $3);"
-
-	stmt, err = r.db.PrepareContext(ctx, query)
-	if err != nil {
-		r.logger.Error("Could not prepare PlayerNames insert statement", zap.String("query", query), zap.Error(err))
-		return errors.Wrap(err, op)
-	}
-
-	if _, err := stmt.ExecContext(ctx, player.PlayerID, player.Platform, player.CurrentName); err != nil {
-		r.logger.Error("Could not execute PlayerNames insert query", zap.String("query", query), zap.Error(err))
+	// Store player name
+	if err := r.nameRepo.Store(ctx, player.PlayerID, player.Platform, player.CurrentName); err != nil {
+		r.logger.Error("Could not store player name", zap.Error(err))
 		return errors.Wrap(err, op)
 	}
 
@@ -153,31 +156,6 @@ func (r *playerRepo) Exists(ctx context.Context, args domain.FindArgs) (bool, er
 	return exists, nil
 }
 
-// UpdateName updates the player's name in the database. It does this by adding a new row in PlayerNames
-// if the player never used this name before. If they have used this name before, it updates the DateRecorded
-// field to the current timestamp.
-//
-// The following fields are required on the passed in player: PlayerID, Platform
-//
-// The passed in player struct has it's CurrentName field updated on success.
-func (r *playerRepo) UpdateName(ctx context.Context, player *domain.Player, newName string) error {
-	const op = opTag + "UpdateName"
-
-	query := `INSERT INTO PlayerNames (PlayerID, Platform, Name, DateRecorded) VALUES ($1, $2, $3, $4)
-			ON CONFLICT (PlayerID, Platform) DO UPDATE SET DateRecorded = CURRENT_TIMESTAMP;`
-
-	runeName := []rune(newName)
-
-	if _, err := r.db.ExecContext(ctx, query, player.PlayerID, player.Platform, string(runeName), time.Now()); err != nil {
-		r.logger.Error("Could not execute name update query", zap.Error(err))
-		return errors.Wrap(err, op)
-	}
-
-	player.CurrentName = newName
-
-	return nil
-}
-
 func (r *playerRepo) Update(ctx context.Context, platform, id string, args domain.UpdateArgs) (*domain.Player, error) {
 	const op = opTag + "Update"
 
@@ -200,40 +178,17 @@ func (r *playerRepo) Update(ctx context.Context, platform, id string, args domai
 		r.logger.Error("Could not scan updated player", zap.Error(err))
 		return nil, errors.Wrap(err, op)
 	}
+	// Get player names
+	updatedPlayer.CurrentName, updatedPlayer.PreviousNames, err = r.nameRepo.GetNames(ctx, updatedPlayer.PlayerID, updatedPlayer.Platform)
+	if err != nil {
+		r.logger.Error("Could not get player names",
+			zap.String("PlayerID", updatedPlayer.PlayerID),
+			zap.String("Platform", updatedPlayer.Platform),
+			zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
 
 	return updatedPlayer.Player(), nil
-}
-
-func (r *playerRepo) GetPlayerNames(ctx context.Context, id, platform string) (string, []string, error) {
-	const op = opTag + "GetPlayerNames"
-
-	query := "SELECT Name FROM PlayerNames WHERE PlayerID = $1 AND Platform = $2 ORDER BY DateRecorded DESC;"
-
-	rows, err := r.db.QueryContext(ctx, query, id, platform)
-	if err != nil {
-		return "", nil, err
-	}
-
-	var names []string
-
-	for rows.Next() {
-		name := ""
-
-		err = rows.Scan(&name)
-		if err != nil {
-			r.logger.Error("Could not scan player name", zap.Error(err))
-			return "", nil, errors.Wrap(err, op)
-		}
-
-		names = append(names, name)
-	}
-
-	if names == nil {
-		return "", nil, errors.Wrap(domain.ErrNotFound, op)
-	}
-
-	// PlayerNames are ordered in descending order by DateRecorded so index 0 will be the most recent name
-	return names[0], names[1:], nil
 }
 
 // Scan helpers
