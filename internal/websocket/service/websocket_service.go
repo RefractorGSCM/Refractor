@@ -18,22 +18,32 @@
 package service
 
 import (
+	"Refractor/authcheckers"
 	"Refractor/domain"
 	"Refractor/pkg/broadcast"
 	"Refractor/pkg/websocket"
+	"context"
+	"fmt"
 	"go.uber.org/zap"
 	"net"
+	"time"
 )
 
 type websocketService struct {
-	pool   *websocket.Pool
-	logger *zap.Logger
+	pool       *websocket.Pool
+	playerRepo domain.PlayerRepo
+	authorizer domain.Authorizer
+	timeout    time.Duration
+	logger     *zap.Logger
 }
 
-func NewWebsocketService(log *zap.Logger) domain.WebsocketService {
+func NewWebsocketService(pr domain.PlayerRepo, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.WebsocketService {
 	return &websocketService{
-		pool:   websocket.NewPool(log),
-		logger: log,
+		pool:       websocket.NewPool(log),
+		playerRepo: pr,
+		authorizer: a,
+		timeout:    to,
+		logger:     log,
 	}
 }
 
@@ -52,10 +62,99 @@ func (s *websocketService) Broadcast(message *domain.WebsocketMessage) {
 	s.pool.Broadcast <- message
 }
 
+func (s *websocketService) BroadcastServerMessage(message *domain.WebsocketMessage, serverID int64, authChecker domain.AuthChecker) error {
+	for _, client := range s.pool.Clients {
+		fmt.Println(client.ID, client.UserID)
+
+		hasPermission, err := s.authorizer.HasPermission(context.TODO(), domain.AuthScope{
+			Type: domain.AuthObjServer,
+			ID:   serverID,
+		}, client.UserID, authChecker)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("hasPermission?", hasPermission)
+
+		if hasPermission {
+			fmt.Println("Broadcasting")
+			s.pool.SendDirect <- &domain.WebsocketDirectMessage{
+				ClientID: client.ID,
+				Message:  message,
+			}
+		}
+	}
+
+	return nil
+}
+
+type playerJoinQuitData struct {
+	ServerID int64  `json:"serverId"`
+	PlayerID string `json:"id"`
+	Platform string `json:"platform"`
+	Name     string `json:"name"`
+	Watched  bool   `json:"watched"`
+}
+
 func (s *websocketService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
-	panic("implement me")
+	ctx, cancel := context.WithTimeout(context.TODO(), s.timeout)
+	defer cancel()
+
+	platform := game.GetPlatform().GetName()
+	playerID := fields["PlayerID"]
+
+	foundPlayer, err := s.playerRepo.GetByID(ctx, game.GetPlatform().GetName(), fields["PlayerID"])
+	if err != nil {
+		s.logger.Warn("Could not get player by ID",
+			zap.String("PlayerID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return
+	}
+
+	if err := s.BroadcastServerMessage(&domain.WebsocketMessage{
+		Type: "player-join",
+		Body: playerJoinQuitData{
+			ServerID: serverID,
+			PlayerID: playerID,
+			Platform: platform,
+			Name:     foundPlayer.CurrentName,
+			Watched:  foundPlayer.Watched,
+		},
+	}, serverID, authcheckers.CanViewServer); err != nil {
+		s.logger.Warn("Could not broadcast player join message",
+			zap.Error(err))
+		return
+	}
 }
 
 func (s *websocketService) HandlePlayerQuit(fields broadcast.Fields, serverID int64, game domain.Game) {
-	panic("implement me")
+	ctx, cancel := context.WithTimeout(context.TODO(), s.timeout)
+	defer cancel()
+
+	platform := game.GetPlatform().GetName()
+	playerID := fields["PlayerID"]
+
+	foundPlayer, err := s.playerRepo.GetByID(ctx, game.GetPlatform().GetName(), fields["PlayerID"])
+	if err != nil {
+		s.logger.Warn("Could not get player by ID",
+			zap.String("PlayerID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return
+	}
+
+	if err := s.BroadcastServerMessage(&domain.WebsocketMessage{
+		Type: "player-quit",
+		Body: playerJoinQuitData{
+			ServerID: serverID,
+			PlayerID: playerID,
+			Platform: platform,
+			Name:     foundPlayer.CurrentName,
+		},
+	}, serverID, authcheckers.CanViewServer); err != nil {
+		s.logger.Warn("Could not broadcast player quit message",
+			zap.Error(err))
+		return
+	}
 }

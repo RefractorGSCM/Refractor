@@ -36,6 +36,7 @@ type WebsocketService interface {
 	CreateClient(userID string, conn net.Conn)
 	StartPool()
 	Broadcast(message *WebsocketMessage)
+	BroadcastServerMessage(message *WebsocketMessage, serverID int64, authChecker AuthChecker) error
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 	HandlePlayerQuit(fields broadcast.Fields, serverID int64, game Game)
 }

@@ -149,17 +149,18 @@ func main() {
 
 	rconService := _rconService.NewRCONService(logger, gameService)
 
-	websocketService := _websocketService.NewWebsocketService(logger)
+	playerNameRepo := playername.NewPlayerNameRepo(db, logger)
+	playerRepo := player.NewPlayerRepo(db, playerNameRepo, logger)
+
+	websocketService := _websocketService.NewWebsocketService(playerRepo, authorizer, time.Second*2, logger)
 	go websocketService.StartPool()
 	_websocketHandler.ApplyWebsocketHandler(apiServer, websocketService, middlewareBundle, logger)
 
-	playerNameRepo := playername.NewPlayerNameRepo(db, logger)
-	playerRepo := player.NewPlayerRepo(db, playerNameRepo, logger)
 	playerService := service2.NewPlayerService(playerRepo, playerNameRepo, time.Second*2, logger)
 
 	// Subscribe to events
-	//rconService.SubscribeJoin(websocketService.HandlePlayerJoin)
-	//rconService.SubscribeQuit(websocketService.HandlePlayerQuit)
+	rconService.SubscribeJoin(websocketService.HandlePlayerJoin)
+	rconService.SubscribeQuit(websocketService.HandlePlayerQuit)
 	rconService.SubscribeJoin(playerService.HandlePlayerJoin)
 	rconService.SubscribeQuit(playerService.HandlePlayerQuit)
 

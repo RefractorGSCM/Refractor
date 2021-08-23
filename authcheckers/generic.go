@@ -20,6 +20,7 @@ package authcheckers
 import (
 	"Refractor/pkg/bitperms"
 	"Refractor/pkg/perms"
+	"fmt"
 )
 
 func DenyAll(permissions *bitperms.Permissions) (bool, error) {
@@ -39,11 +40,20 @@ func RequireAdmin(permissions *bitperms.Permissions) (bool, error) {
 }
 
 func CanViewServer(permissions *bitperms.Permissions) (bool, error) {
+	fmt.Println("CanViewServers", permissions.String())
+
 	if permissions.CheckFlag(perms.GetFlag(perms.FlagViewServers)) {
+		fmt.Println("Has FlagViewServers")
 		return true, nil
 	}
 
 	if permissions.CheckFlag(perms.GetFlag(perms.FlagAdministrator)) {
+		fmt.Println("Has FlagAdministrator")
+		return true, nil
+	}
+
+	if permissions.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {
+		fmt.Println("Has FlagSuperAdmin")
 		return true, nil
 	}
 
