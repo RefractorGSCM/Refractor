@@ -21,6 +21,7 @@ import (
 	"Refractor/domain"
 	"Refractor/pkg/bitperms"
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -32,6 +33,8 @@ func (a *authorizer) hasPermissionServer(ctx context.Context, userID string, ser
 	if err != nil {
 		return false, errors.Wrap(err, op)
 	}
+
+	fmt.Println("Computed perms", userID, serverID, computedPerms.String())
 
 	return checkAuth(computedPerms)
 }
