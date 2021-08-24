@@ -27,7 +27,7 @@ import (
 type Player struct {
 	PlayerID      string    `json:"id"`
 	Platform      string    `json:"platform"`
-	CurrentName   string    `json:"current_name"`
+	CurrentName   string    `json:"name"`
 	PreviousNames []string  `json:"previous_names"`
 	Watched       bool      `json:"watched"`
 	LastSeen      time.Time `json:"last_seen"`

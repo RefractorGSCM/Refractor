@@ -140,17 +140,17 @@ func main() {
 	gameService := _gameService.NewGameService()
 	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
 
+	playerNameRepo := playername.NewPlayerNameRepo(db, logger)
+	playerRepo := player.NewPlayerRepo(db, playerNameRepo, logger)
+
 	serverRepo := _postgresServerRepo.NewServerRepo(db, logger, config)
-	serverService := _serverService.NewServerService(serverRepo, authorizer, time.Second*2, logger)
+	serverService := _serverService.NewServerService(serverRepo, playerRepo, authorizer, time.Second*2, logger)
 	_serverHandler.ApplyServerHandler(apiGroup, serverService, authorizer, middlewareBundle, logger)
 
 	userService := _userService.NewUserService(userMetaRepo, authRepo, groupRepo, authorizer, time.Second*2, logger)
 	_userHandler.ApplyUserHandler(apiGroup, userService, authService, authorizer, middlewareBundle, logger)
 
 	rconService := _rconService.NewRCONService(logger, gameService)
-
-	playerNameRepo := playername.NewPlayerNameRepo(db, logger)
-	playerRepo := player.NewPlayerRepo(db, playerNameRepo, logger)
 
 	websocketService := _websocketService.NewWebsocketService(playerRepo, authorizer, time.Second*2, logger)
 	go websocketService.StartPool()
@@ -163,6 +163,8 @@ func main() {
 	rconService.SubscribeQuit(websocketService.HandlePlayerQuit)
 	rconService.SubscribeJoin(playerService.HandlePlayerJoin)
 	rconService.SubscribeQuit(playerService.HandlePlayerQuit)
+	rconService.SubscribeJoin(serverService.HandlePlayerJoin)
+	rconService.SubscribeQuit(serverService.HandlePlayerQuit)
 
 	// Connect RCON clients for all existing servers
 	if err := SetupServerClients(rconService, serverService, logger); err != nil {
