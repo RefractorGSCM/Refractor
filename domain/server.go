@@ -18,6 +18,7 @@
 package domain
 
 import (
+	"Refractor/pkg/broadcast"
 	"context"
 	"database/sql"
 	"time"
@@ -97,4 +98,6 @@ type ServerService interface {
 	GetAllServerData() ([]*ServerData, error)
 	GetServerData(id int64) (*ServerData, error)
 	Update(c context.Context, id int64, args UpdateArgs) (*Server, error)
+	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
+	HandlePlayerQuit(fields broadcast.Fields, serverID int64, game Game)
 }

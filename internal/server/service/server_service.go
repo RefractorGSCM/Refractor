@@ -20,6 +20,7 @@ package service
 import (
 	"Refractor/domain"
 	"Refractor/pkg/bitperms"
+	"Refractor/pkg/broadcast"
 	"Refractor/pkg/perms"
 	"context"
 	"fmt"
@@ -29,15 +30,17 @@ import (
 
 type serverService struct {
 	repo       domain.ServerRepo
+	playerRepo domain.PlayerRepo
 	authorizer domain.Authorizer
 	timeout    time.Duration
 	logger     *zap.Logger
 	serverData map[int64]*domain.ServerData
 }
 
-func NewServerService(repo domain.ServerRepo, a domain.Authorizer, timeout time.Duration, log *zap.Logger) domain.ServerService {
+func NewServerService(repo domain.ServerRepo, pr domain.PlayerRepo, a domain.Authorizer, timeout time.Duration, log *zap.Logger) domain.ServerService {
 	return &serverService{
 		repo:       repo,
+		playerRepo: pr,
 		authorizer: a,
 		timeout:    timeout,
 		logger:     log,
@@ -50,6 +53,11 @@ func (s *serverService) Store(c context.Context, server *domain.Server) error {
 	defer cancel()
 
 	return s.repo.Store(ctx, server)
+}
+
+type serverResponse struct {
+	Data domain.ServerData `json:"data"`
+	*domain.Server
 }
 
 func (s *serverService) GetByID(c context.Context, id int64) (*domain.Server, error) {
@@ -173,4 +181,30 @@ func (s *serverService) GetServerData(id int64) (*domain.ServerData, error) {
 	}
 
 	return data, nil
+}
+
+func (s *serverService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
+	ctx, cancel := context.WithTimeout(context.TODO(), s.timeout)
+	defer cancel()
+
+	playerID := fields["PlayerID"]
+	platform := game.GetPlatform().GetName()
+
+	player, err := s.playerRepo.GetByID(ctx, platform, playerID)
+	if err != nil {
+		s.logger.Warn("Could not get player by ID",
+			zap.String("PlayerID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return
+	}
+
+	// Add player to server data
+	s.serverData[serverID].OnlinePlayers[playerID] = player
+}
+
+func (s *serverService) HandlePlayerQuit(fields broadcast.Fields, serverID int64, game domain.Game) {
+	playerID := fields["PlayerID"]
+	// Remove player from server data
+	delete(s.serverData[serverID].OnlinePlayers, playerID)
 }

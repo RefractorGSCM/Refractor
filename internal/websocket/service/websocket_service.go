@@ -23,7 +23,6 @@ import (
 	"Refractor/pkg/broadcast"
 	"Refractor/pkg/websocket"
 	"context"
-	"fmt"
 	"go.uber.org/zap"
 	"net"
 	"time"
@@ -64,8 +63,6 @@ func (s *websocketService) Broadcast(message *domain.WebsocketMessage) {
 
 func (s *websocketService) BroadcastServerMessage(message *domain.WebsocketMessage, serverID int64, authChecker domain.AuthChecker) error {
 	for _, client := range s.pool.Clients {
-		fmt.Println(client.ID, client.UserID)
-
 		hasPermission, err := s.authorizer.HasPermission(context.TODO(), domain.AuthScope{
 			Type: domain.AuthObjServer,
 			ID:   serverID,
@@ -74,10 +71,7 @@ func (s *websocketService) BroadcastServerMessage(message *domain.WebsocketMessa
 			return err
 		}
 
-		fmt.Println("hasPermission?", hasPermission)
-
 		if hasPermission {
-			fmt.Println("Broadcasting")
 			s.pool.SendDirect <- &domain.WebsocketDirectMessage{
 				ClientID: client.ID,
 				Message:  message,

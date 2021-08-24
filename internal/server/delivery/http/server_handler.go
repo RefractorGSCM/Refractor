@@ -27,6 +27,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
@@ -107,16 +108,16 @@ func (h *serverHandler) CreateServer(c echo.Context) error {
 }
 
 type resServer struct {
-	ID            int64     `json:"id"`
-	Game          string    `json:"game"`
-	Name          string    `json:"name"`
-	Address       string    `json:"address"`
-	RCONPort      string    `json:"rcon_port"`
-	Deactivated   bool      `json:"deactivated"`
-	CreatedAt     time.Time `json:"created_at"`
-	ModifiedAt    time.Time `json:"modified_at"`
-	OnlinePlayers int       `json:"online_players"`
-	Status        string    `json:"status"`
+	ID            int64            `json:"id"`
+	Game          string           `json:"game"`
+	Name          string           `json:"name"`
+	Address       string           `json:"address"`
+	RCONPort      string           `json:"rcon_port"`
+	Deactivated   bool             `json:"deactivated"`
+	CreatedAt     time.Time        `json:"created_at"`
+	ModifiedAt    time.Time        `json:"modified_at"`
+	OnlinePlayers []*domain.Player `json:"online_players"`
+	Status        string           `json:"status"`
 }
 
 // GetServers is the route handler for /api/v1/servers
@@ -137,7 +138,7 @@ func (h *serverHandler) GetServers(c echo.Context) error {
 
 	// Transform servers into resServers
 	for _, server := range servers {
-		resServers = append(resServers, &resServer{
+		resServer := &resServer{
 			ID:          server.ID,
 			Game:        server.Game,
 			Name:        server.Name,
@@ -146,7 +147,25 @@ func (h *serverHandler) GetServers(c echo.Context) error {
 			Deactivated: server.Deactivated,
 			CreatedAt:   server.CreatedAt,
 			ModifiedAt:  server.ModifiedAt,
-		})
+		}
+
+		// Get server's data
+		data, err := h.service.GetServerData(server.ID)
+		if err == nil {
+			for _, op := range data.OnlinePlayers {
+				resServer.OnlinePlayers = append(resServer.OnlinePlayers, op)
+			}
+
+			if len(resServer.OnlinePlayers) < 1 {
+				resServer.OnlinePlayers = []*domain.Player{}
+			}
+
+			resServer.Status = data.Status
+		} else if errors.Cause(err) != domain.ErrNotFound {
+			return err
+		}
+
+		resServers = append(resServers, resServer)
 	}
 
 	return c.JSON(http.StatusOK, &domain.Response{
