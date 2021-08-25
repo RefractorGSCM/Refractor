@@ -47,7 +47,8 @@ func (r *playerNameRepo) Store(ctx context.Context, id, platform, name string) e
 	const op = opTag + "Store"
 
 	// Insert into PlayerNames
-	query := "INSERT INTO PlayerNames (PlayerID, Platform, Name, DateRecorded) VALUES ($1, $2, $3, $4);"
+	query := `INSERT INTO PlayerNames (PlayerID, Platform, Name, DateRecorded) VALUES ($1, $2, $3, $4)
+			ON CONFLICT (PlayerID, Platform, Name) DO UPDATE SET DateRecorded = CURRENT_TIMESTAMP;`
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
@@ -74,7 +75,7 @@ func (r *playerNameRepo) UpdateName(ctx context.Context, player *domain.Player, 
 	const op = opTag + "UpdateName"
 
 	query := `INSERT INTO PlayerNames (PlayerID, Platform, Name, DateRecorded) VALUES ($1, $2, $3, $4)
-			ON CONFLICT (PlayerID, Platform) DO UPDATE SET DateRecorded = CURRENT_TIMESTAMP;`
+			ON CONFLICT (PlayerID, Platform, Name) DO UPDATE SET DateRecorded = CURRENT_TIMESTAMP;`
 
 	runeName := []rune(newName)
 

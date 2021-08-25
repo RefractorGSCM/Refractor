@@ -53,3 +53,15 @@ func CanViewServer(permissions *bitperms.Permissions) (bool, error) {
 
 	return false, nil
 }
+
+func CanViewPlayerRecords(permissions *bitperms.Permissions) (bool, error) {
+	if permissions.CheckFlag(perms.GetFlag(perms.FlagViewPlayerRecords)) {
+		return true, nil
+	}
+
+	if permissions.CheckFlag(perms.GetFlag(perms.FlagAdministrator)) {
+		return true, nil
+	}
+
+	return false, nil
+}
