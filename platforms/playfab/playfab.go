@@ -25,10 +25,10 @@ func NewPlayfabPlatform() domain.Platform {
 	return &playfab{}
 }
 
-func (p *playfab) GetName() string {
+func (p *playfab) GetDisplayName() string {
 	return "PlayFab"
 }
 
-func (p *playfab) GetPlayerIDField() string {
-	return "PlayFabID"
+func (p *playfab) GetName() string {
+	return "playfab"
 }

@@ -136,6 +136,7 @@ func (s *playerService) HandlePlayerQuit(fields broadcast.Fields, serverID int64
 			zap.String("PlayerID", playerID),
 			zap.String("Platform", platform),
 			zap.Error(err))
+		return
 	}
 
 	// Update their LastSeen field to the current time
@@ -148,4 +149,11 @@ func (s *playerService) HandlePlayerQuit(fields broadcast.Fields, serverID int64
 			zap.Error(err))
 		return
 	}
+}
+
+func (s *playerService) GetPlayer(c context.Context, id, platform string) (*domain.Player, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.GetByID(ctx, platform, id)
 }

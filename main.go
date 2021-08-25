@@ -29,6 +29,7 @@ import (
 	_groupRepo "Refractor/internal/group/repos/postgres"
 	_groupService "Refractor/internal/group/service"
 	"Refractor/internal/mail/service"
+	_playerHandler "Refractor/internal/player/delivery/http"
 	"Refractor/internal/player/repos/postgres/player"
 	"Refractor/internal/player/repos/postgres/playername"
 	service2 "Refractor/internal/player/service"
@@ -157,12 +158,13 @@ func main() {
 	_websocketHandler.ApplyWebsocketHandler(apiServer, websocketService, middlewareBundle, logger)
 
 	playerService := service2.NewPlayerService(playerRepo, playerNameRepo, time.Second*2, logger)
+	_playerHandler.ApplyPlayerHandler(apiGroup, playerService, authorizer, middlewareBundle, logger)
 
 	// Subscribe to events
-	rconService.SubscribeJoin(websocketService.HandlePlayerJoin)
-	rconService.SubscribeQuit(websocketService.HandlePlayerQuit)
 	rconService.SubscribeJoin(playerService.HandlePlayerJoin)
 	rconService.SubscribeQuit(playerService.HandlePlayerQuit)
+	rconService.SubscribeJoin(websocketService.HandlePlayerJoin)
+	rconService.SubscribeQuit(websocketService.HandlePlayerQuit)
 	rconService.SubscribeJoin(serverService.HandlePlayerJoin)
 	rconService.SubscribeQuit(serverService.HandlePlayerQuit)
 

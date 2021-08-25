@@ -86,4 +86,5 @@ type PlayerNameRepo interface {
 type PlayerService interface {
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 	HandlePlayerQuit(fields broadcast.Fields, serverID int64, game Game)
+	GetPlayer(c context.Context, id, platform string) (*Player, error)
 }
