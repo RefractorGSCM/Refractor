@@ -22,6 +22,7 @@ import (
 	"Refractor/internal/rcon/clientcreator"
 	"Refractor/pkg/broadcast"
 	"Refractor/pkg/regexutils"
+	"fmt"
 	"go.uber.org/zap"
 	"net"
 	"time"
@@ -33,18 +34,20 @@ type rconService struct {
 	gameService   domain.GameService
 	clientCreator domain.ClientCreator
 
-	joinSubs []domain.BroadcastSubscriber
-	quitSubs []domain.BroadcastSubscriber
+	joinSubs       []domain.BroadcastSubscriber
+	quitSubs       []domain.BroadcastSubscriber
+	playerListSubs []domain.PlayerListUpdateSubscriber
 }
 
 func NewRCONService(log *zap.Logger, gs domain.GameService) domain.RCONService {
 	return &rconService{
-		logger:        log,
-		clients:       map[int64]domain.RCONClient{},
-		gameService:   gs,
-		clientCreator: clientcreator.NewClientCreator(),
-		joinSubs:      []domain.BroadcastSubscriber{},
-		quitSubs:      []domain.BroadcastSubscriber{},
+		logger:         log,
+		clients:        map[int64]domain.RCONClient{},
+		gameService:    gs,
+		clientCreator:  clientcreator.NewClientCreator(),
+		joinSubs:       []domain.BroadcastSubscriber{},
+		quitSubs:       []domain.BroadcastSubscriber{},
+		playerListSubs: []domain.PlayerListUpdateSubscriber{},
 	}
 }
 
@@ -92,7 +95,18 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 	s.clients[server.ID] = client
 
 	// Get currently online players
-	//onlinePlayers := s.getOnlinePlayers(server.ID, game)
+	onlinePlayers, err := s.getOnlinePlayers(server.ID, game)
+	if err != nil {
+		return err
+	}
+
+	// Dispatch player join events for all currently online players
+	for _, op := range onlinePlayers {
+		fmt.Println(op.PlayerID, op.Name)
+		for _, sub := range s.joinSubs {
+			sub(broadcast.Fields{"PlayerID": op.PlayerID, "Name": op.Name}, server.ID, game)
+		}
+	}
 
 	return nil
 }
@@ -165,6 +179,8 @@ func (s *rconService) getOnlinePlayers(serverID int64, game domain.Game) ([]*onl
 	var onlinePlayers []*onlinePlayer
 
 	for _, player := range players {
+		fmt.Println(player)
+
 		fields := regexutils.MapNamedMatches(playerListPattern, player)
 
 		onlinePlayers = append(onlinePlayers, &onlinePlayer{
@@ -236,4 +252,8 @@ func (s *rconService) SubscribeJoin(sub domain.BroadcastSubscriber) {
 
 func (s *rconService) SubscribeQuit(sub domain.BroadcastSubscriber) {
 	s.quitSubs = append(s.quitSubs, sub)
+}
+
+func (s *rconService) SubscribePlayerListUpdate(sub domain.PlayerListUpdateSubscriber) {
+	s.playerListSubs = append(s.playerListSubs, sub)
 }
