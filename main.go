@@ -28,11 +28,14 @@ import (
 	_groupHandler "Refractor/internal/group/delivery/http"
 	_groupRepo "Refractor/internal/group/repos/postgres"
 	_groupService "Refractor/internal/group/service"
+	_infractionHandler "Refractor/internal/infraction/delivery/http"
+	_infractionRepo "Refractor/internal/infraction/repos/postgres"
+	_infractionService "Refractor/internal/infraction/service"
 	"Refractor/internal/mail/service"
 	_playerHandler "Refractor/internal/player/delivery/http"
-	"Refractor/internal/player/repos/postgres/player"
-	"Refractor/internal/player/repos/postgres/playername"
-	service2 "Refractor/internal/player/service"
+	_playerRepo "Refractor/internal/player/repos/postgres/player"
+	_playerNameRepo "Refractor/internal/player/repos/postgres/playername"
+	_playerService "Refractor/internal/player/service"
 	_rconService "Refractor/internal/rcon/service"
 	_serverHandler "Refractor/internal/server/delivery/http"
 	_postgresServerRepo "Refractor/internal/server/repos/postgres"
@@ -141,8 +144,8 @@ func main() {
 	gameService := _gameService.NewGameService()
 	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
 
-	playerNameRepo := playername.NewPlayerNameRepo(db, logger)
-	playerRepo := player.NewPlayerRepo(db, playerNameRepo, logger)
+	playerNameRepo := _playerNameRepo.NewPlayerNameRepo(db, logger)
+	playerRepo := _playerRepo.NewPlayerRepo(db, playerNameRepo, logger)
 
 	serverRepo := _postgresServerRepo.NewServerRepo(db, logger, config)
 	serverService := _serverService.NewServerService(serverRepo, playerRepo, authorizer, time.Second*2, logger)
@@ -157,8 +160,12 @@ func main() {
 	go websocketService.StartPool()
 	_websocketHandler.ApplyWebsocketHandler(apiServer, websocketService, middlewareBundle, logger)
 
-	playerService := service2.NewPlayerService(playerRepo, playerNameRepo, time.Second*2, logger)
+	playerService := _playerService.NewPlayerService(playerRepo, playerNameRepo, time.Second*2, logger)
 	_playerHandler.ApplyPlayerHandler(apiGroup, playerService, authorizer, middlewareBundle, logger)
+
+	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)
+	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, serverRepo, time.Second*2, logger)
+	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, authorizer, middlewareBundle, logger)
 
 	// Subscribe to events
 	rconService.SubscribeJoin(playerService.HandlePlayerJoin)

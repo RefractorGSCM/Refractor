@@ -205,6 +205,22 @@ func (r *serverRepo) Update(ctx context.Context, id int64, args domain.UpdateArg
 	return updatedServer.Server(), nil
 }
 
+func (r *serverRepo) Exists(ctx context.Context, args domain.FindArgs) (bool, error) {
+	const op = opTag + "Exists"
+
+	query, values := r.qb.BuildExistsQuery("Servers", args)
+
+	row := r.db.QueryRowContext(ctx, query, values...)
+
+	var exists bool
+	if err := row.Scan(&exists); err != nil {
+		r.logger.Error("Could not scan row", zap.Error(err))
+		return false, errors.Wrap(err, op)
+	}
+
+	return exists, nil
+}
+
 // Scan helpers
 func (r *serverRepo) scanRow(row *sql.Row, server *domain.DBServer) error {
 	err := row.Scan(&server.ID, &server.Game, &server.Name, &server.Address, &server.RCONPort, &server.RCONPassword, &server.Deactivated, &server.CreatedAt, &server.ModifiedAt)

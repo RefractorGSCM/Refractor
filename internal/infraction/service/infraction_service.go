@@ -21,20 +21,25 @@ import (
 	"Refractor/domain"
 	"context"
 	"go.uber.org/zap"
+	"net/http"
 	"time"
 )
 
 type infractionService struct {
-	repo    domain.InfractionRepo
-	timeout time.Duration
-	logger  *zap.Logger
+	repo       domain.InfractionRepo
+	playerRepo domain.PlayerRepo
+	serverRepo domain.ServerRepo
+	timeout    time.Duration
+	logger     *zap.Logger
 }
 
-func NewInfractionService(repo domain.InfractionRepo, to time.Duration, log *zap.Logger) domain.InfractionService {
+func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, sr domain.ServerRepo, to time.Duration, log *zap.Logger) domain.InfractionService {
 	return &infractionService{
-		repo:    repo,
-		timeout: to,
-		logger:  log,
+		repo:       repo,
+		playerRepo: pr,
+		serverRepo: sr,
+		timeout:    to,
+		logger:     log,
 	}
 }
 
@@ -42,7 +47,46 @@ func (s *infractionService) Store(c context.Context, infraction *domain.Infracti
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	infraction, err := s.repo.Store(ctx, infraction)
+	// Ensure that player exists
+	playerExists, err := s.playerRepo.Exists(ctx, domain.FindArgs{
+		"PlayerID": infraction.PlayerID,
+		"Platform": infraction.Platform,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !playerExists {
+		return nil, &domain.HTTPError{
+			Cause:   nil,
+			Message: "Player not found",
+			ValidationErrors: map[string]string{
+				"player_id": "player not found",
+			},
+			Status: http.StatusNotFound,
+		}
+	}
+
+	// Ensure the server exists
+	serverExists, err := s.serverRepo.Exists(ctx, domain.FindArgs{
+		"ServerID": infraction.ServerID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !serverExists {
+		return nil, &domain.HTTPError{
+			Cause:   nil,
+			Message: "Server not found",
+			ValidationErrors: map[string]string{
+				"server_id": "server not found",
+			},
+			Status: http.StatusNotFound,
+		}
+	}
+
+	infraction, err = s.repo.Store(ctx, infraction)
 	if err != nil {
 		return nil, err
 	}

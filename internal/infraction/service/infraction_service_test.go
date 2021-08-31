@@ -40,15 +40,21 @@ func Test(t *testing.T) {
 
 	g.Describe("Infraction Service", func() {
 		var mockRepo *mocks.InfractionRepo
+		var playerRepo *mocks.PlayerRepo
+		var serverRepo *mocks.ServerRepo
 		var service *infractionService
 		var ctx = context.TODO()
 
 		g.BeforeEach(func() {
 			mockRepo = new(mocks.InfractionRepo)
+			playerRepo = new(mocks.PlayerRepo)
+			serverRepo = new(mocks.ServerRepo)
 			service = &infractionService{
-				repo:    mockRepo,
-				timeout: time.Second * 2,
-				logger:  zap.NewNop(),
+				repo:       mockRepo,
+				playerRepo: playerRepo,
+				serverRepo: serverRepo,
+				timeout:    time.Second * 2,
+				logger:     zap.NewNop(),
 			}
 		})
 
@@ -72,6 +78,8 @@ func Test(t *testing.T) {
 					}
 
 					mockRepo.On("Store", mock.Anything, mock.Anything).Return(mockInfraction, nil)
+					playerRepo.On("Exists", mock.Anything, mock.Anything).Return(true, nil)
+					serverRepo.On("Exists", mock.Anything, mock.Anything).Return(true, nil)
 				})
 
 				g.It("Should not return an error", func() {
@@ -90,8 +98,55 @@ func Test(t *testing.T) {
 				})
 			})
 
+			g.Describe("Player not found", func() {
+				g.BeforeEach(func() {
+					playerRepo.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
+				})
+
+				g.It("Should return an HTTP error", func() {
+					_, err := service.Store(ctx, &domain.Infraction{
+						Platform: "platform",
+						PlayerID: "playerid",
+					})
+
+					Expect(err).ToNot(BeNil())
+
+					httpErr, ok := err.(*domain.HTTPError)
+
+					Expect(ok).To(BeTrue())
+					Expect(httpErr.Message).To(Equal("Player not found"))
+					mockRepo.AssertExpectations(t)
+					playerRepo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("Server not found", func() {
+				g.BeforeEach(func() {
+					playerRepo.On("Exists", mock.Anything, mock.Anything).Return(true, nil)
+					serverRepo.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
+				})
+
+				g.It("Should return an HTTP error", func() {
+					_, err := service.Store(ctx, &domain.Infraction{
+						Platform: "platform",
+						PlayerID: "playerid",
+					})
+
+					Expect(err).ToNot(BeNil())
+
+					httpErr, ok := err.(*domain.HTTPError)
+
+					Expect(ok).To(BeTrue())
+					Expect(httpErr.Message).To(Equal("Server not found"))
+					mockRepo.AssertExpectations(t)
+					playerRepo.AssertExpectations(t)
+				})
+			})
+
 			g.Describe("Repository error", func() {
 				g.BeforeEach(func() {
+					playerRepo.On("Exists", mock.Anything, mock.Anything).Return(true, nil)
+					serverRepo.On("Exists", mock.Anything, mock.Anything).Return(true, nil)
 					mockRepo.On("Store", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err"))
 				})
 
