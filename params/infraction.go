@@ -40,3 +40,22 @@ func (body CreateWarningParams) Validate() error {
 		validation.Field(&body.ServerID, validation.Required, is.Int, validation.Min(1), validation.Max(math.MaxInt32)),
 		validation.Field(&body.Reason, validation.Required, validation.Length(1, 1024)))
 }
+
+type CreateMuteParams struct {
+	PlayerID int64  `json:"player_id" form:"player_id"`
+	Platform string `json:"platform" form:"platform"`
+	ServerID int64  `json:"server_id" form:"server_id"`
+	Reason   string `json:"reason" form:"reason"`
+	Duration int    `json:"duration" form:"duration"`
+}
+
+func (body CreateMuteParams) Validate() error {
+	body.Reason = strings.TrimSpace(body.Reason)
+
+	return ValidateStruct(&body,
+		validation.Field(&body.PlayerID, validation.Required, validation.Length(1, 80)),
+		validation.Field(&body.Platform, validation.Required, validation.Length(1, 128)),
+		validation.Field(&body.ServerID, validation.Required, is.Int, validation.Min(1), validation.Max(math.MaxInt32)),
+		validation.Field(&body.Reason, validation.Required, validation.Length(1, 1024)),
+		validation.Field(&body.Duration, validation.Required, is.Int, validation.Min(0), validation.Max(math.MaxInt32)))
+}
