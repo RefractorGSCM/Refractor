@@ -265,5 +265,31 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("Delete()", func() {
+			g.Describe("Target infraction exists", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("DELETE FROM Infractions").WillReturnResult(sqlmock.NewResult(0, 1))
+				})
+
+				g.It("Should not return an error", func() {
+					err := repo.Delete(ctx, 1)
+
+					Expect(err).To(BeNil())
+				})
+			})
+
+			g.Describe("Target infraction does not exist", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("DELETE FROM Infractions").WillReturnResult(sqlmock.NewResult(0, 0))
+				})
+
+				g.It("Should return a domain.ErrNotFound error", func() {
+					err := repo.Delete(ctx, 1)
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+				})
+			})
+		})
 	})
 }
