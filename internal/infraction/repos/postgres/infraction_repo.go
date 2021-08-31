@@ -145,7 +145,27 @@ func (r *infractionRepo) Update(ctx context.Context, id int64, args domain.Updat
 }
 
 func (r *infractionRepo) Delete(ctx context.Context, id int64) error {
-	panic("implement me")
+	const op = opTag + "Delete"
+
+	query := "DELETE FROM Infractions WHERE InfractionID = $1;"
+
+	res, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		r.logger.Error("Could not execute query", zap.String("query", query), zap.Error(err))
+		return errors.Wrap(err, op)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		r.logger.Error("Could not get affected rows", zap.Error(err))
+		return errors.Wrap(err, op)
+	}
+
+	if rowsAffected < 1 {
+		return errors.Wrap(domain.ErrNotFound, op)
+	}
+
+	return nil
 }
 
 // Scan helpers
