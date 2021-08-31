@@ -66,7 +66,14 @@ func (e *Enforcer) CheckAuth(authChecker domain.AuthChecker) echo.MiddlewareFunc
 
 			switch e.scope.Type {
 			case domain.AuthObjServer:
-				serverID, ok := parseID(c.Param("id"))
+				var idField = "id"
+
+				// Check if a server ID override was set
+				if e.scope.IDFieldName != "" {
+					idField = e.scope.IDFieldName
+				}
+
+				serverID, ok := parseID(c.Param(idField))
 
 				if !ok {
 					return c.JSON(http.StatusBadRequest, &domain.Response{
