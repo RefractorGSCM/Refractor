@@ -19,7 +19,6 @@ package params
 
 import (
 	validation "github.com/go-ozzo/ozzo-validation"
-	"github.com/go-ozzo/ozzo-validation/is"
 	"math"
 	"strings"
 )
@@ -29,7 +28,7 @@ func infractionReasonRules(fieldPtr interface{}) *validation.FieldRules {
 }
 
 func infractionDurationRules(fieldPtr interface{}) *validation.FieldRules {
-	return validation.Field(fieldPtr, validation.Required, is.Int, validation.Min(0), validation.Max(math.MaxInt32))
+	return validation.Field(fieldPtr, validation.Required, validation.Min(0), validation.Max(math.MaxInt32))
 }
 
 type CreateWarningParams struct {
