@@ -80,8 +80,8 @@ func (r *infractionRepo) fetch(ctx context.Context, query string, args ...interf
 func (r *infractionRepo) Store(ctx context.Context, i *domain.Infraction) (*domain.Infraction, error) {
 	const op = opTag + "Store"
 
-	query := `INSERT INTO Infractions(PlayerID, Platform, UserID, ServerID, Type, Reason, Duration, SystemAction)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *;`
+	query := `INSERT INTO Infractions (PlayerID, Platform, UserID, ServerID, Type, Reason, Duration, SystemAction)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;`
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {

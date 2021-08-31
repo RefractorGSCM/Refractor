@@ -17,6 +17,10 @@
 
 package domain
 
+var AllPlatforms = []string{
+	"playfab",
+}
+
 type Platform interface {
 	GetName() string
 	GetDisplayName() string

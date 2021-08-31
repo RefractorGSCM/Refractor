@@ -28,6 +28,27 @@ func (_m *ServerRepo) Deactivate(ctx context.Context, id int64) error {
 	return r0
 }
 
+// Exists provides a mock function with given fields: ctx, args
+func (_m *ServerRepo) Exists(ctx context.Context, args domain.FindArgs) (bool, error) {
+	ret := _m.Called(ctx, args)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(context.Context, domain.FindArgs) bool); ok {
+		r0 = rf(ctx, args)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, domain.FindArgs) error); ok {
+		r1 = rf(ctx, args)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetAll provides a mock function with given fields: ctx
 func (_m *ServerRepo) GetAll(ctx context.Context) ([]*domain.Server, error) {
 	ret := _m.Called(ctx)
