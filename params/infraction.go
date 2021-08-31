@@ -24,74 +24,86 @@ import (
 	"strings"
 )
 
+func infractionReasonRules(fieldPtr interface{}) *validation.FieldRules {
+	return validation.Field(fieldPtr, validation.Required, validation.Length(1, 1024))
+}
+
+func infractionDurationRules(fieldPtr interface{}) *validation.FieldRules {
+	return validation.Field(fieldPtr, validation.Required, is.Int, validation.Min(0), validation.Max(math.MaxInt32))
+}
+
 type CreateWarningParams struct {
-	PlayerID int64  `json:"player_id" form:"player_id"`
+	PlayerID string `json:"player_id" form:"player_id"`
 	Platform string `json:"platform" form:"platform"`
-	ServerID int64  `json:"server_id" form:"server_id"`
 	Reason   string `json:"reason" form:"reason"`
 }
 
 func (body CreateWarningParams) Validate() error {
+	body.PlayerID = strings.TrimSpace(body.Reason)
+	body.Platform = strings.TrimSpace(body.Platform)
 	body.Reason = strings.TrimSpace(body.Reason)
 
 	return ValidateStruct(&body,
-		validation.Field(&body.PlayerID, validation.Required, validation.Length(1, 80)),
-		validation.Field(&body.Platform, validation.Required, validation.Length(1, 128)),
-		validation.Field(&body.ServerID, validation.Required, is.Int, validation.Min(1), validation.Max(math.MaxInt32)),
-		validation.Field(&body.Reason, validation.Required, validation.Length(1, 1024)))
+		playerIDRules(&body.PlayerID),
+		platformRules(&body.Platform),
+		infractionReasonRules(&body.Reason),
+	)
 }
 
 type CreateMuteParams struct {
-	PlayerID int64  `json:"player_id" form:"player_id"`
+	PlayerID string `json:"player_id" form:"player_id"`
 	Platform string `json:"platform" form:"platform"`
-	ServerID int64  `json:"server_id" form:"server_id"`
 	Reason   string `json:"reason" form:"reason"`
 	Duration int    `json:"duration" form:"duration"`
 }
 
 func (body CreateMuteParams) Validate() error {
+	body.PlayerID = strings.TrimSpace(body.Reason)
+	body.Platform = strings.TrimSpace(body.Platform)
 	body.Reason = strings.TrimSpace(body.Reason)
 
 	return ValidateStruct(&body,
-		validation.Field(&body.PlayerID, validation.Required, validation.Length(1, 80)),
-		validation.Field(&body.Platform, validation.Required, validation.Length(1, 128)),
-		validation.Field(&body.ServerID, validation.Required, is.Int, validation.Min(1), validation.Max(math.MaxInt32)),
-		validation.Field(&body.Reason, validation.Required, validation.Length(1, 1024)),
-		validation.Field(&body.Duration, validation.Required, is.Int, validation.Min(0), validation.Max(math.MaxInt32)))
+		playerIDRules(&body.PlayerID),
+		platformRules(&body.Platform),
+		infractionReasonRules(&body.Reason),
+		infractionDurationRules(&body.Duration),
+	)
 }
 
 type CreateKickParams struct {
-	PlayerID int64  `json:"player_id" form:"player_id"`
+	PlayerID string `json:"player_id" form:"player_id"`
 	Platform string `json:"platform" form:"platform"`
-	ServerID int64  `json:"server_id" form:"server_id"`
 	Reason   string `json:"reason" form:"reason"`
 }
 
 func (body CreateKickParams) Validate() error {
+	body.PlayerID = strings.TrimSpace(body.Reason)
+	body.Platform = strings.TrimSpace(body.Platform)
 	body.Reason = strings.TrimSpace(body.Reason)
 
 	return ValidateStruct(&body,
-		validation.Field(&body.PlayerID, validation.Required, validation.Length(1, 80)),
-		validation.Field(&body.Platform, validation.Required, validation.Length(1, 128)),
-		validation.Field(&body.ServerID, validation.Required, is.Int, validation.Min(1), validation.Max(math.MaxInt32)),
-		validation.Field(&body.Reason, validation.Required, validation.Length(1, 1024)))
+		playerIDRules(&body.PlayerID),
+		platformRules(&body.Platform),
+		infractionReasonRules(&body.Reason),
+	)
 }
 
 type CreateBanParams struct {
-	PlayerID int64  `json:"player_id" form:"player_id"`
+	PlayerID string `json:"player_id" form:"player_id"`
 	Platform string `json:"platform" form:"platform"`
-	ServerID int64  `json:"server_id" form:"server_id"`
 	Reason   string `json:"reason" form:"reason"`
 	Duration int    `json:"duration" form:"duration"`
 }
 
 func (body CreateBanParams) Validate() error {
+	body.PlayerID = strings.TrimSpace(body.Reason)
+	body.Platform = strings.TrimSpace(body.Platform)
 	body.Reason = strings.TrimSpace(body.Reason)
 
 	return ValidateStruct(&body,
-		validation.Field(&body.PlayerID, validation.Required, validation.Length(1, 80)),
-		validation.Field(&body.Platform, validation.Required, validation.Length(1, 128)),
-		validation.Field(&body.ServerID, validation.Required, is.Int, validation.Min(1), validation.Max(math.MaxInt32)),
-		validation.Field(&body.Reason, validation.Required, validation.Length(1, 1024)),
-		validation.Field(&body.Duration, validation.Required, is.Int, validation.Min(0), validation.Max(math.MaxInt32)))
+		playerIDRules(&body.PlayerID),
+		platformRules(&body.Platform),
+		infractionReasonRules(&body.Reason),
+		infractionDurationRules(&body.Duration),
+	)
 }
