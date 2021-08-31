@@ -82,12 +82,12 @@ func (dbi *DBInfraction) Infraction() *Infraction {
 }
 
 type InfractionRepo interface {
-	Create(ctx context.Context, infraction *Infraction) error
+	Store(ctx context.Context, infraction *DBInfraction) (*Infraction, error)
 	GetByID(ctx context.Context, id int64) (*Infraction, error)
 	Update(ctx context.Context, id int64, args UpdateArgs) (*Infraction, error)
 	Delete(ctx context.Context, id int64) error
 }
 
 type InfractionService interface {
-	Create(c context.Context, infraction *Infraction) error
+	Store(c context.Context, infraction *Infraction) error
 }
