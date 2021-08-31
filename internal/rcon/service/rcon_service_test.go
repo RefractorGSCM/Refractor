@@ -102,6 +102,7 @@ func Test(t *testing.T) {
 					rconClient.On("SetDisconnectHandler", mock.Anything)
 					rconClient.On("Connect").Return(nil)
 					rconClient.On("ListenForBroadcasts", mock.Anything, mock.Anything)
+					rconClient.On("ExecCommand", mock.Anything).Return("", nil)
 				})
 
 				g.It("Should not return an error", func() {

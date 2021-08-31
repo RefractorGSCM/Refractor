@@ -11,6 +11,7 @@ require (
 	github.com/gobwas/ws v1.1.0 // indirect
 	github.com/golang-migrate/migrate/v4 v4.14.2-0.20210521165626-8a1a8534dc64
 	github.com/gorilla/schema v1.2.0
+	github.com/guregu/null v4.0.0+incompatible // indirect
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo/v4 v4.3.0

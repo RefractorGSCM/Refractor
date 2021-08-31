@@ -37,6 +37,7 @@ func Test(t *testing.T) {
 
 	var mockRepo *mocks.ServerRepo
 	var authorizer *mocks.Authorizer
+	var playerRepo *mocks.PlayerRepo
 	var service domain.ServerService
 	var ctx = context.TODO()
 
@@ -44,7 +45,8 @@ func Test(t *testing.T) {
 		g.BeforeEach(func() {
 			mockRepo = new(mocks.ServerRepo)
 			authorizer = new(mocks.Authorizer)
-			service = NewServerService(mockRepo, authorizer, time.Second*2, zap.NewNop())
+			playerRepo = new(mocks.PlayerRepo)
+			service = NewServerService(mockRepo, playerRepo, authorizer, time.Second*2, zap.NewNop())
 		})
 
 		g.Describe("Server stored successfully", func() {
@@ -63,7 +65,8 @@ func Test(t *testing.T) {
 		g.BeforeEach(func() {
 			mockRepo = new(mocks.ServerRepo)
 			authorizer = new(mocks.Authorizer)
-			service = NewServerService(mockRepo, authorizer, time.Second*2, zap.NewNop())
+			playerRepo = new(mocks.PlayerRepo)
+			service = NewServerService(mockRepo, playerRepo, authorizer, time.Second*2, zap.NewNop())
 		})
 
 		g.Describe("Result fetched successfully", func() {

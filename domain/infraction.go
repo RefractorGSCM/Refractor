@@ -19,8 +19,7 @@ package domain
 
 import (
 	"context"
-	"database/sql"
-	"time"
+	"github.com/guregu/null"
 )
 
 const (
@@ -31,58 +30,21 @@ const (
 )
 
 type Infraction struct {
-	InfractionID int64     `json:"id"`
-	PlayerID     string    `json:"player_id"`
-	Platform     string    `json:"platform"`
-	UserID       string    `json:"user_id"` // UserID is the ID of the user who created this infraction record
-	ServerID     int64     `json:"server_id"`
-	Type         string    `json:"type"`
-	Reason       string    `json:"reason"`
-	Duration     int       `json:"duration"`
-	SystemAction bool      `json:"system_action"`
-	CreatedAt    time.Time `json:"created_at"`
-	ModifiedAt   time.Time `json:"modified_at"`
-}
-
-type DBInfraction struct {
-	InfractionID int64
-	PlayerID     string
-	Platform     string
-	UserID       sql.NullString
-	ServerID     int64
-	Type         string
-	Reason       sql.NullString
-	Duration     sql.NullInt32
-	SystemAction bool
-	CreatedAt    sql.NullTime
-	ModifiedAt   sql.NullTime
-}
-
-func (dbi *DBInfraction) Infraction() *Infraction {
-	infraction := &Infraction{
-		InfractionID: dbi.InfractionID,
-		PlayerID:     dbi.PlayerID,
-		UserID:       dbi.Reason.String,
-		ServerID:     dbi.ServerID,
-		Reason:       dbi.Reason.String,
-		Duration:     int(dbi.Duration.Int32),
-		Type:         dbi.Type,
-		SystemAction: dbi.SystemAction,
-	}
-
-	if dbi.CreatedAt.Valid {
-		infraction.CreatedAt = dbi.CreatedAt.Time
-	}
-
-	if dbi.ModifiedAt.Valid {
-		infraction.ModifiedAt = dbi.ModifiedAt.Time
-	}
-
-	return infraction
+	InfractionID int64       `json:"id"`
+	PlayerID     string      `json:"player_id"`
+	Platform     string      `json:"platform"`
+	UserID       null.String `json:"user_id"` // UserID is the ID of the user who created this infraction record
+	ServerID     int64       `json:"server_id"`
+	Type         string      `json:"type"`
+	Reason       null.String `json:"reason"`
+	Duration     null.Int    `json:"duration"`
+	SystemAction bool        `json:"system_action"`
+	CreatedAt    null.Time   `json:"created_at"`
+	ModifiedAt   null.Time   `json:"modified_at"`
 }
 
 type InfractionRepo interface {
-	Store(ctx context.Context, infraction *DBInfraction) (*Infraction, error)
+	Store(ctx context.Context, infraction *Infraction) (*Infraction, error)
 	GetByID(ctx context.Context, id int64) (*Infraction, error)
 	Update(ctx context.Context, id int64, args UpdateArgs) (*Infraction, error)
 	Delete(ctx context.Context, id int64) error
