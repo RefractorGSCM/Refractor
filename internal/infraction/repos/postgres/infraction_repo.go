@@ -61,7 +61,7 @@ func (r *infractionRepo) fetch(ctx context.Context, query string, args ...interf
 
 	results := make([]*domain.Infraction, 0)
 	for rows.Next() {
-		infraction := &domain.DBInfraction{}
+		infraction := &domain.Infraction{}
 
 		if err := r.scanRows(rows, infraction); err != nil {
 			if err == sql.ErrNoRows {
@@ -71,13 +71,13 @@ func (r *infractionRepo) fetch(ctx context.Context, query string, args ...interf
 			return nil, errors.Wrap(err, op)
 		}
 
-		results = append(results, infraction.Infraction())
+		results = append(results, infraction)
 	}
 
 	return results, nil
 }
 
-func (r *infractionRepo) Store(ctx context.Context, i *domain.DBInfraction) (*domain.Infraction, error) {
+func (r *infractionRepo) Store(ctx context.Context, i *domain.Infraction) (*domain.Infraction, error) {
 	const op = opTag + "Store"
 
 	query := `INSERT INTO Infractions(PlayerID, Platform, UserID, ServerID, Type, Reason, Duration, SystemAction)
@@ -91,22 +91,57 @@ func (r *infractionRepo) Store(ctx context.Context, i *domain.DBInfraction) (*do
 
 	row := stmt.QueryRowContext(ctx, i.PlayerID, i.Platform, i.UserID, i.ServerID, i.Type, i.Reason, i.Duration, i.SystemAction)
 
-	dbi := &domain.DBInfraction{}
+	infraction := &domain.Infraction{}
 
-	if err := r.scanRow(row, dbi); err != nil {
+	if err := r.scanRow(row, infraction); err != nil {
 		r.logger.Error("Could not scan newly created infraction", zap.Error(err))
 		return nil, errors.Wrap(err, op)
 	}
 
-	return dbi.Infraction(), nil
+	return infraction, nil
 }
 
 func (r *infractionRepo) GetByID(ctx context.Context, id int64) (*domain.Infraction, error) {
-	panic("implement me")
+	const op = opTag + "GetByID"
+
+	query := "SELECT * FROM Infractions WHERE InfractionID = $1;"
+
+	results, err := r.fetch(ctx, query, id)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	if len(results) > 0 {
+		return results[0], nil
+	}
+
+	return nil, errors.Wrap(domain.ErrNotFound, op)
 }
 
 func (r *infractionRepo) Update(ctx context.Context, id int64, args domain.UpdateArgs) (*domain.Infraction, error) {
-	panic("implement me")
+	const op = opTag + "Update"
+
+	query, values := r.qb.BuildUpdateQuery("Infractions", id, "InfractionID", args)
+
+	stmt, err := r.db.PrepareContext(ctx, query)
+	if err != nil {
+		r.logger.Error("Could not prepare statement", zap.String("query", query), zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	row := stmt.QueryRowContext(ctx, values...)
+
+	updatedInfraction := &domain.Infraction{}
+	if err := r.scanRow(row, updatedInfraction); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Wrap(domain.ErrNotFound, op)
+		}
+
+		r.logger.Error("Could not scan updated infraction", zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	return updatedInfraction, nil
 }
 
 func (r *infractionRepo) Delete(ctx context.Context, id int64) error {
@@ -114,10 +149,10 @@ func (r *infractionRepo) Delete(ctx context.Context, id int64) error {
 }
 
 // Scan helpers
-func (r *infractionRepo) scanRow(row *sql.Row, i *domain.DBInfraction) error {
+func (r *infractionRepo) scanRow(row *sql.Row, i *domain.Infraction) error {
 	return row.Scan(&i.InfractionID, &i.PlayerID, &i.Platform, &i.UserID, &i.ServerID, &i.Type, &i.Reason, &i.Duration, &i.SystemAction, &i.CreatedAt, &i.ModifiedAt)
 }
 
-func (r *infractionRepo) scanRows(rows *sql.Rows, i *domain.DBInfraction) error {
+func (r *infractionRepo) scanRows(rows *sql.Rows, i *domain.Infraction) error {
 	return rows.Scan(&i.InfractionID, &i.PlayerID, &i.Platform, &i.UserID, &i.ServerID, &i.Type, &i.Reason, &i.Duration, &i.SystemAction, &i.CreatedAt, &i.ModifiedAt)
 }
