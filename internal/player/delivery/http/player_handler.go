@@ -21,7 +21,6 @@ import (
 	"Refractor/authcheckers"
 	"Refractor/domain"
 	"Refractor/pkg/api/middleware"
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"net/http"
@@ -72,8 +71,6 @@ func (h *playerHandler) GetPlayer(c echo.Context) error {
 			Message: "Invalid platform",
 		})
 	}
-
-	fmt.Println(platform, id)
 
 	player, err := h.service.GetPlayer(c.Request().Context(), id, platform)
 	if err != nil {
