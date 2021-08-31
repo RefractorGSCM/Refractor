@@ -58,6 +58,9 @@ type AuthScope struct {
 	// ID represents an object identifier. e.g 1 (Server ID)
 	ID interface{}
 
+	// IDFieldName is the field name where an ID is extracted from
+	IDFieldName string
+
 	// Context is a map where data can be added for use in authorization checkers
 	Context map[string]interface{}
 }
