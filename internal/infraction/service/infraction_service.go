@@ -119,8 +119,16 @@ func (s *infractionService) Update(c context.Context, id int64, args domain.Upda
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
+	// Get infraction which will be modified
+	infraction, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: permission checks
+
 	// Get filtered args
-	args, err := s.filterUpdateArgs(ctx, id, args)
+	args, err = s.filterUpdateArgs(ctx, infraction, args)
 	if err != nil {
 		return nil, err
 	}
@@ -130,13 +138,7 @@ func (s *infractionService) Update(c context.Context, id int64, args domain.Upda
 }
 
 // filterUpdateArgs filters the arguments to only include the allowed update fields of the target infraction type.
-func (s *infractionService) filterUpdateArgs(ctx context.Context, id int64, args domain.UpdateArgs) (domain.UpdateArgs, error) {
-	// Get infraction which will be modified
-	infraction, err := s.repo.GetByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
+func (s *infractionService) filterUpdateArgs(ctx context.Context, infraction *domain.Infraction, args domain.UpdateArgs) (domain.UpdateArgs, error) {
 	// Get allowed update fields from the infraction type to determine whitelist
 	infractionType := s.infractionTypes[infraction.Type]
 	if infractionType == nil {

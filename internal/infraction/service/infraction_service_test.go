@@ -230,12 +230,10 @@ func Test(t *testing.T) {
 			g.Describe("Warning", func() {
 				g.BeforeEach(func() {
 					infraction.Type = domain.InfractionTypeWarning
-
-					mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(infraction, nil)
 				})
 
 				g.It("Should not return an error", func() {
-					_, err := service.filterUpdateArgs(ctx, 1, args)
+					_, err := service.filterUpdateArgs(ctx, infraction, args)
 
 					Expect(err).To(BeNil())
 					mockRepo.AssertExpectations(t)
@@ -246,7 +244,7 @@ func Test(t *testing.T) {
 						"Reason": "Updated Reason",
 					}
 
-					args, err := service.filterUpdateArgs(ctx, 1, args)
+					args, err := service.filterUpdateArgs(ctx, infraction, args)
 
 					Expect(err).To(BeNil())
 					Expect(args).To(Equal(expected))
@@ -257,12 +255,10 @@ func Test(t *testing.T) {
 			g.Describe("Mute", func() {
 				g.BeforeEach(func() {
 					infraction.Type = domain.InfractionTypeMute
-
-					mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(infraction, nil)
 				})
 
 				g.It("Should not return an error", func() {
-					_, err := service.filterUpdateArgs(ctx, 1, args)
+					_, err := service.filterUpdateArgs(ctx, infraction, args)
 
 					Expect(err).To(BeNil())
 					mockRepo.AssertExpectations(t)
@@ -274,7 +270,7 @@ func Test(t *testing.T) {
 						"Duration": null.NewInt(1000, true),
 					}
 
-					args, err := service.filterUpdateArgs(ctx, 1, args)
+					args, err := service.filterUpdateArgs(ctx, infraction, args)
 
 					Expect(err).To(BeNil())
 					Expect(args).To(Equal(expected))
@@ -285,12 +281,10 @@ func Test(t *testing.T) {
 			g.Describe("Kick", func() {
 				g.BeforeEach(func() {
 					infraction.Type = domain.InfractionTypeKick
-
-					mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(infraction, nil)
 				})
 
 				g.It("Should not return an error", func() {
-					_, err := service.filterUpdateArgs(ctx, 1, args)
+					_, err := service.filterUpdateArgs(ctx, infraction, args)
 
 					Expect(err).To(BeNil())
 					mockRepo.AssertExpectations(t)
@@ -301,7 +295,7 @@ func Test(t *testing.T) {
 						"Reason": "Updated Reason",
 					}
 
-					args, err := service.filterUpdateArgs(ctx, 1, args)
+					args, err := service.filterUpdateArgs(ctx, infraction, args)
 
 					Expect(err).To(BeNil())
 					Expect(args).To(Equal(expected))
@@ -312,12 +306,10 @@ func Test(t *testing.T) {
 			g.Describe("Ban", func() {
 				g.BeforeEach(func() {
 					infraction.Type = domain.InfractionTypeBan
-
-					mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(infraction, nil)
 				})
 
 				g.It("Should not return an error", func() {
-					_, err := service.filterUpdateArgs(ctx, 1, args)
+					_, err := service.filterUpdateArgs(ctx, infraction, args)
 
 					Expect(err).To(BeNil())
 					mockRepo.AssertExpectations(t)
@@ -329,7 +321,7 @@ func Test(t *testing.T) {
 						"Duration": null.NewInt(1000, true),
 					}
 
-					args, err := service.filterUpdateArgs(ctx, 1, args)
+					args, err := service.filterUpdateArgs(ctx, infraction, args)
 
 					Expect(err).To(BeNil())
 					Expect(args).To(Equal(expected))
