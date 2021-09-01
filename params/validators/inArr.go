@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package params
+package validators
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func valueInStrArray(arr []string) validation.RuleFunc {
+func ValueInStrArray(arr []string) validation.RuleFunc {
 	return func(value interface{}) error {
 		value, _ = value.(string)
 
