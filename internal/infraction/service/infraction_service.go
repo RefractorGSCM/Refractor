@@ -20,7 +20,9 @@ package service
 import (
 	"Refractor/domain"
 	"Refractor/internal/infraction/types"
+	"Refractor/pkg/whitelist"
 	"context"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"net/http"
 	"time"
@@ -37,17 +39,21 @@ type infractionService struct {
 
 func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, sr domain.ServerRepo, to time.Duration, log *zap.Logger) domain.InfractionService {
 	return &infractionService{
-		repo:       repo,
-		playerRepo: pr,
-		serverRepo: sr,
-		timeout:    to,
-		logger:     log,
-		infractionTypes: map[string]domain.InfractionType{
-			domain.InfractionTypeWarning: &types.Warning{},
-			domain.InfractionTypeMute:    &types.Mute{},
-			domain.InfractionTypeKick:    &types.Kick{},
-			domain.InfractionTypeBan:     &types.Ban{},
-		},
+		repo:            repo,
+		playerRepo:      pr,
+		serverRepo:      sr,
+		timeout:         to,
+		logger:          log,
+		infractionTypes: getInfractionTypes(),
+	}
+}
+
+func getInfractionTypes() map[string]domain.InfractionType {
+	return map[string]domain.InfractionType{
+		domain.InfractionTypeWarning: &types.Warning{},
+		domain.InfractionTypeMute:    &types.Mute{},
+		domain.InfractionTypeKick:    &types.Kick{},
+		domain.InfractionTypeBan:     &types.Ban{},
 	}
 }
 
@@ -113,14 +119,36 @@ func (s *infractionService) Update(c context.Context, id int64, args domain.Upda
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	// Get infraction which will be modified
-	//infraction, err := s.repo.GetByID(ctx, id)
-	//if err != nil {
-	//	return nil, err
-	//}
+	// Get filtered args
+	args, err := s.filterUpdateArgs(ctx, id, args)
+	if err != nil {
+		return nil, err
+	}
 
-	// Determine allowed update fields based on infraction type
-	//if infraction.Type == domain.InfractionTypeWarning || infraction.Type == domain.InfractionType
-
+	// Update the infraction
 	return s.repo.Update(ctx, id, args)
+}
+
+// filterUpdateArgs filters the arguments to only include the allowed update fields of the target infraction type.
+func (s *infractionService) filterUpdateArgs(ctx context.Context, id int64, args domain.UpdateArgs) (domain.UpdateArgs, error) {
+	// Get infraction which will be modified
+	infraction, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get allowed update fields from the infraction type to determine whitelist
+	infractionType := s.infractionTypes[infraction.Type]
+	if infractionType == nil {
+		s.logger.Warn("An attempt was made to update an infraction with an unknown type", zap.String("Type", infraction.Type))
+		return nil, errors.New("invalid infraction type")
+	}
+
+	// Create a whitelist from the allowed update fields of this infraction type
+	wl := whitelist.StringKeyMap(infractionType.AllowedUpdateFields())
+
+	// Filter update args with whitelist
+	args = wl.FilterKeys(args)
+
+	return args, nil
 }

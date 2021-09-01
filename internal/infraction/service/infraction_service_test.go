@@ -50,11 +50,12 @@ func Test(t *testing.T) {
 			playerRepo = new(mocks.PlayerRepo)
 			serverRepo = new(mocks.ServerRepo)
 			service = &infractionService{
-				repo:       mockRepo,
-				playerRepo: playerRepo,
-				serverRepo: serverRepo,
-				timeout:    time.Second * 2,
-				logger:     zap.NewNop(),
+				repo:            mockRepo,
+				playerRepo:      playerRepo,
+				serverRepo:      serverRepo,
+				timeout:         time.Second * 2,
+				logger:          zap.NewNop(),
+				infractionTypes: getInfractionTypes(),
 			}
 		})
 
@@ -206,6 +207,132 @@ func Test(t *testing.T) {
 					_, err := service.GetByID(ctx, 1)
 
 					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					mockRepo.AssertExpectations(t)
+				})
+			})
+		})
+
+		g.Describe("filterUpdateArgs()", func() {
+			var infraction *domain.Infraction
+			var args domain.UpdateArgs
+
+			g.BeforeEach(func() {
+				infraction = &domain.Infraction{}
+
+				args = domain.UpdateArgs{
+					// we include both reason and duration for all types to see if they will filter the update args correctly
+					"Reason":   "Updated Reason",
+					"Duration": null.NewInt(1000, true),
+					"UserID":   null.NewString("updatedid", true), // not an allowed update field, should be ignore
+				}
+			})
+
+			g.Describe("Warning", func() {
+				g.BeforeEach(func() {
+					infraction.Type = domain.InfractionTypeWarning
+
+					mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(infraction, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.filterUpdateArgs(ctx, 1, args)
+
+					Expect(err).To(BeNil())
+					mockRepo.AssertExpectations(t)
+				})
+
+				g.It("Should only return args with allowed fields", func() {
+					expected := domain.UpdateArgs{
+						"Reason": "Updated Reason",
+					}
+
+					args, err := service.filterUpdateArgs(ctx, 1, args)
+
+					Expect(err).To(BeNil())
+					Expect(args).To(Equal(expected))
+					mockRepo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("Mute", func() {
+				g.BeforeEach(func() {
+					infraction.Type = domain.InfractionTypeMute
+
+					mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(infraction, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.filterUpdateArgs(ctx, 1, args)
+
+					Expect(err).To(BeNil())
+					mockRepo.AssertExpectations(t)
+				})
+
+				g.It("Should only return args with allowed fields", func() {
+					expected := domain.UpdateArgs{
+						"Reason":   "Updated Reason",
+						"Duration": null.NewInt(1000, true),
+					}
+
+					args, err := service.filterUpdateArgs(ctx, 1, args)
+
+					Expect(err).To(BeNil())
+					Expect(args).To(Equal(expected))
+					mockRepo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("Kick", func() {
+				g.BeforeEach(func() {
+					infraction.Type = domain.InfractionTypeKick
+
+					mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(infraction, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.filterUpdateArgs(ctx, 1, args)
+
+					Expect(err).To(BeNil())
+					mockRepo.AssertExpectations(t)
+				})
+
+				g.It("Should only return args with allowed fields", func() {
+					expected := domain.UpdateArgs{
+						"Reason": "Updated Reason",
+					}
+
+					args, err := service.filterUpdateArgs(ctx, 1, args)
+
+					Expect(err).To(BeNil())
+					Expect(args).To(Equal(expected))
+					mockRepo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("Ban", func() {
+				g.BeforeEach(func() {
+					infraction.Type = domain.InfractionTypeBan
+
+					mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(infraction, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.filterUpdateArgs(ctx, 1, args)
+
+					Expect(err).To(BeNil())
+					mockRepo.AssertExpectations(t)
+				})
+
+				g.It("Should only return args with allowed fields", func() {
+					expected := domain.UpdateArgs{
+						"Reason":   "Updated Reason",
+						"Duration": null.NewInt(1000, true),
+					}
+
+					args, err := service.filterUpdateArgs(ctx, 1, args)
+
+					Expect(err).To(BeNil())
+					Expect(args).To(Equal(expected))
 					mockRepo.AssertExpectations(t)
 				})
 			})
