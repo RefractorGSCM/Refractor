@@ -20,6 +20,7 @@ package service
 import (
 	"Refractor/domain"
 	"Refractor/internal/infraction/types"
+	"Refractor/pkg/perms"
 	"Refractor/pkg/whitelist"
 	"context"
 	"github.com/pkg/errors"
@@ -32,16 +33,19 @@ type infractionService struct {
 	repo            domain.InfractionRepo
 	playerRepo      domain.PlayerRepo
 	serverRepo      domain.ServerRepo
+	authorizer      domain.Authorizer
 	timeout         time.Duration
 	logger          *zap.Logger
 	infractionTypes map[string]domain.InfractionType
 }
 
-func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, sr domain.ServerRepo, to time.Duration, log *zap.Logger) domain.InfractionService {
+func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, sr domain.ServerRepo, a domain.Authorizer,
+	to time.Duration, log *zap.Logger) domain.InfractionService {
 	return &infractionService{
 		repo:            repo,
 		playerRepo:      pr,
 		serverRepo:      sr,
+		authorizer:      a,
 		timeout:         to,
 		logger:          log,
 		infractionTypes: getInfractionTypes(),
@@ -115,6 +119,12 @@ func (s *infractionService) GetByID(c context.Context, id int64) (*domain.Infrac
 	return s.repo.GetByID(ctx, id)
 }
 
+// Update updates an infraction. If a user is set inside the passed in context with the key "user" then that user's
+// permission to update the target infraction is checked. Otherwise, calls to this function are seen as trusted and
+// are not authorized.
+//
+// When allowing this function to be executed by user requests, make sure they are authorized by setting the user in
+// context under the key "user".
 func (s *infractionService) Update(c context.Context, id int64, args domain.UpdateArgs) (*domain.Infraction, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
@@ -125,10 +135,23 @@ func (s *infractionService) Update(c context.Context, id int64, args domain.Upda
 		return nil, err
 	}
 
-	// TODO: permission checks
+	// Check if the user is present in the passed in context. If they are, run permission checks. Otherwise, assume this
+	// service call was not caused by a user and does not need to be authorized.
+	user, ok := ctx.Value("user").(*domain.AuthUser)
+	if ok {
+		hasPermission, err := s.hasUpdatePermissions(ctx, infraction, user)
+		if err != nil {
+			return nil, err
+		}
+
+		if !hasPermission {
+			return nil, domain.NewHTTPError(nil, http.StatusUnauthorized,
+				"You do not have permission to update this infraction.")
+		}
+	}
 
 	// Get filtered args
-	args, err = s.filterUpdateArgs(ctx, infraction, args)
+	args, err = s.filterUpdateArgs(infraction, args)
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +169,46 @@ func (s *infractionService) Update(c context.Context, id int64, args domain.Upda
 	return s.repo.Update(ctx, id, args)
 }
 
+func (s *infractionService) hasUpdatePermissions(ctx context.Context, infraction *domain.Infraction, user *domain.AuthUser) (bool, error) {
+	// The user will be granted permission to update this infraction if any of the following paths are satisfied:
+	// 1. The user is an admin or super admin
+	// OR:
+	// 1. The target infraction was created by the user
+	// 2. The user has permission to edit infraction records created by them.
+	// OR:
+	// 1. The user has permission to edit any infraction, even those not created by them.
+
+	// Get computed user permissions for the given server
+	userPerms, err := s.authorizer.GetPermissions(ctx, domain.AuthScope{
+		Type: domain.AuthObjServer,
+		ID:   infraction.ServerID,
+	}, user.Identity.Id)
+	if err != nil {
+		return false, err
+	}
+
+	// Grant access if the user is an admin or super admin
+	if userPerms.CheckFlag(perms.GetFlag(perms.FlagAdministrator)) || userPerms.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {
+		return true, nil
+	}
+
+	// Grant access if the target infraction was created by the user and they have permission to edit their own infractions
+	if infraction.UserID.Valid && infraction.UserID.ValueOrZero() == user.Identity.Id &&
+		userPerms.CheckFlag(perms.GetFlag(perms.FlagEditOwnInfractions)) {
+		return true, nil
+	}
+
+	// Grant access if the user has permission to edit any infraction
+	if userPerms.CheckFlag(perms.GetFlag(perms.FlagEditAnyInfractions)) {
+		return true, nil
+	}
+
+	// Otherwise, deny access
+	return false, nil
+}
+
 // filterUpdateArgs filters the arguments to only include the allowed update fields of the target infraction type.
-func (s *infractionService) filterUpdateArgs(ctx context.Context, infraction *domain.Infraction, args domain.UpdateArgs) (domain.UpdateArgs, error) {
+func (s *infractionService) filterUpdateArgs(infraction *domain.Infraction, args domain.UpdateArgs) (domain.UpdateArgs, error) {
 	// Get allowed update fields from the infraction type to determine whitelist
 	infractionType := s.infractionTypes[infraction.Type]
 	if infractionType == nil {
@@ -162,4 +223,13 @@ func (s *infractionService) filterUpdateArgs(ctx context.Context, infraction *do
 	args = wl.FilterKeys(args)
 
 	return args, nil
+}
+
+func (s *infractionService) Delete(c context.Context, id int64) error {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	// TODO: Check permissions
+
+	return s.repo.Delete(ctx, id)
 }

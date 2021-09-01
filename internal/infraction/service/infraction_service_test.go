@@ -20,11 +20,14 @@ package service
 import (
 	"Refractor/domain"
 	"Refractor/domain/mocks"
+	"Refractor/pkg/bitperms"
+	"Refractor/pkg/perms"
 	"context"
 	"fmt"
 	"github.com/franela/goblin"
 	"github.com/guregu/null"
 	. "github.com/onsi/gomega"
+	kratos "github.com/ory/kratos-client-go"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
@@ -42,6 +45,7 @@ func Test(t *testing.T) {
 		var mockRepo *mocks.InfractionRepo
 		var playerRepo *mocks.PlayerRepo
 		var serverRepo *mocks.ServerRepo
+		var authorizer *mocks.Authorizer
 		var service *infractionService
 		var ctx = context.TODO()
 
@@ -49,10 +53,12 @@ func Test(t *testing.T) {
 			mockRepo = new(mocks.InfractionRepo)
 			playerRepo = new(mocks.PlayerRepo)
 			serverRepo = new(mocks.ServerRepo)
+			authorizer = new(mocks.Authorizer)
 			service = &infractionService{
 				repo:            mockRepo,
 				playerRepo:      playerRepo,
 				serverRepo:      serverRepo,
+				authorizer:      authorizer,
 				timeout:         time.Second * 2,
 				logger:          zap.NewNop(),
 				infractionTypes: getInfractionTypes(),
@@ -212,6 +218,125 @@ func Test(t *testing.T) {
 			})
 		})
 
+		g.Describe("hasUpdatePermissions()", func() {
+			var infraction *domain.Infraction
+			var user *domain.AuthUser
+
+			g.BeforeEach(func() {
+				infraction = &domain.Infraction{
+					InfractionID: 1,
+					PlayerID:     "playerid",
+					Platform:     "platform",
+					UserID:       null.NewString("userid", true),
+					ServerID:     1,
+					Type:         domain.InfractionTypeWarning,
+					Reason:       null.NewString("reason", true),
+					Duration:     null.Int{},
+					SystemAction: false,
+					CreatedAt:    null.Time{},
+					ModifiedAt:   null.Time{},
+				}
+
+				user = &domain.AuthUser{
+					Session: &kratos.Session{
+						Identity: kratos.Identity{
+							Id: "anotheruserid",
+						},
+					},
+				}
+			})
+
+			g.Describe("User is an admin", func() {
+				g.BeforeEach(func() {
+					adminPerms := bitperms.NewPermissionBuilder().AddFlag(perms.GetFlag(perms.FlagAdministrator)).GetPermission()
+					authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(adminPerms, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.hasUpdatePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					authorizer.AssertExpectations(t)
+				})
+
+				g.It("Should return true", func() {
+					hasPermission, err := service.hasUpdatePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					Expect(hasPermission).To(BeTrue())
+					authorizer.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("User is super admin", func() {
+				g.BeforeEach(func() {
+					superPerms := bitperms.NewPermissionBuilder().AddFlag(perms.GetFlag(perms.FlagSuperAdmin)).GetPermission()
+					authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(superPerms, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.hasUpdatePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					authorizer.AssertExpectations(t)
+				})
+
+				g.It("Should return true", func() {
+					hasPermission, err := service.hasUpdatePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					Expect(hasPermission).To(BeTrue())
+					authorizer.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("User created the infraction and they have permission to edit infractions they created", func() {
+				g.BeforeEach(func() {
+					infraction.UserID = null.NewString(user.Identity.Id, true)
+					permissions := bitperms.NewPermissionBuilder().AddFlag(perms.GetFlag(perms.FlagEditOwnInfractions)).GetPermission()
+					authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(permissions, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.hasUpdatePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					authorizer.AssertExpectations(t)
+				})
+
+				g.It("Should return true", func() {
+					hasPermission, err := service.hasUpdatePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					Expect(hasPermission).To(BeTrue())
+					authorizer.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("User did not create the infraction but they have permission to edit any infraction", func() {
+				g.BeforeEach(func() {
+					infraction.UserID = null.NewString("not the right userid", true)
+					permissions := bitperms.NewPermissionBuilder().AddFlag(perms.GetFlag(perms.FlagEditAnyInfractions)).GetPermission()
+					authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(permissions, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.hasUpdatePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					authorizer.AssertExpectations(t)
+				})
+
+				g.It("Should return true", func() {
+					hasPermission, err := service.hasUpdatePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					Expect(hasPermission).To(BeTrue())
+					authorizer.AssertExpectations(t)
+				})
+			})
+		})
+
 		g.Describe("filterUpdateArgs()", func() {
 			var infraction *domain.Infraction
 			var args domain.UpdateArgs
@@ -233,7 +358,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should not return an error", func() {
-					_, err := service.filterUpdateArgs(ctx, infraction, args)
+					_, err := service.filterUpdateArgs(infraction, args)
 
 					Expect(err).To(BeNil())
 					mockRepo.AssertExpectations(t)
@@ -244,7 +369,7 @@ func Test(t *testing.T) {
 						"Reason": "Updated Reason",
 					}
 
-					args, err := service.filterUpdateArgs(ctx, infraction, args)
+					args, err := service.filterUpdateArgs(infraction, args)
 
 					Expect(err).To(BeNil())
 					Expect(args).To(Equal(expected))
@@ -258,7 +383,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should not return an error", func() {
-					_, err := service.filterUpdateArgs(ctx, infraction, args)
+					_, err := service.filterUpdateArgs(infraction, args)
 
 					Expect(err).To(BeNil())
 					mockRepo.AssertExpectations(t)
@@ -270,7 +395,7 @@ func Test(t *testing.T) {
 						"Duration": null.NewInt(1000, true),
 					}
 
-					args, err := service.filterUpdateArgs(ctx, infraction, args)
+					args, err := service.filterUpdateArgs(infraction, args)
 
 					Expect(err).To(BeNil())
 					Expect(args).To(Equal(expected))
@@ -284,7 +409,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should not return an error", func() {
-					_, err := service.filterUpdateArgs(ctx, infraction, args)
+					_, err := service.filterUpdateArgs(infraction, args)
 
 					Expect(err).To(BeNil())
 					mockRepo.AssertExpectations(t)
@@ -295,7 +420,7 @@ func Test(t *testing.T) {
 						"Reason": "Updated Reason",
 					}
 
-					args, err := service.filterUpdateArgs(ctx, infraction, args)
+					args, err := service.filterUpdateArgs(infraction, args)
 
 					Expect(err).To(BeNil())
 					Expect(args).To(Equal(expected))
@@ -309,7 +434,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should not return an error", func() {
-					_, err := service.filterUpdateArgs(ctx, infraction, args)
+					_, err := service.filterUpdateArgs(infraction, args)
 
 					Expect(err).To(BeNil())
 					mockRepo.AssertExpectations(t)
@@ -321,7 +446,7 @@ func Test(t *testing.T) {
 						"Duration": null.NewInt(1000, true),
 					}
 
-					args, err := service.filterUpdateArgs(ctx, infraction, args)
+					args, err := service.filterUpdateArgs(infraction, args)
 
 					Expect(err).To(BeNil())
 					Expect(args).To(Equal(expected))

@@ -25,6 +25,7 @@ import (
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/perms"
 	"Refractor/pkg/structutils"
+	"context"
 	"fmt"
 	"github.com/guregu/null"
 	"github.com/labstack/echo/v4"
@@ -67,7 +68,8 @@ func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, a 
 		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateKick, true)))
 	infractionGroup.POST("/ban/:serverId", handler.CreateBan,
 		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateBan, true)))
-	infractionGroup.PATCH("/:id", handler.UpdateInfraction)
+	infractionGroup.PATCH("/:id", handler.UpdateInfraction)  // perms checked in service
+	infractionGroup.DELETE("/:id", handler.DeleteInfraction) // perms checked in service
 }
 
 func (h *infractionHandler) CreateWarning(c echo.Context) error {
@@ -107,10 +109,22 @@ func (h *infractionHandler) CreateWarning(c echo.Context) error {
 		ModifiedAt:   null.Time{},
 	}
 
-	newWarning, err = h.service.Store(c.Request().Context(), newWarning)
+	// Attach user to request context for use in the service
+	ctx := c.Request().Context()
+	ctx = context.WithValue(ctx, "user", user)
+	newWarning, err = h.service.Store(ctx, newWarning)
 	if err != nil {
 		return err
 	}
+
+	h.logger.Info("Warning record created",
+		zap.Int64("Infraction ID", newWarning.InfractionID),
+		zap.String("Player ID", newWarning.PlayerID),
+		zap.String("Platform", newWarning.Platform),
+		zap.Int64("Server ID", newWarning.ServerID),
+		zap.String("User ID", newWarning.UserID.ValueOrZero()),
+		zap.String("Reason", newWarning.Reason.ValueOrZero()),
+	)
 
 	return c.JSON(http.StatusCreated, &domain.Response{
 		Success: true,
@@ -156,10 +170,23 @@ func (h *infractionHandler) CreateMute(c echo.Context) error {
 		ModifiedAt:   null.Time{},
 	}
 
-	newMute, err = h.service.Store(c.Request().Context(), newMute)
+	// Attach user to request context for use in the service
+	ctx := c.Request().Context()
+	ctx = context.WithValue(ctx, "user", user)
+	newMute, err = h.service.Store(ctx, newMute)
 	if err != nil {
 		return err
 	}
+
+	h.logger.Info("Mute record created",
+		zap.Int64("Infraction ID", newMute.InfractionID),
+		zap.String("Player ID", newMute.PlayerID),
+		zap.String("Platform", newMute.Platform),
+		zap.Int64("Server ID", newMute.ServerID),
+		zap.String("User ID", newMute.UserID.ValueOrZero()),
+		zap.String("Reason", newMute.Reason.ValueOrZero()),
+		zap.Int64("Duration", newMute.Duration.ValueOrZero()),
+	)
 
 	return c.JSON(http.StatusCreated, &domain.Response{
 		Success: true,
@@ -205,10 +232,22 @@ func (h *infractionHandler) CreateKick(c echo.Context) error {
 		ModifiedAt:   null.Time{},
 	}
 
-	newKick, err = h.service.Store(c.Request().Context(), newKick)
+	// Attach user to request context for use in the service
+	ctx := c.Request().Context()
+	ctx = context.WithValue(ctx, "user", user)
+	newKick, err = h.service.Store(ctx, newKick)
 	if err != nil {
 		return err
 	}
+
+	h.logger.Info("Kick record created",
+		zap.Int64("Infraction ID", newKick.InfractionID),
+		zap.String("Player ID", newKick.PlayerID),
+		zap.String("Platform", newKick.Platform),
+		zap.Int64("Server ID", newKick.ServerID),
+		zap.String("User ID", newKick.UserID.ValueOrZero()),
+		zap.String("Reason", newKick.Reason.ValueOrZero()),
+	)
 
 	return c.JSON(http.StatusCreated, &domain.Response{
 		Success: true,
@@ -254,10 +293,23 @@ func (h *infractionHandler) CreateBan(c echo.Context) error {
 		ModifiedAt:   null.Time{},
 	}
 
-	newBan, err = h.service.Store(c.Request().Context(), newBan)
+	// Attach user to request context for use in the service
+	ctx := c.Request().Context()
+	ctx = context.WithValue(ctx, "user", user)
+	newBan, err = h.service.Store(ctx, newBan)
 	if err != nil {
 		return err
 	}
+
+	h.logger.Info("Ban record created",
+		zap.Int64("Infraction ID", newBan.InfractionID),
+		zap.String("Player ID", newBan.PlayerID),
+		zap.String("Platform", newBan.Platform),
+		zap.Int64("Server ID", newBan.ServerID),
+		zap.String("User ID", newBan.UserID.ValueOrZero()),
+		zap.String("Reason", newBan.Reason.ValueOrZero()),
+		zap.Int64("Duration", newBan.Duration.ValueOrZero()),
+	)
 
 	return c.JSON(http.StatusCreated, &domain.Response{
 		Success: true,
@@ -302,8 +354,12 @@ func (h *infractionHandler) UpdateInfraction(c echo.Context) error {
 		})
 	}
 
+	// Attach user to request context for use in the service
+	ctx := c.Request().Context()
+	ctx = context.WithValue(ctx, "user", user)
+
 	// Update warning
-	updated, err := h.service.Update(c.Request().Context(), infractionID, updateArgs)
+	updated, err := h.service.Update(ctx, infractionID, updateArgs)
 	if err != nil {
 		return err
 	}
@@ -317,5 +373,38 @@ func (h *infractionHandler) UpdateInfraction(c echo.Context) error {
 		Success: true,
 		Message: "Warning updated",
 		Payload: updated,
+	})
+}
+
+func (h *infractionHandler) DeleteInfraction(c echo.Context) error {
+	infractionIDString := c.Param("id")
+
+	infractionID, err := strconv.ParseInt(infractionIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid infraction id"), http.StatusBadRequest, "")
+	}
+
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	// Attach user to request context for use in the service
+	ctx := c.Request().Context()
+	ctx = context.WithValue(ctx, "user", user)
+
+	// Delete the infraction
+	if err := h.service.Delete(ctx, infractionID); err != nil {
+		return err
+	}
+
+	h.logger.Info("Infraction deleted",
+		zap.Int64("Infraction ID", infractionID),
+		zap.String("User ID", user.Identity.Id),
+	)
+
+	return c.JSON(http.StatusNoContent, &domain.Response{
+		Success: true,
+		Message: "Infraction deleted",
 	})
 }
