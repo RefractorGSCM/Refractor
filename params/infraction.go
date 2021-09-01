@@ -30,14 +30,14 @@ type CreateWarningParams struct {
 }
 
 func (body CreateWarningParams) Validate() error {
-	body.PlayerID = strings.TrimSpace(body.Reason)
+	body.PlayerID = strings.TrimSpace(body.PlayerID)
 	body.Platform = strings.TrimSpace(body.Platform)
 	body.Reason = strings.TrimSpace(body.Reason)
 
 	return ValidateStruct(&body,
-		validation.Field(&body.PlayerID, appendRules(rules.PlayerIDRules, validation.Required)...),
-		validation.Field(&body.Platform, appendRules(rules.PlatformRules, validation.Required)...),
-		validation.Field(&body.Reason, appendRules(rules.InfractionReasonRules, validation.Required)...),
+		validation.Field(&body.PlayerID, rules.PlayerIDRules.Prepend(validation.Required)...),
+		validation.Field(&body.Platform, rules.PlatformRules.Prepend(validation.Required)...),
+		validation.Field(&body.Reason, rules.InfractionReasonRules.Prepend(validation.Required)...),
 	)
 }
 
@@ -49,15 +49,15 @@ type CreateMuteParams struct {
 }
 
 func (body CreateMuteParams) Validate() error {
-	body.PlayerID = strings.TrimSpace(body.Reason)
+	body.PlayerID = strings.TrimSpace(body.PlayerID)
 	body.Platform = strings.TrimSpace(body.Platform)
 	body.Reason = strings.TrimSpace(body.Reason)
 
 	return ValidateStruct(&body,
-		validation.Field(&body.PlayerID, appendRules(rules.PlayerIDRules, validation.Required)...),
-		validation.Field(&body.Platform, appendRules(rules.PlatformRules, validation.Required)...),
-		validation.Field(&body.Reason, appendRules(rules.InfractionReasonRules, validation.Required)...),
-		validation.Field(&body.Duration, appendRules(rules.InfractionDurationRules, validation.Required)...),
+		validation.Field(&body.PlayerID, rules.PlayerIDRules.Prepend(validation.Required)...),
+		validation.Field(&body.Platform, rules.PlatformRules.Prepend(validation.Required)...),
+		validation.Field(&body.Reason, rules.InfractionReasonRules.Prepend(validation.Required)...),
+		validation.Field(&body.Duration, rules.InfractionDurationRules.Prepend(validation.Required)...),
 	)
 }
 
@@ -68,14 +68,14 @@ type CreateKickParams struct {
 }
 
 func (body CreateKickParams) Validate() error {
-	body.PlayerID = strings.TrimSpace(body.Reason)
+	body.PlayerID = strings.TrimSpace(body.PlayerID)
 	body.Platform = strings.TrimSpace(body.Platform)
 	body.Reason = strings.TrimSpace(body.Reason)
 
 	return ValidateStruct(&body,
-		validation.Field(&body.PlayerID, appendRules(rules.PlayerIDRules, validation.Required)...),
-		validation.Field(&body.Platform, appendRules(rules.PlatformRules, validation.Required)...),
-		validation.Field(&body.Reason, appendRules(rules.InfractionReasonRules, validation.Required)...),
+		validation.Field(&body.PlayerID, rules.PlayerIDRules.Prepend(validation.Required)...),
+		validation.Field(&body.Platform, rules.PlatformRules.Prepend(validation.Required)...),
+		validation.Field(&body.Reason, rules.InfractionReasonRules.Prepend(validation.Required)...),
 	)
 }
 
@@ -87,15 +87,15 @@ type CreateBanParams struct {
 }
 
 func (body CreateBanParams) Validate() error {
-	body.PlayerID = strings.TrimSpace(body.Reason)
+	body.PlayerID = strings.TrimSpace(body.PlayerID)
 	body.Platform = strings.TrimSpace(body.Platform)
 	body.Reason = strings.TrimSpace(body.Reason)
 
 	return ValidateStruct(&body,
-		validation.Field(&body.PlayerID, appendRules(rules.PlayerIDRules, validation.Required)...),
-		validation.Field(&body.Platform, appendRules(rules.PlatformRules, validation.Required)...),
-		validation.Field(&body.Reason, appendRules(rules.InfractionReasonRules, validation.Required)...),
-		validation.Field(&body.Duration, appendRules(rules.InfractionDurationRules, validation.Required)...),
+		validation.Field(&body.PlayerID, rules.PlayerIDRules.Prepend(validation.Required)...),
+		validation.Field(&body.Platform, rules.PlatformRules.Prepend(validation.Required)...),
+		validation.Field(&body.Reason, rules.InfractionReasonRules.Prepend(validation.Required)...),
+		validation.Field(&body.Duration, rules.InfractionDurationRules.Prepend(validation.Required)...),
 	)
 }
 
@@ -121,6 +121,7 @@ func (body UpdateBanParams) Validate() error {
 	body.Reason = strings.TrimSpace(body.Reason)
 
 	return ValidateStruct(&body,
-		validation.Field(&body.Reason, appendRules(rules.InfractionReasonRules)...),
+		validation.Field(&body.Reason, rules.InfractionReasonRules...),
+		validation.Field(&body.Duration, rules.InfractionDurationRules...),
 	)
 }

@@ -18,28 +18,23 @@
 package rules
 
 import (
-	"Refractor/domain"
-	"Refractor/params/validators"
 	validation "github.com/go-ozzo/ozzo-validation"
-	"github.com/go-ozzo/ozzo-validation/is"
-	"math"
 )
 
-var PlatformRules = RuleGroup{
-	validation.Length(1, 128),
-	validation.By(validators.ValueInStrArray(domain.AllPlatforms)),
+type RuleGroup []validation.Rule
+
+// Prepend adds additional rules to the start of the RuleGroup. It does not modify the original, it simply returns a
+// copy with the additional rules prepended.
+func (rg RuleGroup) Prepend(rules ...validation.Rule) RuleGroup {
+	tmp := make([]validation.Rule, len(rules), len(rules)+len(rg))
+	copy(tmp, rules)
+	return append(tmp, rg...)
 }
 
-var PlayerIDRules = RuleGroup{
-	validation.Length(1, 80),
-	is.Alphanumeric,
-}
-
-var InfractionReasonRules = RuleGroup{
-	validation.Length(1, 1024),
-}
-
-var InfractionDurationRules = RuleGroup{
-	validation.Min(0),
-	validation.Max(math.MaxInt32),
+// Append adds additional rules to the end of the RuleGroup. It does not modify the original, it simply returns a
+// copy with the additional rules appended.
+func (rg RuleGroup) Append(rules ...validation.Rule) RuleGroup {
+	tmp := make([]validation.Rule, len(rg), len(rg)+len(rules))
+	copy(tmp, rg)
+	return append(tmp, rules...)
 }
