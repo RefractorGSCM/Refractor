@@ -133,6 +133,15 @@ func (s *infractionService) Update(c context.Context, id int64, args domain.Upda
 		return nil, err
 	}
 
+	if len(args) < 1 {
+		return nil, &domain.HTTPError{
+			Success:          false,
+			Message:          "No updatable fields were provided",
+			ValidationErrors: nil,
+			Status:           http.StatusBadRequest,
+		}
+	}
+
 	// Update the infraction
 	return s.repo.Update(ctx, id, args)
 }

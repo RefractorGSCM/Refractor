@@ -24,6 +24,7 @@ import (
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/perms"
+	"Refractor/pkg/structutils"
 	"fmt"
 	"github.com/guregu/null"
 	"github.com/labstack/echo/v4"
@@ -54,6 +55,10 @@ func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, a 
 		IDFieldName: "serverId",
 	}, log)
 
+	//rEnforcer := middleware.NewEnforcer(a, domain.AuthScope{
+	//	Type: domain.AuthObjRefractor,
+	//}, log)
+
 	infractionGroup.POST("/warning/:serverId", handler.CreateWarning,
 		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateWarning, true)))
 	infractionGroup.POST("/mute/:serverId", handler.CreateMute,
@@ -62,6 +67,7 @@ func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, a 
 		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateKick, true)))
 	infractionGroup.POST("/ban/:serverId", handler.CreateBan,
 		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateBan, true)))
+	infractionGroup.PATCH("/:id", handler.UpdateInfraction)
 }
 
 func (h *infractionHandler) CreateWarning(c echo.Context) error {
@@ -257,5 +263,59 @@ func (h *infractionHandler) CreateBan(c echo.Context) error {
 		Success: true,
 		Message: "Ban created",
 		Payload: newBan,
+	})
+}
+
+func (h *infractionHandler) UpdateInfraction(c echo.Context) error {
+	infractionIDString := c.Param("id")
+
+	infractionID, err := strconv.ParseInt(infractionIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid infraction id"), http.StatusBadRequest, "")
+	}
+
+	// Validate request body
+	var body params.UpdateInfractionParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	// Get update args
+	updateArgs, err := structutils.GetNonNilFieldMap(body)
+	if err != nil {
+		return err
+	}
+
+	if len(updateArgs) < 1 {
+		return c.JSON(http.StatusBadRequest, &domain.Response{
+			Success: false,
+			Message: "No update fields provided",
+		})
+	}
+
+	// Update warning
+	updated, err := h.service.Update(c.Request().Context(), infractionID, updateArgs)
+	if err != nil {
+		return err
+	}
+
+	h.logger.Info("Warning updated",
+		zap.Any("Update Args", updateArgs),
+		zap.String("User ID", user.Identity.Id),
+	)
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Warning updated",
+		Payload: updated,
 	})
 }
