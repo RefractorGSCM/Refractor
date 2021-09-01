@@ -17,22 +17,12 @@
 
 package params
 
-import (
-	"Refractor/domain"
-	validation "github.com/go-ozzo/ozzo-validation"
-)
+import validation "github.com/go-ozzo/ozzo-validation"
 
-func platformRules(fieldPtr interface{}) *validation.FieldRules {
-	return validation.Field(fieldPtr,
-		validation.Required,
-		validation.Length(1, 128),
-		validation.By(valueInStrArray(domain.AllPlatforms)),
-	)
-}
-
-func playerIDRules(fieldPtr interface{}) *validation.FieldRules {
-	return validation.Field(fieldPtr,
-		validation.Required,
-		validation.Length(1, 80),
-	)
+// appendRules takes in a slice of validation.Rule, copies it, appends the extra rules provided **to the beginning** of
+// the slice and then returns the result. The original slice is not modified.
+func appendRules(rules []validation.Rule, extras ...validation.Rule) []validation.Rule {
+	tmp := make([]validation.Rule, len(rules), len(rules)+len(extras))
+	copy(tmp, rules)
+	return append(extras, tmp...)
 }

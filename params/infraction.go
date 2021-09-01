@@ -18,18 +18,10 @@
 package params
 
 import (
+	"Refractor/params/rules"
 	validation "github.com/go-ozzo/ozzo-validation"
-	"math"
 	"strings"
 )
-
-func infractionReasonRules(fieldPtr interface{}) *validation.FieldRules {
-	return validation.Field(fieldPtr, validation.Required, validation.Length(1, 1024))
-}
-
-func infractionDurationRules(fieldPtr interface{}) *validation.FieldRules {
-	return validation.Field(fieldPtr, validation.Required, validation.Min(0), validation.Max(math.MaxInt32))
-}
 
 type CreateWarningParams struct {
 	PlayerID string `json:"player_id" form:"player_id"`
@@ -43,9 +35,9 @@ func (body CreateWarningParams) Validate() error {
 	body.Reason = strings.TrimSpace(body.Reason)
 
 	return ValidateStruct(&body,
-		playerIDRules(&body.PlayerID),
-		platformRules(&body.Platform),
-		infractionReasonRules(&body.Reason),
+		validation.Field(&body.PlayerID, appendRules(rules.PlayerIDRules, validation.Required)...),
+		validation.Field(&body.Platform, appendRules(rules.PlatformRules, validation.Required)...),
+		validation.Field(&body.Reason, appendRules(rules.InfractionReasonRules, validation.Required)...),
 	)
 }
 
@@ -62,10 +54,10 @@ func (body CreateMuteParams) Validate() error {
 	body.Reason = strings.TrimSpace(body.Reason)
 
 	return ValidateStruct(&body,
-		playerIDRules(&body.PlayerID),
-		platformRules(&body.Platform),
-		infractionReasonRules(&body.Reason),
-		infractionDurationRules(&body.Duration),
+		validation.Field(&body.PlayerID, appendRules(rules.PlayerIDRules, validation.Required)...),
+		validation.Field(&body.Platform, appendRules(rules.PlatformRules, validation.Required)...),
+		validation.Field(&body.Reason, appendRules(rules.InfractionReasonRules, validation.Required)...),
+		validation.Field(&body.Duration, appendRules(rules.InfractionDurationRules, validation.Required)...),
 	)
 }
 
@@ -81,9 +73,9 @@ func (body CreateKickParams) Validate() error {
 	body.Reason = strings.TrimSpace(body.Reason)
 
 	return ValidateStruct(&body,
-		playerIDRules(&body.PlayerID),
-		platformRules(&body.Platform),
-		infractionReasonRules(&body.Reason),
+		validation.Field(&body.PlayerID, appendRules(rules.PlayerIDRules, validation.Required)...),
+		validation.Field(&body.Platform, appendRules(rules.PlatformRules, validation.Required)...),
+		validation.Field(&body.Reason, appendRules(rules.InfractionReasonRules, validation.Required)...),
 	)
 }
 
@@ -100,9 +92,35 @@ func (body CreateBanParams) Validate() error {
 	body.Reason = strings.TrimSpace(body.Reason)
 
 	return ValidateStruct(&body,
-		playerIDRules(&body.PlayerID),
-		platformRules(&body.Platform),
-		infractionReasonRules(&body.Reason),
-		infractionDurationRules(&body.Duration),
+		validation.Field(&body.PlayerID, appendRules(rules.PlayerIDRules, validation.Required)...),
+		validation.Field(&body.Platform, appendRules(rules.PlatformRules, validation.Required)...),
+		validation.Field(&body.Reason, appendRules(rules.InfractionReasonRules, validation.Required)...),
+		validation.Field(&body.Duration, appendRules(rules.InfractionDurationRules, validation.Required)...),
+	)
+}
+
+type UpdateWarningParams struct {
+	Reason string `json:"reason" form:"reason"`
+}
+
+type UpdateMuteParams struct {
+	Reason   string `json:"reason" form:"reason"`
+	Duration int    `json:"duration" form:"duration"`
+}
+
+type UpdateKickParams struct {
+	Reason string `json:"reason" form:"reason"`
+}
+
+type UpdateBanParams struct {
+	Reason   string `json:"reason" form:"reason"`
+	Duration int    `json:"duration" form:"duration"`
+}
+
+func (body UpdateBanParams) Validate() error {
+	body.Reason = strings.TrimSpace(body.Reason)
+
+	return ValidateStruct(&body,
+		validation.Field(&body.Reason, appendRules(rules.InfractionReasonRules)...),
 	)
 }
