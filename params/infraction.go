@@ -103,13 +103,38 @@ type UpdateWarningParams struct {
 	Reason string `json:"reason" form:"reason"`
 }
 
+func (body UpdateWarningParams) Validate() error {
+	body.Reason = strings.TrimSpace(body.Reason)
+
+	return ValidateStruct(&body,
+		validation.Field(&body.Reason, rules.InfractionReasonRules...),
+	)
+}
+
 type UpdateMuteParams struct {
 	Reason   string `json:"reason" form:"reason"`
 	Duration int    `json:"duration" form:"duration"`
 }
 
+func (body UpdateMuteParams) Validate() error {
+	body.Reason = strings.TrimSpace(body.Reason)
+
+	return ValidateStruct(&body,
+		validation.Field(&body.Reason, rules.InfractionReasonRules...),
+		validation.Field(&body.Duration, rules.InfractionDurationRules...),
+	)
+}
+
 type UpdateKickParams struct {
 	Reason string `json:"reason" form:"reason"`
+}
+
+func (body UpdateKickParams) Validate() error {
+	body.Reason = strings.TrimSpace(body.Reason)
+
+	return ValidateStruct(&body,
+		validation.Field(&body.Reason, rules.InfractionReasonRules...),
+	)
 }
 
 type UpdateBanParams struct {
