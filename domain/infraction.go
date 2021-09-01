@@ -59,4 +59,5 @@ type InfractionService interface {
 	Store(c context.Context, infraction *Infraction) (*Infraction, error)
 	GetByID(c context.Context, id int64) (*Infraction, error)
 	Update(c context.Context, id int64, args UpdateArgs) (*Infraction, error)
+	Delete(c context.Context, id int64) error
 }

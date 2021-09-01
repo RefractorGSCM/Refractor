@@ -164,7 +164,8 @@ func main() {
 	_playerHandler.ApplyPlayerHandler(apiGroup, playerService, authorizer, middlewareBundle, logger)
 
 	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)
-	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, serverRepo, time.Second*2, logger)
+	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, serverRepo,
+		authorizer, time.Second*2, logger)
 	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, authorizer, middlewareBundle, logger)
 
 	// Subscribe to events
