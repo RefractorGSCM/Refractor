@@ -19,6 +19,7 @@ package service
 
 import (
 	"Refractor/domain"
+	"Refractor/internal/infraction/types"
 	"context"
 	"go.uber.org/zap"
 	"net/http"
@@ -26,11 +27,12 @@ import (
 )
 
 type infractionService struct {
-	repo       domain.InfractionRepo
-	playerRepo domain.PlayerRepo
-	serverRepo domain.ServerRepo
-	timeout    time.Duration
-	logger     *zap.Logger
+	repo            domain.InfractionRepo
+	playerRepo      domain.PlayerRepo
+	serverRepo      domain.ServerRepo
+	timeout         time.Duration
+	logger          *zap.Logger
+	infractionTypes map[string]domain.InfractionType
 }
 
 func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, sr domain.ServerRepo, to time.Duration, log *zap.Logger) domain.InfractionService {
@@ -40,6 +42,12 @@ func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, sr d
 		serverRepo: sr,
 		timeout:    to,
 		logger:     log,
+		infractionTypes: map[string]domain.InfractionType{
+			domain.InfractionTypeWarning: &types.Warning{},
+			domain.InfractionTypeMute:    &types.Mute{},
+			domain.InfractionTypeKick:    &types.Kick{},
+			domain.InfractionTypeBan:     &types.Ban{},
+		},
 	}
 }
 
@@ -99,4 +107,20 @@ func (s *infractionService) GetByID(c context.Context, id int64) (*domain.Infrac
 	defer cancel()
 
 	return s.repo.GetByID(ctx, id)
+}
+
+func (s *infractionService) Update(c context.Context, id int64, args domain.UpdateArgs) (*domain.Infraction, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	// Get infraction which will be modified
+	//infraction, err := s.repo.GetByID(ctx, id)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	// Determine allowed update fields based on infraction type
+	//if infraction.Type == domain.InfractionTypeWarning || infraction.Type == domain.InfractionType
+
+	return s.repo.Update(ctx, id, args)
 }
