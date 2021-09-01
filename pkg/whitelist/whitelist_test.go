@@ -30,12 +30,12 @@ func Test(t *testing.T) {
 	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
 
 	g.Describe("Whitelist test", func() {
-		g.Describe("StringMap", func() {
+		g.Describe("StringKeyMap", func() {
 			g.Describe("FilterKeys()", func() {
-				var input map[string]string
+				var input map[string]interface{}
 
 				g.BeforeEach(func() {
-					input = map[string]string{
+					input = map[string]interface{}{
 						"Key1": "val1",
 						"Key2": "val1",
 						"Key3": "val1",
@@ -44,12 +44,12 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should remove fields with non-whitelisted keys", func() {
-					wl := StringMap{
+					wl := StringKeyMap{
 						"Key1",
 						"Key3",
 					}
 
-					expected := map[string]string{
+					expected := map[string]interface{}{
 						"Key1": "val1",
 						"Key3": "val1",
 					}

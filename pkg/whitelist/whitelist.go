@@ -17,9 +17,9 @@
 
 package whitelist
 
-type StringMap []string
+type StringKeyMap []string
 
-func (m StringMap) FilterKeys(input map[string]string) map[string]string {
+func (m StringKeyMap) FilterKeys(input map[string]interface{}) map[string]interface{} {
 	for k, _ := range input {
 		allowedKey := false
 		for _, whitelistKey := range m {
