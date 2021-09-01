@@ -34,6 +34,10 @@ const (
 	FlagViewPlayerRecords     = FlagName("FLAG_VIEW_PLAYER_RECORDS")
 	FlagViewInfractionRecords = FlagName("FLAG_VIEW_INFRACTION_RECORDS")
 	FlagViewChatRecords       = FlagName("FLAG_VIEW_CHAT_RECORDS")
+	FlagCreateWarning         = FlagName("FLAG_CREATE_WARNING")
+	FlagCreateMute            = FlagName("FLAG_CREATE_MUTE")
+	FlagCreateKick            = FlagName("FLAG_CREATE_KICK")
+	FlagCreateBan             = FlagName("FLAG_CREATE_BAN")
 )
 
 type FlagName string
@@ -124,6 +128,30 @@ func init() {
 						  allow or deny accessing chat records for individual servers.`,
 			Scope: ScopeAny,
 		},
+		{
+			Name:        FlagCreateWarning,
+			DisplayName: "Log player warnings",
+			Description: `Allows creation of player warn records. This permission can be overridden on servers.`,
+			Scope:       ScopeAny,
+		},
+		{
+			Name:        FlagCreateMute,
+			DisplayName: "Log player mutes",
+			Description: `Allows creation of player mute records. This permission can be overridden on servers.`,
+			Scope:       ScopeAny,
+		},
+		{
+			Name:        FlagCreateKick,
+			DisplayName: "Log player kicks",
+			Description: `Allows creation of player kick records. This permission can be overridden on servers.`,
+			Scope:       ScopeAny,
+		},
+		{
+			Name:        FlagCreateBan,
+			DisplayName: "Log player bans",
+			Description: `Allows creation of player ban records. This permission can be overridden on servers.`,
+			Scope:       ScopeAny,
+		},
 		// ADD NEW FLAGS HERE. Do not touch any of the above permissions!
 	})
 
@@ -131,6 +159,10 @@ func init() {
 	defaultPermissions = bitperms.NewPermissionBuilder().
 		AddFlag(GetFlag(FlagViewServers)).
 		AddFlag(GetFlag(FlagViewPlayerRecords)).
+		AddFlag(GetFlag(FlagCreateWarning)).
+		AddFlag(GetFlag(FlagCreateMute)).
+		AddFlag(GetFlag(FlagCreateKick)).
+		AddFlag(GetFlag(FlagCreateBan)).
 		GetPermission()
 }
 
