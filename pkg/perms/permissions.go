@@ -38,6 +38,8 @@ const (
 	FlagCreateMute            = FlagName("FLAG_CREATE_MUTE")
 	FlagCreateKick            = FlagName("FLAG_CREATE_KICK")
 	FlagCreateBan             = FlagName("FLAG_CREATE_BAN")
+	FlagEditOwnInfractions    = FlagName("FLAG_EDIT_OWN_INFRACTIONS")
+	FlagEditAnyInfractions    = FlagName("FLAG_EDIT_ANY_INFRACTIONS")
 )
 
 type FlagName string
@@ -152,6 +154,20 @@ func init() {
 			Description: `Allows creation of player ban records. This permission can be overridden on servers.`,
 			Scope:       ScopeAny,
 		},
+		{
+			Name:        FlagEditOwnInfractions,
+			DisplayName: "Edit own infractions",
+			Description: `Allows users to edit player infraction records created by them. This permission can be
+						  overridden on servers.`,
+			Scope: ScopeAny,
+		},
+		{
+			Name:        FlagEditAnyInfractions,
+			DisplayName: "Edit any infractions",
+			Description: `Allows users to edit player infraction records created by anyone. This permission can be
+						  overridden on servers.`,
+			Scope: ScopeAny,
+		},
 		// ADD NEW FLAGS HERE. Do not touch any of the above permissions!
 	})
 
@@ -163,6 +179,7 @@ func init() {
 		AddFlag(GetFlag(FlagCreateMute)).
 		AddFlag(GetFlag(FlagCreateKick)).
 		AddFlag(GetFlag(FlagCreateBan)).
+		AddFlag(GetFlag(FlagEditOwnInfractions)).
 		GetPermission()
 }
 
