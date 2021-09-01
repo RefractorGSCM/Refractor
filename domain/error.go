@@ -25,10 +25,9 @@ import (
 
 var (
 	ErrConflict = errors.New("conflict")  // action cannot be performed
-	ErrInternal = errors.New("internal")  // internal server error
 	ErrInvalid  = errors.New("invalid")   // validation failed
 	ErrNotFound = errors.New("not found") // entity does not exist
-	ErrMarshal  = errors.New("marshal")
+	ErrNoArgs   = errors.New("no args")   // no arguments provided
 )
 
 type ClientError interface {
@@ -43,6 +42,7 @@ type ClientError interface {
 
 // HTTPError implements the ClientError interface.
 type HTTPError struct {
+	Success          bool        `json:"success"`
 	Cause            error       `json:"-"`
 	Message          string      `json:"message"`
 	ValidationErrors interface{} `json:"errors,omitempty"`
@@ -75,6 +75,7 @@ func (e *HTTPError) ResponseHeaders() (int, map[string]string) {
 
 func NewHTTPError(err error, status int, detail string) error {
 	return &HTTPError{
+		Success: false,
 		Cause:   err,
 		Message: detail,
 		Status:  status,

@@ -100,15 +100,13 @@ func (body CreateBanParams) Validate() error {
 }
 
 type UpdateInfractionParams struct {
-	Reason   string `json:"reason" form:"reason"`
-	Duration int    `json:"duration" form:"duration"`
+	Reason   *string `json:"reason" form:"reason"`
+	Duration *int    `json:"duration" form:"duration"`
 }
 
 func (body UpdateInfractionParams) Validate() error {
-	body.Reason = strings.TrimSpace(body.Reason)
-
 	return ValidateStruct(&body,
-		validation.Field(&body.Reason, rules.InfractionReasonRules...),
+		validation.Field(&body.Reason, rules.InfractionReasonRules.Prepend(validation.By(stringPointerNotEmpty))...),
 		validation.Field(&body.Duration, rules.InfractionDurationRules...),
 	)
 }
