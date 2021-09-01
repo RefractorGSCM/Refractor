@@ -18,9 +18,12 @@
 package http
 
 import (
+	"Refractor/authcheckers"
 	"Refractor/domain"
 	"Refractor/params"
 	"Refractor/pkg/api"
+	"Refractor/pkg/api/middleware"
+	"Refractor/pkg/perms"
 	"fmt"
 	"github.com/guregu/null"
 	"github.com/labstack/echo/v4"
@@ -46,15 +49,19 @@ func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, a 
 	infractionGroup := apiGroup.Group("/infractions", mware.ProtectMiddleware, mware.ActivationMiddleware)
 
 	// Create an enforcer to authorize the user on the various infraction endpoints
-	//sEnforcer := middleware.NewEnforcer(a, domain.AuthScope{
-	//	Type:        domain.AuthObjServer,
-	//	IDFieldName: "serverId",
-	//}, log)
+	sEnforcer := middleware.NewEnforcer(a, domain.AuthScope{
+		Type:        domain.AuthObjServer,
+		IDFieldName: "serverId",
+	}, log)
 
-	infractionGroup.POST("/warning/:serverId", handler.CreateWarning)
-	infractionGroup.POST("/mute/:serverId", handler.CreateMute)
-	infractionGroup.POST("/kick/:serverId", handler.CreateKick)
-	infractionGroup.POST("/ban/:serverId", handler.CreateBan)
+	infractionGroup.POST("/warning/:serverId", handler.CreateWarning,
+		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateWarning, true)))
+	infractionGroup.POST("/mute/:serverId", handler.CreateMute,
+		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateMute, true)))
+	infractionGroup.POST("/kick/:serverId", handler.CreateKick,
+		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateKick, true)))
+	infractionGroup.POST("/ban/:serverId", handler.CreateBan,
+		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateBan, true)))
 }
 
 func (h *infractionHandler) CreateWarning(c echo.Context) error {
