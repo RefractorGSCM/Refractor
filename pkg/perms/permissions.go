@@ -40,6 +40,8 @@ const (
 	FlagCreateBan             = FlagName("FLAG_CREATE_BAN")
 	FlagEditOwnInfractions    = FlagName("FLAG_EDIT_OWN_INFRACTIONS")
 	FlagEditAnyInfractions    = FlagName("FLAG_EDIT_ANY_INFRACTIONS")
+	FlagDeleteOwnInfractions  = FlagName("FLAG_DELETE_OWN_INFRACTIONS")
+	FlagDeleteAnyInfractions  = FlagName("FLAG_DELETE_ANY_INFRACTIONS")
 )
 
 type FlagName string
@@ -165,6 +167,20 @@ func init() {
 			Name:        FlagEditAnyInfractions,
 			DisplayName: "Edit any infractions",
 			Description: `Allows users to edit player infraction records created by anyone. This permission can be
+						  overridden on servers.`,
+			Scope: ScopeAny,
+		},
+		{
+			Name:        FlagDeleteOwnInfractions,
+			DisplayName: "Delete own infractions",
+			Description: `Allows users to delete player infraction records created by them. This permission can be
+						  overridden on servers.`,
+			Scope: ScopeAny,
+		},
+		{
+			Name:        FlagDeleteAnyInfractions,
+			DisplayName: "Delete any infractions",
+			Description: `Allows users to delete player infraction records created by anyone. This permission can be
 						  overridden on servers.`,
 			Scope: ScopeAny,
 		},
