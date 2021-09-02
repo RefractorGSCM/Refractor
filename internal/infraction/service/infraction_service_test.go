@@ -454,5 +454,124 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("hasDeletePermissions()", func() {
+			var infraction *domain.Infraction
+			var user *domain.AuthUser
+
+			g.BeforeEach(func() {
+				infraction = &domain.Infraction{
+					InfractionID: 1,
+					PlayerID:     "playerid",
+					Platform:     "platform",
+					UserID:       null.NewString("userid", true),
+					ServerID:     1,
+					Type:         domain.InfractionTypeWarning,
+					Reason:       null.NewString("reason", true),
+					Duration:     null.Int{},
+					SystemAction: false,
+					CreatedAt:    null.Time{},
+					ModifiedAt:   null.Time{},
+				}
+
+				user = &domain.AuthUser{
+					Session: &kratos.Session{
+						Identity: kratos.Identity{
+							Id: "anotheruserid",
+						},
+					},
+				}
+			})
+
+			g.Describe("User is an admin", func() {
+				g.BeforeEach(func() {
+					adminPerms := bitperms.NewPermissionBuilder().AddFlag(perms.GetFlag(perms.FlagAdministrator)).GetPermission()
+					authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(adminPerms, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.hasDeletePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					authorizer.AssertExpectations(t)
+				})
+
+				g.It("Should return true", func() {
+					hasPermission, err := service.hasDeletePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					Expect(hasPermission).To(BeTrue())
+					authorizer.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("User is super admin", func() {
+				g.BeforeEach(func() {
+					superPerms := bitperms.NewPermissionBuilder().AddFlag(perms.GetFlag(perms.FlagSuperAdmin)).GetPermission()
+					authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(superPerms, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.hasDeletePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					authorizer.AssertExpectations(t)
+				})
+
+				g.It("Should return true", func() {
+					hasPermission, err := service.hasDeletePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					Expect(hasPermission).To(BeTrue())
+					authorizer.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("User created the infraction and they have permission to edit infractions they created", func() {
+				g.BeforeEach(func() {
+					infraction.UserID = null.NewString(user.Identity.Id, true)
+					permissions := bitperms.NewPermissionBuilder().AddFlag(perms.GetFlag(perms.FlagDeleteOwnInfractions)).GetPermission()
+					authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(permissions, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.hasDeletePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					authorizer.AssertExpectations(t)
+				})
+
+				g.It("Should return true", func() {
+					hasPermission, err := service.hasDeletePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					Expect(hasPermission).To(BeTrue())
+					authorizer.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("User did not create the infraction but they have permission to edit any infraction", func() {
+				g.BeforeEach(func() {
+					infraction.UserID = null.NewString("not the right userid", true)
+					permissions := bitperms.NewPermissionBuilder().AddFlag(perms.GetFlag(perms.FlagDeleteAnyInfractions)).GetPermission()
+					authorizer.On("GetPermissions", mock.Anything, mock.Anything, mock.Anything).Return(permissions, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.hasDeletePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					authorizer.AssertExpectations(t)
+				})
+
+				g.It("Should return true", func() {
+					hasPermission, err := service.hasDeletePermissions(ctx, infraction, user)
+
+					Expect(err).To(BeNil())
+					Expect(hasPermission).To(BeTrue())
+					authorizer.AssertExpectations(t)
+				})
+			})
+		})
 	})
 }

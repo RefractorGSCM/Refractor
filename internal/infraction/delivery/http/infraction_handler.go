@@ -403,7 +403,7 @@ func (h *infractionHandler) DeleteInfraction(c echo.Context) error {
 		zap.String("User ID", user.Identity.Id),
 	)
 
-	return c.JSON(http.StatusNoContent, &domain.Response{
+	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
 		Message: "Infraction deleted",
 	})
