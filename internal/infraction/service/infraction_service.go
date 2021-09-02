@@ -225,11 +225,74 @@ func (s *infractionService) filterUpdateArgs(infraction *domain.Infraction, args
 	return args, nil
 }
 
+// Delete deletes an infraction. If a user is set inside the passed in context with the key "user" then that user's
+// permission to delete the target infraction is checked. Otherwise, calls to this function are seen as trusted and
+// are not authorized.
+//
+// When allowing this function to be executed by user requests, make sure they are authorized by setting the user in
+// context under the key "user".
 func (s *infractionService) Delete(c context.Context, id int64) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	// TODO: Check permissions
+	// Get infraction which will be modified
+	infraction, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// Check if the user is present in the passed in context. If they are, run permission checks. Otherwise, assume this
+	// service call was not caused by a user and does not need to be authorized.
+	user, ok := ctx.Value("user").(*domain.AuthUser)
+	if ok {
+		hasPermission, err := s.hasDeletePermissions(ctx, infraction, user)
+		if err != nil {
+			return err
+		}
+
+		if !hasPermission {
+			return domain.NewHTTPError(nil, http.StatusUnauthorized,
+				"You do not have permission to delete this infraction.")
+		}
+	}
 
 	return s.repo.Delete(ctx, id)
+}
+
+func (s *infractionService) hasDeletePermissions(ctx context.Context, infraction *domain.Infraction, user *domain.AuthUser) (bool, error) {
+	// The user will be granted permission to delete this infraction if any of the following paths are satisfied:
+	// 1. The user is an admin or super admin
+	// OR:
+	// 1. The target infraction was created by the user
+	// 2. The user has permission to delete infraction records created by them.
+	// OR:
+	// 1. The user has permission to delete any infraction, even those not created by them.
+
+	// Get computed user permissions for the given server
+	userPerms, err := s.authorizer.GetPermissions(ctx, domain.AuthScope{
+		Type: domain.AuthObjServer,
+		ID:   infraction.ServerID,
+	}, user.Identity.Id)
+	if err != nil {
+		return false, err
+	}
+
+	// Grant access if the user is an admin or super admin
+	if userPerms.CheckFlag(perms.GetFlag(perms.FlagAdministrator)) || userPerms.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {
+		return true, nil
+	}
+
+	// Grant access if the target infraction was created by the user and they have permission to edit their own infractions
+	if infraction.UserID.Valid && infraction.UserID.ValueOrZero() == user.Identity.Id &&
+		userPerms.CheckFlag(perms.GetFlag(perms.FlagDeleteOwnInfractions)) {
+		return true, nil
+	}
+
+	// Grant access if the user has permission to edit any infraction
+	if userPerms.CheckFlag(perms.GetFlag(perms.FlagDeleteAnyInfractions)) {
+		return true, nil
+	}
+
+	// Otherwise, deny access
+	return false, nil
 }
