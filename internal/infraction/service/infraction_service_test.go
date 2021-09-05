@@ -63,6 +63,7 @@ func Test(t *testing.T) {
 				logger:          zap.NewNop(),
 				infractionTypes: getInfractionTypes(),
 			}
+			ctx = context.TODO()
 		})
 
 		g.Describe("Store()", func() {
@@ -214,6 +215,153 @@ func Test(t *testing.T) {
 
 					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
 					mockRepo.AssertExpectations(t)
+				})
+			})
+		})
+
+		g.Describe("GetByPlayer()", func() {
+			var mockInfractions []*domain.Infraction
+
+			g.BeforeEach(func() {
+				mockInfractions = []*domain.Infraction{
+					{
+						InfractionID: 1,
+						PlayerID:     "playerid",
+						Platform:     "platform",
+						UserID:       null.NewString("userid", true),
+						ServerID:     1,
+						Type:         domain.InfractionTypeMute,
+						Reason:       null.NewString("Test mute reason", true),
+						Duration:     null.NewInt(60, true),
+						SystemAction: false,
+						CreatedAt:    null.NewTime(time.Now(), true),
+						ModifiedAt:   null.Time{},
+					},
+					{
+						InfractionID: 2,
+						PlayerID:     "playerid",
+						Platform:     "platform",
+						UserID:       null.NewString("userid", true),
+						ServerID:     2,
+						Type:         domain.InfractionTypeKick,
+						Reason:       null.NewString("Test kick reason", true),
+						Duration:     null.NewInt(0, false),
+						SystemAction: false,
+						CreatedAt:    null.NewTime(time.Now(), true),
+						ModifiedAt:   null.Time{},
+					},
+					{
+						InfractionID: 3,
+						PlayerID:     "playerid",
+						Platform:     "platform",
+						UserID:       null.NewString("userid", true),
+						ServerID:     3,
+						Type:         domain.InfractionTypeWarning,
+						Reason:       null.NewString("Test warn reason", true),
+						Duration:     null.NewInt(0, false),
+						SystemAction: false,
+						CreatedAt:    null.NewTime(time.Now(), true),
+						ModifiedAt:   null.Time{},
+					},
+					{
+						InfractionID: 4,
+						PlayerID:     "playerid",
+						Platform:     "platform",
+						UserID:       null.NewString("userid", true),
+						ServerID:     4,
+						Type:         domain.InfractionTypeBan,
+						Reason:       null.NewString("Test ban reason", true),
+						Duration:     null.NewInt(1440, true),
+						SystemAction: false,
+						CreatedAt:    null.NewTime(time.Now(), true),
+						ModifiedAt:   null.Time{},
+					},
+				}
+			})
+
+			g.Describe("User was provided in context (check auth)", func() {
+				g.BeforeEach(func() {
+					ctx = context.WithValue(ctx, "user", &domain.AuthUser{
+						Session: &kratos.Session{
+							Identity: kratos.Identity{
+								Id: "userid",
+							},
+						},
+					})
+				})
+
+				g.Describe("Infractions were found", func() {
+					g.BeforeEach(func() {
+						mockRepo.On("GetByPlayer", mock.Anything, mock.Anything, mock.Anything).Return(mockInfractions, nil)
+						serverRepo.On("GetAll", mock.Anything).Return([]*domain.Server{
+							{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4},
+						}, nil)
+
+						// user has permission for servers ID 1 and 4 and is denied permission for servers ID 2 and 3. Notice the order of calls.
+						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+							Return(true, nil).Once() // ID 1
+						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+							Return(false, nil).Once() // ID 2
+						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+							Return(false, nil).Once() // ID 3
+						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+							Return(true, nil).Once() // ID 4
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := service.GetByPlayer(ctx, "playerid", "platform")
+
+						Expect(err).To(BeNil())
+						mockRepo.AssertExpectations(t)
+					})
+
+					g.It("Should return the correct infractions", func() {
+						var expected []*domain.Infraction
+						expected = append(expected, mockInfractions[0])
+						expected = append(expected, mockInfractions[3])
+
+						got, err := service.GetByPlayer(ctx, "playerid", "platform")
+
+						Expect(err).To(BeNil())
+						Expect(got).To(Equal(expected))
+						mockRepo.AssertExpectations(t)
+					})
+				})
+			})
+
+			g.Describe("User was not provided in context (don't check auth)", func() {
+				g.Describe("Infractions were found", func() {
+					g.BeforeEach(func() {
+						mockRepo.On("GetByPlayer", mock.Anything, mock.Anything, mock.Anything).Return(mockInfractions, nil)
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := service.GetByPlayer(ctx, "playerid", "platform")
+
+						Expect(err).To(BeNil())
+						mockRepo.AssertExpectations(t)
+					})
+
+					g.It("Should return the correct infractions", func() {
+						got, err := service.GetByPlayer(ctx, "playerid", "platform")
+
+						Expect(err).To(BeNil())
+						Expect(got).To(Equal(mockInfractions))
+						mockRepo.AssertExpectations(t)
+					})
+				})
+
+				g.Describe("No results were found", func() {
+					g.BeforeEach(func() {
+						mockRepo.On("GetByPlayer", mock.Anything, mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
+					})
+
+					g.It("Should return a domain.ErrNotFound error", func() {
+						_, err := service.GetByPlayer(ctx, "playerid", "platform")
+
+						Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+						mockRepo.AssertExpectations(t)
+					})
 				})
 			})
 		})

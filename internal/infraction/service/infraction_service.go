@@ -18,6 +18,7 @@
 package service
 
 import (
+	"Refractor/authcheckers"
 	"Refractor/domain"
 	"Refractor/internal/infraction/types"
 	"Refractor/pkg/perms"
@@ -119,11 +120,63 @@ func (s *infractionService) GetByID(c context.Context, id int64) (*domain.Infrac
 	return s.repo.GetByID(ctx, id)
 }
 
+// GetByPlayer returns all infractions for a player on a given platform.
+//
+// If a user is set inside the provided context with the key "user" then permissions are checked against each server
+// so that only infractions belonging to servers the requesting user has access to are returned.
 func (s *infractionService) GetByPlayer(c context.Context, playerID, platform string) ([]*domain.Infraction, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.GetByPlayer(ctx, playerID, platform)
+	authorizedServers := map[int64]bool{}
+
+	// Check if a user exists in the context. If they do, check permissions.
+	user, checkAuth := ctx.Value("user").(*domain.AuthUser)
+	if checkAuth {
+		// Get all servers
+		servers, err := s.serverRepo.GetAll(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// Check if the user has permission to view player records on each server. If they do, then add the ID of this
+		// server to the list of authorizedServers.
+		for _, server := range servers {
+			hasPermission, err := s.authorizer.HasPermission(ctx, domain.AuthScope{
+				Type: domain.AuthObjServer,
+				ID:   server.ID,
+			}, user.Identity.Id, authcheckers.HasPermission(perms.FlagViewPlayerRecords, true))
+			if err != nil {
+				return nil, err
+			}
+
+			if hasPermission {
+				authorizedServers[server.ID] = true
+			} else {
+				authorizedServers[server.ID] = false
+			}
+		}
+	}
+
+	// Get player infractions
+	infractions, err := s.repo.GetByPlayer(ctx, playerID, platform)
+	if err != nil {
+		return nil, err
+	}
+
+	var outputInfractions []*domain.Infraction
+	if checkAuth {
+		// Filter out infractions which belong to servers not in the authorizedServers slice.
+		for _, i := range infractions {
+			if authorizedServers[i.ServerID] {
+				outputInfractions = append(outputInfractions, i)
+			}
+		}
+	} else {
+		outputInfractions = infractions
+	}
+
+	return outputInfractions, err
 }
 
 // Update updates an infraction. If a user is set inside the passed in context with the key "user" then that user's
