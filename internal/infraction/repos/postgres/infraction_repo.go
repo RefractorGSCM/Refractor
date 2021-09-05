@@ -118,6 +118,23 @@ func (r *infractionRepo) GetByID(ctx context.Context, id int64) (*domain.Infract
 	return nil, errors.Wrap(domain.ErrNotFound, op)
 }
 
+func (r *infractionRepo) GetByPlayer(ctx context.Context, playerID, platform string) ([]*domain.Infraction, error) {
+	const op = opTag + "GetByPlayer"
+
+	query := "SELECT * FROM Infractions WHERE PlayerID = $1 AND Platform = $2;"
+
+	results, err := r.fetch(ctx, query, playerID, platform)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	if len(results) > 0 {
+		return results, nil
+	}
+
+	return nil, errors.Wrap(domain.ErrNotFound, op)
+}
+
 func (r *infractionRepo) Update(ctx context.Context, id int64, args domain.UpdateArgs) (*domain.Infraction, error) {
 	const op = opTag + "Update"
 

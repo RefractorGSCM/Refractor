@@ -193,6 +193,117 @@ func Test(t *testing.T) {
 			})
 		})
 
+		g.Describe("GetByPlayer()", func() {
+			g.Describe("Infractions found", func() {
+				var infractions []*domain.Infraction
+
+				g.BeforeEach(func() {
+					infractions = []*domain.Infraction{
+						{
+							InfractionID: 1,
+							PlayerID:     "playerid",
+							Platform:     "platform",
+							UserID:       null.NewString("userid", true),
+							ServerID:     1,
+							Type:         domain.InfractionTypeMute,
+							Reason:       null.NewString("Test mute reason", true),
+							Duration:     null.NewInt(60, true),
+							SystemAction: false,
+							CreatedAt:    null.NewTime(time.Now(), true),
+							ModifiedAt:   null.Time{},
+						},
+						{
+							InfractionID: 2,
+							PlayerID:     "playerid",
+							Platform:     "platform",
+							UserID:       null.NewString("userid2", true),
+							ServerID:     2,
+							Type:         domain.InfractionTypeKick,
+							Reason:       null.NewString("Test kick reason", true),
+							Duration:     null.NewInt(0, false),
+							SystemAction: false,
+							CreatedAt:    null.NewTime(time.Now(), true),
+							ModifiedAt:   null.Time{},
+						},
+						{
+							InfractionID: 3,
+							PlayerID:     "playerid",
+							Platform:     "platform",
+							UserID:       null.NewString("userid2", true),
+							ServerID:     2,
+							Type:         domain.InfractionTypeWarning,
+							Reason:       null.NewString("Test warn reason", true),
+							Duration:     null.NewInt(0, false),
+							SystemAction: false,
+							CreatedAt:    null.NewTime(time.Now(), true),
+							ModifiedAt:   null.Time{},
+						},
+						{
+							InfractionID: 4,
+							PlayerID:     "playerid",
+							Platform:     "platform",
+							UserID:       null.NewString("userid3", true),
+							ServerID:     1,
+							Type:         domain.InfractionTypeBan,
+							Reason:       null.NewString("Test ban reason", true),
+							Duration:     null.NewInt(1440, true),
+							SystemAction: false,
+							CreatedAt:    null.NewTime(time.Now(), true),
+							ModifiedAt:   null.Time{},
+						},
+					}
+
+					rows := sqlmock.NewRows(cols)
+					for _, i := range infractions {
+						rows.AddRow(i.InfractionID, i.PlayerID, i.Platform, i.UserID, i.ServerID, i.Type, i.Reason, i.Duration,
+							i.SystemAction, i.CreatedAt, i.ModifiedAt)
+					}
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Infractions")).WillReturnRows(rows)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.GetByPlayer(ctx, "playerid", "platform")
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return the correct scanned results", func() {
+					got, err := repo.GetByPlayer(ctx, "playerid", "platform")
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal(infractions))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("No infractions found", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Infractions")).WillReturnRows(sqlmock.NewRows(cols))
+				})
+
+				g.It("Should return a domain.ErrNotFound error", func() {
+					_, err := repo.GetByPlayer(ctx, "playerid", "platform")
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Database error", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Infractions")).WillReturnError(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					_, err := repo.GetByPlayer(ctx, "playerid", "platform")
+
+					Expect(err).ToNot(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
+
 		g.Describe("Update()", func() {
 			g.BeforeEach(func() {
 				mock.ExpectPrepare("UPDATE Infractions SET")

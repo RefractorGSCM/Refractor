@@ -119,6 +119,13 @@ func (s *infractionService) GetByID(c context.Context, id int64) (*domain.Infrac
 	return s.repo.GetByID(ctx, id)
 }
 
+func (s *infractionService) GetByPlayer(c context.Context, playerID, platform string) ([]*domain.Infraction, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.GetByPlayer(ctx, playerID, platform)
+}
+
 // Update updates an infraction. If a user is set inside the passed in context with the key "user" then that user's
 // permission to update the target infraction is checked. Otherwise, calls to this function are seen as trusted and
 // are not authorized.
