@@ -56,9 +56,9 @@ func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, a 
 		IDFieldName: "serverId",
 	}, log)
 
-	//rEnforcer := middleware.NewEnforcer(a, domain.AuthScope{
-	//	Type: domain.AuthObjRefractor,
-	//}, log)
+	rEnforcer := middleware.NewEnforcer(a, domain.AuthScope{
+		Type: domain.AuthObjRefractor,
+	}, log)
 
 	infractionGroup.POST("/warning/:serverId", handler.CreateWarning,
 		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateWarning, true)))
@@ -70,6 +70,8 @@ func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, a 
 		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateBan, true)))
 	infractionGroup.PATCH("/:id", handler.UpdateInfraction)  // perms checked in service
 	infractionGroup.DELETE("/:id", handler.DeleteInfraction) // perms checked in service
+	infractionGroup.GET("/player/:platform/:playerId", handler.GetPlayerInfractions,
+		rEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagViewPlayerRecords, true))) // additional server specific perms checks done in service
 }
 
 func (h *infractionHandler) CreateWarning(c echo.Context) error {
@@ -406,5 +408,47 @@ func (h *infractionHandler) DeleteInfraction(c echo.Context) error {
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
 		Message: "Infraction deleted",
+	})
+}
+
+func (h *infractionHandler) GetPlayerInfractions(c echo.Context) error {
+	platform := c.Param("platform")
+	playerID := c.Param("playerId")
+
+	validPlatform := false
+	for _, p := range domain.AllPlatforms {
+		if platform == p {
+			validPlatform = true
+			break
+		}
+	}
+
+	if !validPlatform {
+		return c.JSON(http.StatusBadRequest, &domain.Response{
+			Success: false,
+			Message: "Invalid platform provided",
+		})
+	}
+
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	// Get request context and attach the user to it so that the service.GetByPlayer call is authorized against the
+	// various servers.
+	ctx := c.Request().Context()
+	ctx = context.WithValue(ctx, "user", user)
+
+	// Get player infractions
+	infractions, err := h.service.GetByPlayer(ctx, playerID, platform)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusFound, &domain.Response{
+		Success: true,
+		Message: fmt.Sprintf("Fetched %d infractions", len(infractions)),
+		Payload: infractions,
 	})
 }
