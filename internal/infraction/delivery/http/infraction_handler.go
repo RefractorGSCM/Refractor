@@ -446,7 +446,7 @@ func (h *infractionHandler) GetPlayerInfractions(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusFound, &domain.Response{
+	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
 		Message: fmt.Sprintf("Fetched %d infractions", len(infractions)),
 		Payload: infractions,
