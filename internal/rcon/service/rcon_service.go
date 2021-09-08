@@ -128,6 +128,9 @@ func (s *rconService) getBroadcastHandler(serverID int64, game domain.Game) func
 		s.logger.Info("Broadcast received", zap.Int64("Server", serverID), zap.String("Message", message))
 
 		bcast := broadcast.GetBroadcastType(message, game.GetConfig().BroadcastPatterns)
+		if bcast == nil {
+			return
+		}
 
 		switch bcast.Type {
 		case broadcast.TYPE_JOIN:
