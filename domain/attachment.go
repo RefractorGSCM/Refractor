@@ -31,3 +31,9 @@ type AttachmentRepo interface {
 	GetByInfraction(ctx context.Context, infractionID int64) ([]*Attachment, error)
 	Delete(ctx context.Context, id int64) error
 }
+
+type AttachmentService interface {
+	Store(c context.Context, attachment *Attachment) error
+	GetByInfraction(c context.Context, infractionID int64) ([]*Attachment, error)
+	Delete(c context.Context, id int64) error
+}
