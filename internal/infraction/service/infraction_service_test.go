@@ -91,14 +91,14 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should not return an error", func() {
-					_, err := service.Store(ctx, mockInfraction)
+					_, err := service.Store(ctx, mockInfraction, nil)
 
 					Expect(err).To(BeNil())
 					mockRepo.AssertExpectations(t)
 				})
 
 				g.It("Should return the correct infraction", func() {
-					infraction, err := service.Store(ctx, mockInfraction)
+					infraction, err := service.Store(ctx, mockInfraction, nil)
 
 					Expect(err).To(BeNil())
 					Expect(infraction).To(Equal(mockInfraction))
@@ -115,7 +115,7 @@ func Test(t *testing.T) {
 					_, err := service.Store(ctx, &domain.Infraction{
 						Platform: "platform",
 						PlayerID: "playerid",
-					})
+					}, nil)
 
 					Expect(err).ToNot(BeNil())
 
@@ -138,7 +138,7 @@ func Test(t *testing.T) {
 					_, err := service.Store(ctx, &domain.Infraction{
 						Platform: "platform",
 						PlayerID: "playerid",
-					})
+					}, nil)
 
 					Expect(err).ToNot(BeNil())
 
@@ -159,7 +159,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return an error", func() {
-					_, err := service.Store(ctx, &domain.Infraction{})
+					_, err := service.Store(ctx, &domain.Infraction{}, nil)
 
 					Expect(err).ToNot(BeNil())
 					mockRepo.AssertExpectations(t)

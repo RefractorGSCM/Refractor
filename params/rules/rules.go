@@ -23,6 +23,7 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
 	"math"
+	"regexp"
 )
 
 var PlatformRules = RuleGroup{
@@ -42,4 +43,14 @@ var InfractionReasonRules = RuleGroup{
 var InfractionDurationRules = RuleGroup{
 	validation.Min(0),
 	validation.Max(math.MaxInt32),
+}
+
+var attachmentUrlPattern = regexp.MustCompile(".(jpeg|jpg|gif|png)$")
+var AttachmentURLRules = RuleGroup{
+	is.RequestURL,
+	validation.Match(attachmentUrlPattern),
+}
+
+var AttachmentNoteRules = RuleGroup{
+	validation.Length(1, 512),
 }
