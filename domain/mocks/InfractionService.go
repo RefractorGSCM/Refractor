@@ -74,13 +74,13 @@ func (_m *InfractionService) GetByPlayer(ctx context.Context, playerID string, p
 	return r0, r1
 }
 
-// Store provides a mock function with given fields: c, infraction
-func (_m *InfractionService) Store(c context.Context, infraction *domain.Infraction) (*domain.Infraction, error) {
-	ret := _m.Called(c, infraction)
+// Store provides a mock function with given fields: c, infraction, attachments
+func (_m *InfractionService) Store(c context.Context, infraction *domain.Infraction, attachments []*domain.Attachment) (*domain.Infraction, error) {
+	ret := _m.Called(c, infraction, attachments)
 
 	var r0 *domain.Infraction
-	if rf, ok := ret.Get(0).(func(context.Context, *domain.Infraction) *domain.Infraction); ok {
-		r0 = rf(c, infraction)
+	if rf, ok := ret.Get(0).(func(context.Context, *domain.Infraction, []*domain.Attachment) *domain.Infraction); ok {
+		r0 = rf(c, infraction, attachments)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*domain.Infraction)
@@ -88,8 +88,8 @@ func (_m *InfractionService) Store(c context.Context, infraction *domain.Infract
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *domain.Infraction) error); ok {
-		r1 = rf(c, infraction)
+	if rf, ok := ret.Get(1).(func(context.Context, *domain.Infraction, []*domain.Attachment) error); ok {
+		r1 = rf(c, infraction, attachments)
 	} else {
 		r1 = ret.Error(1)
 	}

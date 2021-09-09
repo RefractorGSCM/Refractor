@@ -34,18 +34,20 @@ type infractionService struct {
 	repo            domain.InfractionRepo
 	playerRepo      domain.PlayerRepo
 	serverRepo      domain.ServerRepo
+	attachmentRepo  domain.AttachmentRepo
 	authorizer      domain.Authorizer
 	timeout         time.Duration
 	logger          *zap.Logger
 	infractionTypes map[string]domain.InfractionType
 }
 
-func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, sr domain.ServerRepo, a domain.Authorizer,
-	to time.Duration, log *zap.Logger) domain.InfractionService {
+func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, sr domain.ServerRepo, ar domain.AttachmentRepo,
+	a domain.Authorizer, to time.Duration, log *zap.Logger) domain.InfractionService {
 	return &infractionService{
 		repo:            repo,
 		playerRepo:      pr,
 		serverRepo:      sr,
+		attachmentRepo:  ar,
 		authorizer:      a,
 		timeout:         to,
 		logger:          log,
@@ -62,7 +64,7 @@ func getInfractionTypes() map[string]domain.InfractionType {
 	}
 }
 
-func (s *infractionService) Store(c context.Context, infraction *domain.Infraction) (*domain.Infraction, error) {
+func (s *infractionService) Store(c context.Context, infraction *domain.Infraction, attachments []*domain.Attachment) (*domain.Infraction, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
@@ -108,6 +110,23 @@ func (s *infractionService) Store(c context.Context, infraction *domain.Infracti
 	infraction, err = s.repo.Store(ctx, infraction)
 	if err != nil {
 		return nil, err
+	}
+
+	// Create attachments
+	for _, attachment := range attachments {
+		attachment.InfractionID = infraction.InfractionID
+
+		if err := s.attachmentRepo.Store(ctx, attachment); err != nil {
+			s.logger.Error("Could not create attachment",
+				zap.Int64("InfractionID", infraction.InfractionID),
+				zap.String("Attachment URL", attachment.URL),
+				zap.String("Attachment Note", attachment.Note),
+				zap.Error(err),
+			)
+
+			// Do not fully return out of the function since attachment creation is not considered mission critical
+			continue
+		}
 	}
 
 	return infraction, nil

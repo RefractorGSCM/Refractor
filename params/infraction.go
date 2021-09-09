@@ -19,15 +19,28 @@ package params
 
 import (
 	"Refractor/params/rules"
+	"fmt"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"strings"
 )
 
 type CreateWarningParams struct {
-	PlayerID string `json:"player_id" form:"player_id"`
-	Platform string `json:"platform" form:"platform"`
-	Reason   string `json:"reason" form:"reason"`
+	PlayerID    string                   `json:"player_id" form:"player_id"`
+	Platform    string                   `json:"platform" form:"platform"`
+	Reason      string                   `json:"reason" form:"reason"`
+	Attachments []CreateAttachmentParams `json:"attachments"`
 }
+
+var attachmentArrValidator = validation.Each(validation.By(func(value interface{}) error {
+	aBody, ok := value.(CreateAttachmentParams)
+	if !ok {
+		return fmt.Errorf("could not cast to *domain.Attachment")
+	}
+
+	return validation.ValidateStruct(&aBody,
+		validation.Field(&aBody.URL, rules.AttachmentURLRules.Prepend(validation.Required)...),
+		validation.Field(&aBody.Note, rules.AttachmentNoteRules...))
+}))
 
 func (body CreateWarningParams) Validate() error {
 	body.PlayerID = strings.TrimSpace(body.PlayerID)
@@ -38,14 +51,16 @@ func (body CreateWarningParams) Validate() error {
 		validation.Field(&body.PlayerID, rules.PlayerIDRules.Prepend(validation.Required)...),
 		validation.Field(&body.Platform, rules.PlatformRules.Prepend(validation.Required)...),
 		validation.Field(&body.Reason, rules.InfractionReasonRules.Prepend(validation.Required)...),
+		validation.Field(&body.Attachments, attachmentArrValidator),
 	)
 }
 
 type CreateMuteParams struct {
-	PlayerID string `json:"player_id" form:"player_id"`
-	Platform string `json:"platform" form:"platform"`
-	Reason   string `json:"reason" form:"reason"`
-	Duration int    `json:"duration" form:"duration"`
+	PlayerID    string                   `json:"player_id" form:"player_id"`
+	Platform    string                   `json:"platform" form:"platform"`
+	Reason      string                   `json:"reason" form:"reason"`
+	Duration    int                      `json:"duration" form:"duration"`
+	Attachments []CreateAttachmentParams `json:"attachments"`
 }
 
 func (body CreateMuteParams) Validate() error {
@@ -58,13 +73,15 @@ func (body CreateMuteParams) Validate() error {
 		validation.Field(&body.Platform, rules.PlatformRules.Prepend(validation.Required)...),
 		validation.Field(&body.Reason, rules.InfractionReasonRules.Prepend(validation.Required)...),
 		validation.Field(&body.Duration, rules.InfractionDurationRules.Prepend(validation.Required)...),
+		validation.Field(&body.Attachments, attachmentArrValidator),
 	)
 }
 
 type CreateKickParams struct {
-	PlayerID string `json:"player_id" form:"player_id"`
-	Platform string `json:"platform" form:"platform"`
-	Reason   string `json:"reason" form:"reason"`
+	PlayerID    string                   `json:"player_id" form:"player_id"`
+	Platform    string                   `json:"platform" form:"platform"`
+	Reason      string                   `json:"reason" form:"reason"`
+	Attachments []CreateAttachmentParams `json:"attachments"`
 }
 
 func (body CreateKickParams) Validate() error {
@@ -76,14 +93,16 @@ func (body CreateKickParams) Validate() error {
 		validation.Field(&body.PlayerID, rules.PlayerIDRules.Prepend(validation.Required)...),
 		validation.Field(&body.Platform, rules.PlatformRules.Prepend(validation.Required)...),
 		validation.Field(&body.Reason, rules.InfractionReasonRules.Prepend(validation.Required)...),
+		validation.Field(&body.Attachments, attachmentArrValidator),
 	)
 }
 
 type CreateBanParams struct {
-	PlayerID string `json:"player_id" form:"player_id"`
-	Platform string `json:"platform" form:"platform"`
-	Reason   string `json:"reason" form:"reason"`
-	Duration int    `json:"duration" form:"duration"`
+	PlayerID    string                   `json:"player_id" form:"player_id"`
+	Platform    string                   `json:"platform" form:"platform"`
+	Reason      string                   `json:"reason" form:"reason"`
+	Duration    int                      `json:"duration" form:"duration"`
+	Attachments []CreateAttachmentParams `json:"attachments"`
 }
 
 func (body CreateBanParams) Validate() error {
@@ -96,6 +115,7 @@ func (body CreateBanParams) Validate() error {
 		validation.Field(&body.Platform, rules.PlatformRules.Prepend(validation.Required)...),
 		validation.Field(&body.Reason, rules.InfractionReasonRules.Prepend(validation.Required)...),
 		validation.Field(&body.Duration, rules.InfractionDurationRules.Prepend(validation.Required)...),
+		validation.Field(&body.Attachments, attachmentArrValidator),
 	)
 }
 

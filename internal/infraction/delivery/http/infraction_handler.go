@@ -111,10 +111,19 @@ func (h *infractionHandler) CreateWarning(c echo.Context) error {
 		ModifiedAt:   null.Time{},
 	}
 
+	// Convert attachments body field to slice of attachment slices
+	var attachments []*domain.Attachment
+	for _, att := range body.Attachments {
+		attachments = append(attachments, &domain.Attachment{
+			URL:  att.URL,
+			Note: att.Note,
+		})
+	}
+
 	// Attach user to request context for use in the service
 	ctx := c.Request().Context()
 	ctx = context.WithValue(ctx, "user", user)
-	newWarning, err = h.service.Store(ctx, newWarning)
+	newWarning, err = h.service.Store(ctx, newWarning, attachments)
 	if err != nil {
 		return err
 	}
@@ -172,10 +181,19 @@ func (h *infractionHandler) CreateMute(c echo.Context) error {
 		ModifiedAt:   null.Time{},
 	}
 
+	// Convert attachments body field to slice of attachment slices
+	var attachments []*domain.Attachment
+	for _, att := range body.Attachments {
+		attachments = append(attachments, &domain.Attachment{
+			URL:  att.URL,
+			Note: att.Note,
+		})
+	}
+
 	// Attach user to request context for use in the service
 	ctx := c.Request().Context()
 	ctx = context.WithValue(ctx, "user", user)
-	newMute, err = h.service.Store(ctx, newMute)
+	newMute, err = h.service.Store(ctx, newMute, attachments)
 	if err != nil {
 		return err
 	}
@@ -234,10 +252,19 @@ func (h *infractionHandler) CreateKick(c echo.Context) error {
 		ModifiedAt:   null.Time{},
 	}
 
+	// Convert attachments body field to slice of attachment slices
+	var attachments []*domain.Attachment
+	for _, att := range body.Attachments {
+		attachments = append(attachments, &domain.Attachment{
+			URL:  att.URL,
+			Note: att.Note,
+		})
+	}
+
 	// Attach user to request context for use in the service
 	ctx := c.Request().Context()
 	ctx = context.WithValue(ctx, "user", user)
-	newKick, err = h.service.Store(ctx, newKick)
+	newKick, err = h.service.Store(ctx, newKick, attachments)
 	if err != nil {
 		return err
 	}
@@ -295,10 +322,19 @@ func (h *infractionHandler) CreateBan(c echo.Context) error {
 		ModifiedAt:   null.Time{},
 	}
 
+	// Convert attachments body field to slice of attachment slices
+	var attachments []*domain.Attachment
+	for _, att := range body.Attachments {
+		attachments = append(attachments, &domain.Attachment{
+			URL:  att.URL,
+			Note: att.Note,
+		})
+	}
+
 	// Attach user to request context for use in the service
 	ctx := c.Request().Context()
 	ctx = context.WithValue(ctx, "user", user)
-	newBan, err = h.service.Store(ctx, newBan)
+	newBan, err = h.service.Store(ctx, newBan, attachments)
 	if err != nil {
 		return err
 	}
