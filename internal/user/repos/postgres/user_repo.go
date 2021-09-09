@@ -174,6 +174,31 @@ func (r *userRepo) IsDeactivated(ctx context.Context, userID string) (bool, erro
 	return isDeactivated, nil
 }
 
+func (r *userRepo) GetUsername(ctx context.Context, userID string) (string, error) {
+	const op = opTag + "IsDeactivated"
+
+	// If the user meta is cached, pull it from cache and return it.
+	cachedUser, isCached := r.cache.Get(userID)
+	if isCached {
+		foundUser := cachedUser.(*domain.UserMeta)
+		return foundUser.Username, nil
+	}
+
+	query := "SELECT Username FROM UserMeta WHERE UserID = $1;"
+
+	var username string
+	if err := r.db.QueryRowContext(ctx, query, userID).Scan(&username); err != nil {
+		if errors.Cause(err) == sql.ErrNoRows {
+			return "", errors.Wrap(domain.ErrNotFound, op)
+		}
+
+		r.logger.Error("Could not scan row", zap.Error(err))
+		return "", errors.Wrap(err, op)
+	}
+
+	return username, nil
+}
+
 // Scan helpers
 func (r *userRepo) scanRow(row *sql.Row, meta *domain.UserMeta) error {
 	return row.Scan(&meta.ID, &meta.InitialUsername, &meta.Username, &meta.Deactivated)

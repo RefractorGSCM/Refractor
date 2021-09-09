@@ -300,5 +300,59 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("GetUsername()", func() {
+			g.Describe("UserMeta is cached", func() {
+				var cachedUser *domain.UserMeta
+
+				g.BeforeEach(func() {
+					cachedUser = &domain.UserMeta{
+						ID:              "userid",
+						InitialUsername: "initialUsername",
+						Username:        "currentUsername",
+						Deactivated:     false,
+					}
+
+					repo.cache.SetDefault(cachedUser.ID, cachedUser)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.GetUsername(ctx, cachedUser.ID)
+
+					Expect(err).To(BeNil())
+				})
+
+				g.It("Should return username from cache without hitting DB", func() {
+					username, err := repo.GetUsername(ctx, cachedUser.ID)
+
+					Expect(err).To(BeNil())
+					Expect(username).To(Equal(cachedUser.Username))
+				})
+			})
+
+			g.Describe("UserMeta is not cached", func() {
+				g.Describe("Username found in DB", func() {
+					g.BeforeEach(func() {
+						mock.ExpectQuery("SELECT Username FROM UserMeta").WillReturnRows(
+							sqlmock.NewRows([]string{"username"}).AddRow("currentUsername"))
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := repo.GetUsername(ctx, "userid")
+
+						Expect(err).To(BeNil())
+						Expect(mock.ExpectationsWereMet()).To(BeNil())
+					})
+
+					g.It("Should return the correct username", func() {
+						username, err := repo.GetUsername(ctx, "userid")
+
+						Expect(err).To(BeNil())
+						Expect(username).To(Equal("currentUsername"))
+						Expect(mock.ExpectationsWereMet()).To(BeNil())
+					})
+				})
+			})
+		})
 	})
 }
