@@ -352,6 +352,19 @@ func Test(t *testing.T) {
 						Expect(mock.ExpectationsWereMet()).To(BeNil())
 					})
 				})
+
+				g.Describe("Username not found in DB", func() {
+					g.BeforeEach(func() {
+						mock.ExpectQuery("SELECT Username FROM UserMeta").WillReturnError(sql.ErrNoRows)
+					})
+
+					g.It("Should return a domain.ErrNotFound error", func() {
+						_, err := repo.GetUsername(ctx, "userid")
+
+						Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+						Expect(mock.ExpectationsWereMet()).To(BeNil())
+					})
+				})
 			})
 		})
 	})
