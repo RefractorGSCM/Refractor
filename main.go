@@ -168,7 +168,7 @@ func main() {
 
 	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)
 	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, serverRepo,
-		attachmentRepo, authorizer, time.Second*2, logger)
+		attachmentRepo, userMetaRepo, authorizer, time.Second*2, logger)
 	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, authorizer, middlewareBundle, logger)
 
 	// Subscribe to events

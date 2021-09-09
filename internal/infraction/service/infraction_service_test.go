@@ -45,6 +45,7 @@ func Test(t *testing.T) {
 		var mockRepo *mocks.InfractionRepo
 		var playerRepo *mocks.PlayerRepo
 		var serverRepo *mocks.ServerRepo
+		var userMetaRepo *mocks.UserMetaRepo
 		var authorizer *mocks.Authorizer
 		var service *infractionService
 		var ctx = context.TODO()
@@ -53,11 +54,13 @@ func Test(t *testing.T) {
 			mockRepo = new(mocks.InfractionRepo)
 			playerRepo = new(mocks.PlayerRepo)
 			serverRepo = new(mocks.ServerRepo)
+			userMetaRepo = new(mocks.UserMetaRepo)
 			authorizer = new(mocks.Authorizer)
 			service = &infractionService{
 				repo:            mockRepo,
 				playerRepo:      playerRepo,
 				serverRepo:      serverRepo,
+				userMetaRepo:    userMetaRepo,
 				authorizer:      authorizer,
 				timeout:         time.Second * 2,
 				logger:          zap.NewNop(),
@@ -236,6 +239,7 @@ func Test(t *testing.T) {
 						SystemAction: false,
 						CreatedAt:    null.NewTime(time.Now(), true),
 						ModifiedAt:   null.Time{},
+						IssuerName:   "foundIssuerName",
 					},
 					{
 						InfractionID: 2,
@@ -249,6 +253,7 @@ func Test(t *testing.T) {
 						SystemAction: false,
 						CreatedAt:    null.NewTime(time.Now(), true),
 						ModifiedAt:   null.Time{},
+						IssuerName:   "foundIssuerName",
 					},
 					{
 						InfractionID: 3,
@@ -262,6 +267,7 @@ func Test(t *testing.T) {
 						SystemAction: false,
 						CreatedAt:    null.NewTime(time.Now(), true),
 						ModifiedAt:   null.Time{},
+						IssuerName:   "foundIssuerName",
 					},
 					{
 						InfractionID: 4,
@@ -275,6 +281,7 @@ func Test(t *testing.T) {
 						SystemAction: false,
 						CreatedAt:    null.NewTime(time.Now(), true),
 						ModifiedAt:   null.Time{},
+						IssuerName:   "foundIssuerName",
 					},
 				}
 			})
@@ -306,6 +313,8 @@ func Test(t *testing.T) {
 							Return(false, nil).Once() // ID 3
 						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 							Return(true, nil).Once() // ID 4
+
+						userMetaRepo.On("GetUsername", mock.Anything, mock.Anything).Return("foundIssuerUsername", nil)
 					})
 
 					g.It("Should not return an error", func() {
@@ -333,6 +342,7 @@ func Test(t *testing.T) {
 				g.Describe("Infractions were found", func() {
 					g.BeforeEach(func() {
 						mockRepo.On("GetByPlayer", mock.Anything, mock.Anything, mock.Anything).Return(mockInfractions, nil)
+						userMetaRepo.On("GetUsername", mock.Anything, mock.Anything).Return("foundIssuerUsername", nil)
 					})
 
 					g.It("Should not return an error", func() {

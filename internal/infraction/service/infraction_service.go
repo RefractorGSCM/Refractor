@@ -35,6 +35,7 @@ type infractionService struct {
 	playerRepo      domain.PlayerRepo
 	serverRepo      domain.ServerRepo
 	attachmentRepo  domain.AttachmentRepo
+	userMetaRepo    domain.UserMetaRepo
 	authorizer      domain.Authorizer
 	timeout         time.Duration
 	logger          *zap.Logger
@@ -42,12 +43,13 @@ type infractionService struct {
 }
 
 func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, sr domain.ServerRepo, ar domain.AttachmentRepo,
-	a domain.Authorizer, to time.Duration, log *zap.Logger) domain.InfractionService {
+	umr domain.UserMetaRepo, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.InfractionService {
 	return &infractionService{
 		repo:            repo,
 		playerRepo:      pr,
 		serverRepo:      sr,
 		attachmentRepo:  ar,
+		userMetaRepo:    umr,
 		authorizer:      a,
 		timeout:         to,
 		logger:          log,
@@ -143,6 +145,8 @@ func (s *infractionService) GetByID(c context.Context, id int64) (*domain.Infrac
 //
 // If a user is set inside the provided context with the key "user" then permissions are checked against each server
 // so that only infractions belonging to servers the requesting user has access to are returned.
+//
+// GetByPlayer also fetches the username of each issuing staff member for each infraction.
 func (s *infractionService) GetByPlayer(c context.Context, playerID, platform string) ([]*domain.Infraction, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
@@ -193,6 +197,24 @@ func (s *infractionService) GetByPlayer(c context.Context, playerID, platform st
 		}
 	} else {
 		outputInfractions = infractions
+	}
+
+	// Get username of issuer for each infraction and add to infraction object
+	for _, infr := range outputInfractions {
+		if !infr.UserID.Valid {
+			continue
+		}
+
+		username, err := s.userMetaRepo.GetUsername(ctx, infr.UserID.ValueOrZero())
+		if err != nil {
+			s.logger.Error("Could not get infraction issuer's username",
+				zap.String("User ID", infr.UserID.ValueOrZero()),
+				zap.Error(err),
+			)
+			continue
+		}
+
+		infr.IssuerName = username
 	}
 
 	return outputInfractions, err

@@ -46,6 +46,7 @@ type Infraction struct {
 	SystemAction bool        `json:"system_action"`
 	CreatedAt    null.Time   `json:"created_at"`
 	ModifiedAt   null.Time   `json:"modified_at"`
+	IssuerName   string      `json:"issuer_name"` // IssuerName is not a DB field. It does not get scanned. It is populated manually.
 }
 
 type InfractionRepo interface {
