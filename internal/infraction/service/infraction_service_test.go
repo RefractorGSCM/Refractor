@@ -171,53 +171,99 @@ func Test(t *testing.T) {
 		})
 
 		g.Describe("GetByID()", func() {
-			g.Describe("Result found", func() {
-				var mockInfraction *domain.Infraction
+			g.Describe("User was not provided in context (do not check auth)", func() {
+				g.Describe("Result found", func() {
+					var mockInfraction *domain.Infraction
 
-				g.BeforeEach(func() {
-					mockInfraction = &domain.Infraction{
-						InfractionID: 1,
-						PlayerID:     "playerid",
-						Platform:     "platform",
-						UserID:       null.NewString("userid", true),
-						ServerID:     4,
-						Type:         domain.InfractionTypeWarning,
-						Reason:       null.NewString("Test reason", true),
-						Duration:     null.Int{},
-						SystemAction: false,
-						CreatedAt:    null.Time{},
-						ModifiedAt:   null.Time{},
-					}
+					g.BeforeEach(func() {
+						mockInfraction = &domain.Infraction{
+							InfractionID: 1,
+							PlayerID:     "playerid",
+							Platform:     "platform",
+							UserID:       null.NewString("userid", true),
+							ServerID:     4,
+							Type:         domain.InfractionTypeWarning,
+							Reason:       null.NewString("Test reason", true),
+							Duration:     null.Int{},
+							SystemAction: false,
+							CreatedAt:    null.Time{},
+							ModifiedAt:   null.Time{},
+						}
 
-					mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(mockInfraction, nil)
+						mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(mockInfraction, nil)
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := service.GetByID(ctx, 1)
+
+						Expect(err).To(BeNil())
+						mockRepo.AssertExpectations(t)
+					})
+
+					g.It("Should return the correct infraction", func() {
+						foundInfraction, err := service.GetByID(ctx, 1)
+
+						Expect(err).To(BeNil())
+						Expect(foundInfraction).To(Equal(mockInfraction))
+						mockRepo.AssertExpectations(t)
+					})
 				})
 
-				g.It("Should not return an error", func() {
-					_, err := service.GetByID(ctx, 1)
+				g.Describe("No results found", func() {
+					g.BeforeEach(func() {
+						mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
+					})
 
-					Expect(err).To(BeNil())
-					mockRepo.AssertExpectations(t)
-				})
+					g.It("Should return a domain.ErrNotFound error", func() {
+						_, err := service.GetByID(ctx, 1)
 
-				g.It("Should return the correct infraction", func() {
-					foundInfraction, err := service.GetByID(ctx, 1)
-
-					Expect(err).To(BeNil())
-					Expect(foundInfraction).To(Equal(mockInfraction))
-					mockRepo.AssertExpectations(t)
+						Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+						mockRepo.AssertExpectations(t)
+					})
 				})
 			})
 
-			g.Describe("No results found", func() {
+			g.Describe("User was set in context (check authorization)", func() {
 				g.BeforeEach(func() {
-					mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
+					ctx = context.WithValue(ctx, "user", &domain.AuthUser{
+						Session: &kratos.Session{
+							Identity: kratos.Identity{
+								Id: "userid",
+							},
+						},
+					})
+
+					mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(&domain.Infraction{
+						ServerID: 1,
+					}, nil)
 				})
 
-				g.It("Should return a domain.ErrNotFound error", func() {
-					_, err := service.GetByID(ctx, 1)
+				g.Describe("User has authorization", func() {
+					g.BeforeEach(func() {
+						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+							Return(true, nil)
+					})
 
-					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
-					mockRepo.AssertExpectations(t)
+					g.It("Should not return an error", func() {
+						_, err := service.GetByID(ctx, 1)
+
+						Expect(err).To(BeNil())
+						mockRepo.AssertExpectations(t)
+					})
+				})
+
+				g.Describe("User does not have authorization", func() {
+					g.BeforeEach(func() {
+						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+							Return(false, nil)
+					})
+
+					g.It("Should return an error", func() {
+						_, err := service.GetByID(ctx, 1)
+
+						Expect(err).ToNot(BeNil())
+						mockRepo.AssertExpectations(t)
+					})
 				})
 			})
 		})

@@ -134,11 +134,44 @@ func (s *infractionService) Store(c context.Context, infraction *domain.Infracti
 	return infraction, nil
 }
 
+// GetByID returns an infraction with a matching ID.
+//
+// If a user is set inside the provided context with the key "user" then permissions are checked against the server
+// this infraction was recorded on. If no user is provided in context, then authorization is skipped.
+//
+// GetByID also fetches the username of each issuing staff member for each infraction.
 func (s *infractionService) GetByID(c context.Context, id int64) (*domain.Infraction, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.GetByID(ctx, id)
+	infraction, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if a user exists in the context. If they do, check permissions.
+	user, checkAuth := ctx.Value("user").(*domain.AuthUser)
+	isAuthorized := false
+
+	if checkAuth {
+		// Check if the user has permission to view player records on the infraction's server.
+		hasPermission, err := s.authorizer.HasPermission(ctx, domain.AuthScope{
+			Type: domain.AuthObjServer,
+			ID:   infraction.ServerID,
+		}, user.Identity.Id, authcheckers.HasPermission(perms.FlagViewPlayerRecords, true))
+		if err != nil {
+			return nil, err
+		}
+
+		isAuthorized = hasPermission
+	}
+
+	if checkAuth && !isAuthorized {
+		return nil, domain.NewHTTPError(nil, http.StatusUnauthorized,
+			"You do not have permission to view this infraction.")
+	}
+
+	return infraction, nil
 }
 
 // GetByPlayer returns all infractions for a player on a given platform.
