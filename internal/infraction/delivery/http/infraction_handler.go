@@ -72,6 +72,33 @@ func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, a 
 	infractionGroup.DELETE("/:id", handler.DeleteInfraction) // perms checked in service
 	infractionGroup.GET("/player/:platform/:playerId", handler.GetPlayerInfractions,
 		rEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagViewPlayerRecords, true))) // additional server specific perms checks done in service
+	infractionGroup.GET("/:id", handler.GetByID) // perms checked in service
+}
+
+func (h *infractionHandler) GetByID(c echo.Context) error {
+	infractionIDString := c.Param("id")
+
+	infractionID, err := strconv.ParseInt(infractionIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid server id"), http.StatusBadRequest, "")
+	}
+
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	ctx := c.Request().Context()
+	ctx = context.WithValue(ctx, "user", user)
+	infraction, err := h.service.GetByID(ctx, infractionID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Payload: infraction,
+	})
 }
 
 func (h *infractionHandler) CreateWarning(c echo.Context) error {

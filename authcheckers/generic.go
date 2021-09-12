@@ -51,14 +51,45 @@ func HasPermission(flagName perms.FlagName, adminBypass bool) domain.AuthChecker
 			return true, nil
 		}
 
-		// Super admins bypass all permission checks
-		if permissions.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {
-			return true, nil
+		if adminBypass {
+			// Super admins bypass all permission checks
+			if permissions.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {
+				return true, nil
+			}
+
+			// If adminBypass is enabled and the specified flag is not set, check if the user is admin
+			if permissions.CheckFlag(perms.GetFlag(perms.FlagAdministrator)) {
+				return true, nil
+			}
 		}
 
-		// If adminBypass is enabled and the specified flag is not set, check if the user is admin
-		if permissions.CheckFlag(perms.GetFlag(perms.FlagAdministrator)) {
-			return true, nil
+		return false, nil
+	}
+}
+
+func HasOneOfPermissions(adminBypass bool, flagNames ...perms.FlagName) domain.AuthChecker {
+	return func(permissions *bitperms.Permissions) (bool, error) {
+		for _, flagName := range flagNames {
+			flag := perms.GetFlag(flagName)
+			if flag == nil {
+				return false, errors.New("invalid flag name")
+			}
+
+			if permissions.CheckFlag(flag) {
+				return true, nil
+			}
+		}
+
+		if adminBypass {
+			// Super admins bypass all permission checks
+			if permissions.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {
+				return true, nil
+			}
+
+			// If adminBypass is enabled and the specified flag is not set, check if the user is admin
+			if permissions.CheckFlag(perms.GetFlag(perms.FlagAdministrator)) {
+				return true, nil
+			}
 		}
 
 		return false, nil

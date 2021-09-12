@@ -158,10 +158,23 @@ func (s *infractionService) GetByID(c context.Context, id int64) (*domain.Infrac
 		hasPermission, err := s.authorizer.HasPermission(ctx, domain.AuthScope{
 			Type: domain.AuthObjServer,
 			ID:   infraction.ServerID,
-		}, user.Identity.Id, authcheckers.HasPermission(perms.FlagViewPlayerRecords, true))
+		}, user.Identity.Id, authcheckers.HasOneOfPermissions(true, perms.FlagViewPlayerRecords, perms.FlagViewInfractionRecords))
 		if err != nil {
 			return nil, err
 		}
+
+		// NOTE: It may seem a little backwards that we are checking both the FlagViewPlayerRecords or FlagViewInfractionRecords
+		// to check whether the user is authorized to view an infraction record. Wouldn't solely checking FlagViewInfractionRecords
+		// make more sense? On the surface, yes it would, but from an implementation standpoint this would complicate things.
+		//
+		// Take the following situation where only FlagViewInfractionRecords is checked:
+		// 1. The player has permission to view player records
+		// 2. They open a player's summary and see a list of partial infraction previews
+		// 3. They click on one to view it's full info but oops! They are denied access because they only had
+		//    FlagViewPlayerRecords.
+		//
+		// Since Infractions are tied so strongly to specific players, it makes more sense to allow access to users with
+		// either of these permissions, even if it seems like a bit of a domain boundary violation. This is simpler.
 
 		isAuthorized = hasPermission
 	}
