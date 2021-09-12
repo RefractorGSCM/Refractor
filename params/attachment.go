@@ -17,7 +17,19 @@
 
 package params
 
+import (
+	"Refractor/params/rules"
+	validation "github.com/go-ozzo/ozzo-validation"
+)
+
 type CreateAttachmentParams struct {
 	URL  string `json:"url" form:"url"`
 	Note string `json:"note" form:"note"`
+}
+
+func (body CreateAttachmentParams) Validate() error {
+	return ValidateStruct(&body,
+		validation.Field(&body.URL, rules.AttachmentURLRules.Prepend(validation.Required)...),
+		validation.Field(&body.Note, rules.AttachmentNoteRules...),
+	)
 }
