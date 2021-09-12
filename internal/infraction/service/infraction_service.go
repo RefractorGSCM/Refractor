@@ -184,6 +184,18 @@ func (s *infractionService) GetByID(c context.Context, id int64) (*domain.Infrac
 			"You do not have permission to view this infraction.")
 	}
 
+	// Get issuer username
+	username, err := s.userMetaRepo.GetUsername(ctx, infraction.UserID.ValueOrZero())
+	if err != nil {
+		s.logger.Error("Could not get infraction issuer's username",
+			zap.Int64("Infraction ID", infraction.InfractionID),
+			zap.String("User ID", infraction.UserID.ValueOrZero()),
+			zap.Error(err),
+		)
+	}
+
+	infraction.IssuerName = username
+
 	return infraction, nil
 }
 
@@ -254,6 +266,7 @@ func (s *infractionService) GetByPlayer(c context.Context, playerID, platform st
 		username, err := s.userMetaRepo.GetUsername(ctx, infr.UserID.ValueOrZero())
 		if err != nil {
 			s.logger.Error("Could not get infraction issuer's username",
+				zap.Int64("Infraction ID", infr.InfractionID),
 				zap.String("User ID", infr.UserID.ValueOrZero()),
 				zap.Error(err),
 			)
