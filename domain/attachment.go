@@ -29,6 +29,7 @@ type Attachment struct {
 type AttachmentRepo interface {
 	Store(ctx context.Context, attachment *Attachment) error
 	GetByInfraction(ctx context.Context, infractionID int64) ([]*Attachment, error)
+	GetByID(ctx context.Context, id int64) (*Attachment, error)
 	Delete(ctx context.Context, id int64) error
 }
 

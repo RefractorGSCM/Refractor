@@ -115,6 +115,23 @@ func (r *attachmentRepo) GetByInfraction(ctx context.Context, infractionID int64
 	return nil, errors.Wrap(domain.ErrNotFound, op)
 }
 
+func (r *attachmentRepo) GetByID(ctx context.Context, id int64) (*domain.Attachment, error) {
+	const op = opTag + "GetByID"
+
+	query := "SELECT * FROM Attachments WHERE AttachmentID = $1;"
+
+	results, err := r.fetch(ctx, query, id)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	if len(results) > 0 {
+		return results[0], nil
+	}
+
+	return nil, errors.Wrap(domain.ErrNotFound, op)
+}
+
 func (r *attachmentRepo) Delete(ctx context.Context, id int64) error {
 	const op = opTag + "Delete"
 

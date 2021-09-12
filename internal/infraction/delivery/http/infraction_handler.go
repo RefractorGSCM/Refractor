@@ -76,7 +76,9 @@ func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, as
 	infractionGroup.DELETE("/:id", handler.DeleteInfraction) // perms checked in service
 	infractionGroup.GET("/player/:platform/:playerId", handler.GetPlayerInfractions,
 		rEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagViewPlayerRecords, true))) // additional server specific perms checks done in service
-	infractionGroup.GET("/:id", handler.GetByID) // perms checked in service
+	infractionGroup.GET("/:id", handler.GetByID)                        // perms checked in service
+	infractionGroup.POST("/:id/attachment", handler.AddAttachment)      // perms checked in service
+	infractionGroup.DELETE("/attachment/:id", handler.RemoveAttachment) // perms checked in service
 }
 
 type infractionWithAttachments struct {
@@ -533,5 +535,80 @@ func (h *infractionHandler) GetPlayerInfractions(c echo.Context) error {
 		Success: true,
 		Message: fmt.Sprintf("Fetched %d infractions", len(infractions)),
 		Payload: infractions,
+	})
+}
+
+func (h *infractionHandler) AddAttachment(c echo.Context) error {
+	infractionIDString := c.Param("id")
+
+	infractionID, err := strconv.ParseInt(infractionIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid infraction id"), http.StatusBadRequest, "")
+	}
+
+	// Validate request body
+	var body params.CreateAttachmentParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	// Attach user to request context for use in the service
+	ctx := c.Request().Context()
+	ctx = context.WithValue(ctx, "user", user)
+
+	// Create attachment
+	attachment := &domain.Attachment{
+		InfractionID: infractionID,
+		URL:          body.URL,
+		Note:         body.Note,
+	}
+
+	if err := h.attachmentService.Store(ctx, attachment); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Attachment created",
+		Payload: attachment,
+	})
+}
+
+// RemoveAttachment would belong more in a separate Attachment handler, but it doesn't hurt anything while being here.
+// If something else calls for the creation of a separate attachment service, this method should be moved there.
+func (h *infractionHandler) RemoveAttachment(c echo.Context) error {
+	attachmentIDString := c.Param("id")
+
+	attachmentID, err := strconv.ParseInt(attachmentIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid attachment id"), http.StatusBadRequest, "")
+	}
+
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	// Attach user to request context for use in the service
+	ctx := c.Request().Context()
+	ctx = context.WithValue(ctx, "user", user)
+
+	// Delete attachment
+	if err := h.attachmentService.Delete(ctx, attachmentID); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Attachment deleted",
 	})
 }

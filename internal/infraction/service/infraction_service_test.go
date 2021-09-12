@@ -191,6 +191,7 @@ func Test(t *testing.T) {
 						}
 
 						mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(mockInfraction, nil)
+						userMetaRepo.On("GetUsername", mock.Anything, mock.Anything).Return("username", nil)
 					})
 
 					g.It("Should not return an error", func() {
@@ -236,6 +237,8 @@ func Test(t *testing.T) {
 					mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(&domain.Infraction{
 						ServerID: 1,
 					}, nil)
+
+					userMetaRepo.On("GetUsername", mock.Anything, mock.Anything).Return("username", nil)
 				})
 
 				g.Describe("User has authorization", func() {

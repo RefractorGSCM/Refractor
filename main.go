@@ -165,10 +165,11 @@ func main() {
 	playerService := _playerService.NewPlayerService(playerRepo, playerNameRepo, time.Second*2, logger)
 	_playerHandler.ApplyPlayerHandler(apiGroup, playerService, authorizer, middlewareBundle, logger)
 
-	attachmentRepo := _attachmentRepo.NewAttachmentRepo(db, logger)
-	attachmentService := _attachmentService.NewAttachmentService(attachmentRepo, time.Second*2, logger)
-
 	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)
+
+	attachmentRepo := _attachmentRepo.NewAttachmentRepo(db, logger)
+	attachmentService := _attachmentService.NewAttachmentService(attachmentRepo, infractionRepo, authorizer, time.Second*2, logger)
+
 	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, serverRepo,
 		attachmentRepo, userMetaRepo, authorizer, time.Second*2, logger)
 	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
