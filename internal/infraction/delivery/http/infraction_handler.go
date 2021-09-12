@@ -29,22 +29,26 @@ import (
 	"fmt"
 	"github.com/guregu/null"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 )
 
 type infractionHandler struct {
-	service    domain.InfractionService
-	authorizer domain.Authorizer
-	logger     *zap.Logger
+	service           domain.InfractionService
+	attachmentService domain.AttachmentService
+	authorizer        domain.Authorizer
+	logger            *zap.Logger
 }
 
-func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, a domain.Authorizer, mware domain.Middleware, log *zap.Logger) {
+func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, as domain.AttachmentService,
+	a domain.Authorizer, mware domain.Middleware, log *zap.Logger) {
 	handler := &infractionHandler{
-		service:    s,
-		authorizer: a,
-		logger:     log,
+		service:           s,
+		attachmentService: as,
+		authorizer:        a,
+		logger:            log,
 	}
 
 	// Create the infraction routing group
@@ -75,6 +79,11 @@ func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, a 
 	infractionGroup.GET("/:id", handler.GetByID) // perms checked in service
 }
 
+type infractionWithAttachments struct {
+	Attachments []*domain.Attachment `json:"attachments"`
+	*domain.Infraction
+}
+
 func (h *infractionHandler) GetByID(c echo.Context) error {
 	infractionIDString := c.Param("id")
 
@@ -95,9 +104,20 @@ func (h *infractionHandler) GetByID(c echo.Context) error {
 		return err
 	}
 
+	// Get attachments belonging to infraction
+	attachments, err := h.attachmentService.GetByInfraction(ctx, infraction.InfractionID)
+	if err != nil && errors.Cause(err) != domain.ErrNotFound {
+		return err
+	}
+
+	res := &infractionWithAttachments{
+		Attachments: attachments,
+		Infraction:  infraction,
+	}
+
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
-		Payload: infraction,
+		Payload: res,
 	})
 }
 

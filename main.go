@@ -22,6 +22,7 @@ import (
 	"Refractor/domain"
 	"Refractor/games/mordhau"
 	_attachmentRepo "Refractor/internal/attachment/repos/postgres"
+	_attachmentService "Refractor/internal/attachment/service"
 	_authRepo "Refractor/internal/auth/repos/kratos"
 	_authService "Refractor/internal/auth/service"
 	_authorizer "Refractor/internal/authorizer"
@@ -165,11 +166,12 @@ func main() {
 	_playerHandler.ApplyPlayerHandler(apiGroup, playerService, authorizer, middlewareBundle, logger)
 
 	attachmentRepo := _attachmentRepo.NewAttachmentRepo(db, logger)
+	attachmentService := _attachmentService.NewAttachmentService(attachmentRepo, time.Second*2, logger)
 
 	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)
 	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, serverRepo,
 		attachmentRepo, userMetaRepo, authorizer, time.Second*2, logger)
-	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, authorizer, middlewareBundle, logger)
+	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
 
 	// Subscribe to events
 	rconService.SubscribeJoin(playerService.HandlePlayerJoin)
