@@ -64,7 +64,7 @@ func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, a domain.A
 	serverGroup.POST("/", handler.CreateServer, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
 	serverGroup.PATCH("/deactivate/:id", handler.DeactivateServer, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
 	serverGroup.PATCH("/:id", handler.UpdateServer, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
-	serverGroup.GET("/:id/permissions", handler.GetScopedPermissions, sEnforcer.CheckAuth(authcheckers.CanViewServer))
+	serverGroup.GET("/:id/permissions", handler.GetScopedPermissions)
 }
 
 func (h *serverHandler) CreateServer(c echo.Context) error {
