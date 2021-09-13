@@ -64,6 +64,7 @@ func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, a domain.A
 	serverGroup.POST("/", handler.CreateServer, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
 	serverGroup.PATCH("/deactivate/:id", handler.DeactivateServer, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
 	serverGroup.PATCH("/:id", handler.UpdateServer, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
+	serverGroup.GET("/:id/permissions", handler.GetScopedPermissions, sEnforcer.CheckAuth(authcheckers.CanViewServer))
 }
 
 func (h *serverHandler) CreateServer(c echo.Context) error {
@@ -287,5 +288,33 @@ func (h *serverHandler) UpdateServer(c echo.Context) error {
 		Success: true,
 		Message: "Server updated",
 		Payload: updated,
+	})
+}
+
+// GetScopedPermissions returns the user's computed permissions for the given server.
+func (h *serverHandler) GetScopedPermissions(c echo.Context) error {
+	serverIDString := c.Param("id")
+
+	serverID, err := strconv.ParseInt(serverIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid server id"), http.StatusBadRequest, "")
+	}
+
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	perms, err := h.authorizer.GetPermissions(c.Request().Context(), domain.AuthScope{
+		Type: domain.AuthObjServer,
+		ID:   serverID,
+	}, user.Identity.Id)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Payload: perms.String(),
 	})
 }
