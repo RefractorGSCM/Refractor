@@ -18,6 +18,7 @@
 package service
 
 import (
+	"Refractor/authcheckers"
 	"Refractor/domain"
 	"Refractor/pkg/bitperms"
 	"Refractor/pkg/broadcast"
@@ -132,6 +133,31 @@ func (s *serverService) GetAllAccessible(c context.Context) ([]*domain.Server, e
 		// If the user has permission, add it to the results slice
 		if hasPermission {
 			results = append(results, server)
+		} else {
+			// If the user does not have permission to outright view the server, check if they have permission to view
+			// player or infraction records on this server. If they do, append an incomplete server fragment to the list
+			// containing only the ID and Name while keeping any more sensitive info hidden.
+			hasPermission, err := s.authorizer.HasPermission(ctx, domain.AuthScope{
+				Type: domain.AuthObjServer,
+				ID:   server.ID,
+			}, user.Identity.Id, authcheckers.HasOneOfPermissions(true, perms.FlagViewPlayerRecords, perms.FlagViewInfractionRecords))
+			if err != nil {
+				s.logger.Error(
+					"Could not check if user has permission to view player/infraction records on server",
+					zap.String("User ID", user.Identity.Id),
+					zap.Int64("Server ID", server.ID),
+					zap.Error(err),
+				)
+				return nil, err
+			}
+
+			if hasPermission {
+				results = append(results, &domain.Server{
+					ID:         server.ID,
+					Name:       server.Name,
+					IsFragment: true,
+				})
+			}
 		}
 	}
 

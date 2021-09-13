@@ -34,6 +34,7 @@ type Server struct {
 	Deactivated  bool      `json:"deactivated"`
 	CreatedAt    time.Time `json:"created_at"`
 	ModifiedAt   time.Time `json:"modified_at"`
+	IsFragment   bool      `json:"-"` // not a database field
 }
 
 type DBServer struct {

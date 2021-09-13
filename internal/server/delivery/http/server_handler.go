@@ -121,6 +121,11 @@ type resServer struct {
 	Status        string           `json:"status"`
 }
 
+type resServerFragment struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
 // GetServers is the route handler for /api/v1/servers
 // It returns a JSON array containing all servers which the requesting user has access to.
 func (h *serverHandler) GetServers(c echo.Context) error {
@@ -135,38 +140,45 @@ func (h *serverHandler) GetServers(c echo.Context) error {
 		return err
 	}
 
-	var resServers []*resServer
+	var resServers []interface{}
 
 	// Transform servers into resServers
 	for _, server := range servers {
-		resServer := &resServer{
-			ID:          server.ID,
-			Game:        server.Game,
-			Name:        server.Name,
-			Address:     server.Address,
-			RCONPort:    server.RCONPort,
-			Deactivated: server.Deactivated,
-			CreatedAt:   server.CreatedAt,
-			ModifiedAt:  server.ModifiedAt,
-		}
-
-		// Get server's data
-		data, err := h.service.GetServerData(server.ID)
-		if err == nil {
-			for _, op := range data.OnlinePlayers {
-				resServer.OnlinePlayers = append(resServer.OnlinePlayers, op)
+		if server.IsFragment {
+			resServers = append(resServers, &resServerFragment{
+				ID:   server.ID,
+				Name: server.Name,
+			})
+		} else {
+			resServer := &resServer{
+				ID:          server.ID,
+				Game:        server.Game,
+				Name:        server.Name,
+				Address:     server.Address,
+				RCONPort:    server.RCONPort,
+				Deactivated: server.Deactivated,
+				CreatedAt:   server.CreatedAt,
+				ModifiedAt:  server.ModifiedAt,
 			}
 
-			if len(resServer.OnlinePlayers) < 1 {
-				resServer.OnlinePlayers = []*domain.Player{}
+			// Get server's data
+			data, err := h.service.GetServerData(server.ID)
+			if err == nil {
+				for _, op := range data.OnlinePlayers {
+					resServer.OnlinePlayers = append(resServer.OnlinePlayers, op)
+				}
+
+				if len(resServer.OnlinePlayers) < 1 {
+					resServer.OnlinePlayers = []*domain.Player{}
+				}
+
+				resServer.Status = data.Status
+			} else if errors.Cause(err) != domain.ErrNotFound {
+				return err
 			}
 
-			resServer.Status = data.Status
-		} else if errors.Cause(err) != domain.ErrNotFound {
-			return err
+			resServers = append(resServers, resServer)
 		}
-
-		resServers = append(resServers, resServer)
 	}
 
 	return c.JSON(http.StatusOK, &domain.Response{
