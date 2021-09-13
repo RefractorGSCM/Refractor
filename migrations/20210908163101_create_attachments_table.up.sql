@@ -21,5 +21,5 @@
      URL VARCHAR(512) NOT NULL,
      Note TEXT DEFAULT '',
 
-     FOREIGN KEY (InfractionID) REFERENCES Infractions (InfractionID)
+     FOREIGN KEY (InfractionID) REFERENCES Infractions (InfractionID) ON DELETE CASCADE
  )
