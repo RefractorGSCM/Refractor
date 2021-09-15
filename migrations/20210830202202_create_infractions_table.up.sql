@@ -15,8 +15,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-DROP TYPE IF EXISTS InfractionType;
-CREATE TYPE InfractionType AS ENUM ('WARNING', 'MUTE', 'KICK', 'BAN');
+DO $$ BEGIN
+    CREATE TYPE InfractionType AS ENUM ('WARNING', 'MUTE', 'KICK', 'BAN');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS Infractions(
     InfractionID SERIAL NOT NULL PRIMARY KEY,
