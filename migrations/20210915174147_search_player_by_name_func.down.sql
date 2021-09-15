@@ -15,8 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package domain
+DROP TYPE playerNameSearchResult;
 
-type SearchService interface {
-	SearchPlayers(term, searchType, platform string, limit, offset int) (int, []*Player, error)
-}
+DROP FUNCTION IF EXISTS search_player_names(VARCHAR, INT, INT);
