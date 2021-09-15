@@ -63,3 +63,28 @@ func (_m *RCONService) GetServerClient(serverID int64) domain.RCONClient {
 
 	return r0
 }
+
+// StartReconnectRoutine provides a mock function with given fields: server, data
+func (_m *RCONService) StartReconnectRoutine(server *domain.Server, data *domain.ServerData) {
+	_m.Called(server, data)
+}
+
+// SubscribeJoin provides a mock function with given fields: sub
+func (_m *RCONService) SubscribeJoin(sub domain.BroadcastSubscriber) {
+	_m.Called(sub)
+}
+
+// SubscribePlayerListUpdate provides a mock function with given fields: sub
+func (_m *RCONService) SubscribePlayerListUpdate(sub domain.PlayerListUpdateSubscriber) {
+	_m.Called(sub)
+}
+
+// SubscribeQuit provides a mock function with given fields: sub
+func (_m *RCONService) SubscribeQuit(sub domain.BroadcastSubscriber) {
+	_m.Called(sub)
+}
+
+// SubscribeServerStatus provides a mock function with given fields: sub
+func (_m *RCONService) SubscribeServerStatus(sub domain.ServerStatusSubscriber) {
+	_m.Called(sub)
+}

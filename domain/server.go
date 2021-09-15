@@ -102,4 +102,5 @@ type ServerService interface {
 	Update(c context.Context, id int64, args UpdateArgs) (*Server, error)
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 	HandlePlayerQuit(fields broadcast.Fields, serverID int64, game Game)
+	HandleServerStatusChange(serverID int64, status string)
 }

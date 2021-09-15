@@ -184,6 +184,7 @@ func (s *serverService) CreateServerData(id int64) error {
 		ServerID:      id,
 		PlayerCount:   0,
 		OnlinePlayers: map[string]*domain.Player{},
+		Status:        "Unknown",
 	}
 
 	return nil
@@ -233,4 +234,14 @@ func (s *serverService) HandlePlayerQuit(fields broadcast.Fields, serverID int64
 	playerID := fields["PlayerID"]
 	// Remove player from server data
 	delete(s.serverData[serverID].OnlinePlayers, playerID)
+}
+
+func (s *serverService) HandleServerStatusChange(serverID int64, status string) {
+	data, err := s.GetServerData(serverID)
+	if err != nil {
+		s.logger.Warn("Could not get server data", zap.Int64("Server ID", serverID), zap.Error(err))
+		return
+	}
+
+	data.Status = status
 }

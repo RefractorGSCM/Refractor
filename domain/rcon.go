@@ -36,6 +36,7 @@ type RCONClient interface {
 
 type BroadcastSubscriber func(fields broadcast.Fields, serverID int64, game Game)
 type PlayerListUpdateSubscriber func(players []*Player)
+type ServerStatusSubscriber func(serverID int64, status string)
 
 type RCONService interface {
 	CreateClient(server *Server) error
@@ -46,4 +47,5 @@ type RCONService interface {
 	SubscribeJoin(sub BroadcastSubscriber)
 	SubscribeQuit(sub BroadcastSubscriber)
 	SubscribePlayerListUpdate(sub PlayerListUpdateSubscriber)
+	SubscribeServerStatus(sub ServerStatusSubscriber)
 }

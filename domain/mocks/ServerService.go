@@ -3,8 +3,10 @@
 package mocks
 
 import (
-	domain "Refractor/domain"
+	broadcast "Refractor/pkg/broadcast"
 	context "context"
+
+	domain "Refractor/domain"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -155,6 +157,21 @@ func (_m *ServerService) GetServerData(id int64) (*domain.ServerData, error) {
 	}
 
 	return r0, r1
+}
+
+// HandlePlayerJoin provides a mock function with given fields: fields, serverID, game
+func (_m *ServerService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
+	_m.Called(fields, serverID, game)
+}
+
+// HandlePlayerQuit provides a mock function with given fields: fields, serverID, game
+func (_m *ServerService) HandlePlayerQuit(fields broadcast.Fields, serverID int64, game domain.Game) {
+	_m.Called(fields, serverID, game)
+}
+
+// HandleServerStatusChange provides a mock function with given fields: serverID, status
+func (_m *ServerService) HandleServerStatusChange(serverID int64, status string) {
+	_m.Called(serverID, status)
 }
 
 // Store provides a mock function with given fields: c, server
