@@ -54,3 +54,13 @@ var AttachmentURLRules = RuleGroup{
 var AttachmentNoteRules = RuleGroup{
 	validation.Length(1, 512),
 }
+
+var SearchOffsetRules = RuleGroup{
+	validation.Min(0),
+	validation.Max(math.MaxInt32),
+}
+
+var SearchLimitRules = RuleGroup{
+	validation.Min(0),
+	validation.Max(100),
+}
