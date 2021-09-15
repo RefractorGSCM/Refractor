@@ -37,6 +37,7 @@ type rconService struct {
 	joinSubs       []domain.BroadcastSubscriber
 	quitSubs       []domain.BroadcastSubscriber
 	playerListSubs []domain.PlayerListUpdateSubscriber
+	statusSubs     []domain.ServerStatusSubscriber
 }
 
 func NewRCONService(log *zap.Logger, gs domain.GameService) domain.RCONService {
@@ -48,6 +49,7 @@ func NewRCONService(log *zap.Logger, gs domain.GameService) domain.RCONService {
 		joinSubs:       []domain.BroadcastSubscriber{},
 		quitSubs:       []domain.BroadcastSubscriber{},
 		playerListSubs: []domain.PlayerListUpdateSubscriber{},
+		statusSubs:     []domain.ServerStatusSubscriber{},
 	}
 }
 
@@ -108,6 +110,11 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 		}
 	}
 
+	// Notify that this server is online
+	for _, sub := range s.statusSubs {
+		sub(server.ID, "Online")
+	}
+
 	return nil
 }
 
@@ -150,6 +157,10 @@ func (s *rconService) getBroadcastHandler(serverID int64, game domain.Game) func
 func (s *rconService) getDisconnectHandler(serverID int64) func(error, bool) {
 	return func(err error, expected bool) {
 		s.logger.Warn("RCON client disconnected", zap.Int64("Server", serverID), zap.Bool("Expected", expected), zap.Error(err))
+
+		for _, sub := range s.statusSubs {
+			sub(serverID, "Offline")
+		}
 
 		// Delete the client from the list of clients. Reconnection attempts will be made in the watchdog.
 		s.DeleteClient(serverID)
@@ -259,4 +270,8 @@ func (s *rconService) SubscribeQuit(sub domain.BroadcastSubscriber) {
 
 func (s *rconService) SubscribePlayerListUpdate(sub domain.PlayerListUpdateSubscriber) {
 	s.playerListSubs = append(s.playerListSubs, sub)
+}
+
+func (s *rconService) SubscribeServerStatus(sub domain.ServerStatusSubscriber) {
+	s.statusSubs = append(s.statusSubs, sub)
 }

@@ -39,4 +39,5 @@ type WebsocketService interface {
 	BroadcastServerMessage(message *WebsocketMessage, serverID int64, authChecker AuthChecker) error
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 	HandlePlayerQuit(fields broadcast.Fields, serverID int64, game Game)
+	HandleServerStatusChange(serverID int64, status string)
 }

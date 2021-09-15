@@ -152,3 +152,21 @@ func (s *websocketService) HandlePlayerQuit(fields broadcast.Fields, serverID in
 		return
 	}
 }
+
+type serverStatusBody struct {
+	ServerID int64  `json:"server_id"`
+	Status   string `json:"status"`
+}
+
+func (s *websocketService) HandleServerStatusChange(serverID int64, status string) {
+	if err := s.BroadcastServerMessage(&domain.WebsocketMessage{
+		Type: "server-status",
+		Body: serverStatusBody{
+			ServerID: serverID,
+			Status:   status,
+		},
+	}, serverID, authcheckers.CanViewServer); err != nil {
+		s.logger.Warn("Could not broadcast server status message", zap.Error(err))
+		return
+	}
+}
