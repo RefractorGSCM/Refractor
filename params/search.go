@@ -28,12 +28,12 @@ import (
 
 type SearchParams struct {
 	Offset int `json:"offset" form:"offset"`
-	Limit  int `json:"limit" form:"offset"`
+	Limit  int `json:"limit" form:"limit"`
 }
 
 func (body SearchParams) Validate() error {
 	return ValidateStruct(&body,
-		validation.Field(&body.Offset, rules.SearchOffsetRules.Prepend(validation.Required)...),
+		validation.Field(&body.Offset, rules.SearchOffsetRules...),
 		validation.Field(&body.Limit, rules.SearchLimitRules.Prepend(validation.Required)...),
 	)
 }
@@ -42,7 +42,7 @@ type SearchPlayerParams struct {
 	Term     string `json:"term" form:"term"`
 	Type     string `json:"type" form:"type"`
 	Platform string `json:"platform" form:"platform"`
-	SearchParams
+	*SearchParams
 }
 
 var validPlayerSearchTypes = []string{"name", "id"}
