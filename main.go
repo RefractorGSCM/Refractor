@@ -39,6 +39,8 @@ import (
 	_playerNameRepo "Refractor/internal/player/repos/postgres/playername"
 	_playerService "Refractor/internal/player/service"
 	_rconService "Refractor/internal/rcon/service"
+	_searchHandler "Refractor/internal/search/delivery/http"
+	_searchService "Refractor/internal/search/service"
 	_serverHandler "Refractor/internal/server/delivery/http"
 	_postgresServerRepo "Refractor/internal/server/repos/postgres"
 	_serverService "Refractor/internal/server/service"
@@ -173,6 +175,9 @@ func main() {
 	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, serverRepo,
 		attachmentRepo, userMetaRepo, authorizer, time.Second*2, logger)
 	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
+
+	searchService := _searchService.NewSearchService(playerRepo, time.Second*2, logger)
+	_searchHandler.ApplySearchHandler(apiGroup, searchService, authorizer, middlewareBundle, logger)
 
 	// Subscribe to events
 	rconService.SubscribeJoin(playerService.HandlePlayerJoin)
