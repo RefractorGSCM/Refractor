@@ -228,12 +228,12 @@ func (r *playerRepo) SearchByName(ctx context.Context, name string, limit, offse
 	} else {
 		query = `
 			SELECT COUNT(1) AS Matches FROM (
-				SELECT 1 FROM PlayerNames WHERE Name LIKE CONCAT('%', $1, '%')
+				SELECT 1 FROM PlayerNames WHERE Name LIKE CONCAT('%', $1::VARCHAR, '%')
 				GROUP BY PlayerID, Platform
 			) AS Matches
 		`
 
-		row := r.db.QueryRowContext(ctx, query)
+		row := r.db.QueryRowContext(ctx, query, name)
 		if err := row.Scan(&totalResults); err != nil {
 			r.logger.Error("Could not scan total player name search result count", zap.Error(err))
 			return 0, nil, errors.Wrap(err, op)
