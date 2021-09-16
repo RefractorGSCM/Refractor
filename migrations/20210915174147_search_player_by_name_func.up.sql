@@ -41,10 +41,8 @@ begin
                    group by pn.playerid, pn.platform
                    limit limt offset offst
         loop
-            raise notice '%,%', looprow.playerid, looprow.platform;
-
             select p.playerid, p.platform, p.lastseen, pn.name into tmp from playernames pn
-                                                                                 inner join players p on p.playerid = pn.playerid and p.platform = pn.platform
+            inner join players p on p.playerid = pn.playerid and p.platform = pn.platform
             where pn.playerid = looprow.playerid
               and pn.platform = looprow.platform
             order by daterecorded desc

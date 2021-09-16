@@ -58,6 +58,36 @@ func (_m *PlayerRepo) GetByID(ctx context.Context, platform string, id string) (
 	return r0, r1
 }
 
+// SearchByName provides a mock function with given fields: ctx, name, limit, offset
+func (_m *PlayerRepo) SearchByName(ctx context.Context, name string, limit int, offset int) (int, []*domain.Player, error) {
+	ret := _m.Called(ctx, name, limit, offset)
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func(context.Context, string, int, int) int); ok {
+		r0 = rf(ctx, name, limit, offset)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	var r1 []*domain.Player
+	if rf, ok := ret.Get(1).(func(context.Context, string, int, int) []*domain.Player); ok {
+		r1 = rf(ctx, name, limit, offset)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]*domain.Player)
+		}
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(context.Context, string, int, int) error); ok {
+		r2 = rf(ctx, name, limit, offset)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // Store provides a mock function with given fields: ctx, player
 func (_m *PlayerRepo) Store(ctx context.Context, player *domain.Player) error {
 	ret := _m.Called(ctx, player)

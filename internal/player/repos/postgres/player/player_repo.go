@@ -22,25 +22,29 @@ import (
 	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"time"
 )
 
 const opTag = "PlayerRepo.Postgres."
 
 type playerRepo struct {
-	db       *sql.DB
-	logger   *zap.Logger
-	qb       domain.QueryBuilder
-	nameRepo domain.PlayerNameRepo
+	db              *sql.DB
+	logger          *zap.Logger
+	qb              domain.QueryBuilder
+	nameRepo        domain.PlayerNameRepo
+	nameSearchCache *cache.Cache
 }
 
 func NewPlayerRepo(db *sql.DB, nameRepo domain.PlayerNameRepo, logger *zap.Logger) domain.PlayerRepo {
 	return &playerRepo{
-		db:       db,
-		logger:   logger,
-		qb:       psqlqb.NewPostgresQueryBuilder(),
-		nameRepo: nameRepo,
+		db:              db,
+		logger:          logger,
+		qb:              psqlqb.NewPostgresQueryBuilder(),
+		nameRepo:        nameRepo,
+		nameSearchCache: cache.New(time.Minute*2, time.Minute*5),
 	}
 }
 
@@ -189,6 +193,54 @@ func (r *playerRepo) Update(ctx context.Context, platform, id string, args domai
 	}
 
 	return updatedPlayer.Player(), nil
+}
+
+func (r *playerRepo) SearchByName(ctx context.Context, name string, limit, offset int) (int, []*domain.Player, error) {
+	const op = opTag + "SearchByName"
+
+	query := "SELECT * FROM search_player_names($1, $2, $3);"
+
+	rows, err := r.db.QueryContext(ctx, query, name, limit, offset)
+	if err != nil {
+		r.logger.Error("Could not execute player name search query", zap.String("query", query), zap.Error(err))
+		return 0, nil, errors.Wrap(err, op)
+	}
+
+	var results []*domain.Player
+
+	for rows.Next() {
+		res := &domain.Player{}
+
+		if err := rows.Scan(&res.PlayerID, &res.Platform, &res.LastSeen, &res.CurrentName); err != nil {
+			r.logger.Error("Could not scan player search result", zap.Error(err))
+			return 0, nil, errors.Wrap(err, op)
+		}
+
+		results = append(results, res)
+	}
+
+	// Get total results. If total results for this search were already cached, pull it from cache.
+	// Otherwise, fetch it from the DB.
+	var totalResults int
+	res, ok := r.nameSearchCache.Get(name)
+	if ok {
+		totalResults = res.(int)
+	} else {
+		query = `
+			SELECT COUNT(1) AS Matches FROM (
+				SELECT 1 FROM PlayerNames WHERE Name LIKE CONCAT('%', $1, '%')
+				GROUP BY PlayerID, Platform
+			) AS Matches
+		`
+
+		row := r.db.QueryRowContext(ctx, query)
+		if err := row.Scan(&totalResults); err != nil {
+			r.logger.Error("Could not scan total player name search result count", zap.Error(err))
+			return 0, nil, errors.Wrap(err, op)
+		}
+	}
+
+	return totalResults, results, nil
 }
 
 // Scan helpers

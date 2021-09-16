@@ -20,12 +20,14 @@ package player
 import (
 	"Refractor/domain"
 	"Refractor/domain/mocks"
+	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
 	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/franela/goblin"
 	. "github.com/onsi/gomega"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
@@ -44,7 +46,7 @@ func Test(t *testing.T) {
 	var ctx = context.TODO()
 
 	g.Describe("Player Postgres Repo", func() {
-		var repo domain.PlayerRepo
+		var repo *playerRepo
 		var mockRepo sqlmock.Sqlmock
 		var nameRepo *mocks.PlayerNameRepo
 		var db *sql.DB
@@ -58,7 +60,13 @@ func Test(t *testing.T) {
 			}
 
 			nameRepo = new(mocks.PlayerNameRepo)
-			repo = NewPlayerRepo(db, nameRepo, zap.NewNop())
+			repo = &playerRepo{
+				db:              db,
+				logger:          zap.NewNop(),
+				qb:              psqlqb.NewPostgresQueryBuilder(),
+				nameRepo:        nameRepo,
+				nameSearchCache: cache.New(time.Minute*1, time.Minute*1),
+			}
 		})
 
 		g.After(func() {
@@ -303,6 +311,108 @@ func Test(t *testing.T) {
 					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
 					Expect(p).To(BeNil())
 					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
+
+		g.Describe("SearchByName()", func() {
+			g.Describe("Results found", func() {
+				var results []*domain.Player
+
+				g.BeforeEach(func() {
+					results = []*domain.Player{
+						{
+							PlayerID:    "1",
+							Platform:    "Platform",
+							LastSeen:    time.Now(),
+							CurrentName: "1-name",
+						},
+						{
+							PlayerID:    "2",
+							Platform:    "Platform",
+							LastSeen:    time.Now(),
+							CurrentName: "2-name",
+						},
+						{
+							PlayerID:    "3",
+							Platform:    "Platform",
+							LastSeen:    time.Now(),
+							CurrentName: "3-name",
+						},
+					}
+
+					rows := sqlmock.NewRows([]string{"playerid", "platform", "lastseen", "playername"})
+
+					for _, res := range results {
+						rows.AddRow(res.PlayerID, res.Platform, res.LastSeen, res.CurrentName)
+					}
+
+					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT * FROM search_player_names")).WillReturnRows(rows)
+				})
+
+				g.Describe("Total results count for query not found in cache", func() {
+					g.BeforeEach(func() {
+						mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) AS Matches FROM")).WillReturnRows(
+							sqlmock.NewRows([]string{"matchcount"}).AddRow(len(results)))
+					})
+
+					g.It("Should not return an error", func() {
+						_, _, err := repo.SearchByName(ctx, "name", 0, 0)
+
+						Expect(err).To(BeNil())
+						Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+					})
+
+					g.It("Should return the correct results", func() {
+						_, res, err := repo.SearchByName(ctx, "name", 0, 0)
+
+						Expect(err).To(BeNil())
+						Expect(res).To(Equal(results))
+						Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+					})
+
+					g.It("Should return the correct total number of results", func() {
+						totalCount, _, err := repo.SearchByName(ctx, "name", 0, 0)
+
+						Expect(err).To(BeNil())
+						Expect(totalCount).To(Equal(len(results)))
+						Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+					})
+				})
+
+				g.Describe("Total results count for query is cached", func() {
+					var expectedTotal int
+
+					g.BeforeEach(func() {
+						expectedTotal = 2631
+
+						repo.nameSearchCache.SetDefault("name", expectedTotal)
+					})
+
+					// Since it's cached, there should not be a DB call to query COUNT(1) like in the above describe block
+
+					g.It("Should not return an error", func() {
+						_, _, err := repo.SearchByName(ctx, "name", 0, 0)
+
+						Expect(err).To(BeNil())
+						Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+					})
+
+					g.It("Should return the correct results", func() {
+						_, res, err := repo.SearchByName(ctx, "name", 0, 0)
+
+						Expect(err).To(BeNil())
+						Expect(res).To(Equal(results))
+						Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+					})
+
+					g.It("Should return the correct total number of results", func() {
+						totalCount, _, err := repo.SearchByName(ctx, "name", 0, 0)
+
+						Expect(err).To(BeNil())
+						Expect(totalCount).To(Equal(expectedTotal))
+						Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+					})
 				})
 			})
 		})
