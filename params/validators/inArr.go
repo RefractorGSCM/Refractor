@@ -27,6 +27,10 @@ func ValueInStrArray(arr []string) validation.RuleFunc {
 	return func(value interface{}) error {
 		value, _ = value.(string)
 
+		if value == "" {
+			return nil
+		}
+
 		for _, val := range arr {
 			if val == value {
 				return nil
