@@ -75,6 +75,7 @@ type PlayerRepo interface {
 	GetByID(ctx context.Context, platform, id string) (*Player, error)
 	Exists(ctx context.Context, args FindArgs) (bool, error)
 	Update(ctx context.Context, platform, id string, args UpdateArgs) (*Player, error)
+	SearchByName(ctx context.Context, name string, limit, offset int) (int, []*Player, error)
 }
 
 type PlayerNameRepo interface {

@@ -17,6 +17,8 @@
 
 package domain
 
+import "context"
+
 type SearchService interface {
-	SearchPlayers(term, searchType, platform string, limit, offset int) (int, []*Player, error)
+	SearchPlayers(c context.Context, term, searchType, platform string, limit, offset int) (int, []*Player, error)
 }
