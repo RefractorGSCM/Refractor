@@ -385,6 +385,27 @@ func Test(t *testing.T) {
 						mockRepo.AssertExpectations(t)
 					})
 				})
+
+				g.Describe("Infractions not found", func() {
+					g.BeforeEach(func() {
+						mockRepo.On("GetByPlayer", mock.Anything, mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := service.GetByPlayer(ctx, "playerid", "platform")
+
+						Expect(err).To(BeNil())
+						mockRepo.AssertExpectations(t)
+					})
+
+					g.It("Should return an empty array", func() {
+						output, err := service.GetByPlayer(ctx, "playerid", "platform")
+
+						Expect(err).To(BeNil())
+						Expect(output).To(Equal([]*domain.Infraction{}))
+						mockRepo.AssertExpectations(t)
+					})
+				})
 			})
 
 			g.Describe("User was not provided in context (don't check auth)", func() {
@@ -415,10 +436,18 @@ func Test(t *testing.T) {
 						mockRepo.On("GetByPlayer", mock.Anything, mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
 					})
 
-					g.It("Should return a domain.ErrNotFound error", func() {
+					g.It("Should not return an error", func() {
 						_, err := service.GetByPlayer(ctx, "playerid", "platform")
 
-						Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+						Expect(err).To(BeNil())
+						mockRepo.AssertExpectations(t)
+					})
+
+					g.It("Should return an empty array", func() {
+						output, err := service.GetByPlayer(ctx, "playerid", "platform")
+
+						Expect(err).To(BeNil())
+						Expect(output).To(Equal([]*domain.Infraction{}))
 						mockRepo.AssertExpectations(t)
 					})
 				})
