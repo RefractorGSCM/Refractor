@@ -161,8 +161,6 @@ func (h *serverHandler) GetServers(c echo.Context) error {
 				resServer.OnlinePlayers = []*domain.Player{}
 			}
 
-			fmt.Println(data.ServerID, data.Status)
-
 			resServer.Status = data.Status
 		} else if errors.Cause(err) != domain.ErrNotFound {
 			return err

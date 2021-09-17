@@ -213,6 +213,18 @@ func (s *infractionService) GetByPlayer(c context.Context, playerID, platform st
 
 	// Check if a user exists in the context. If they do, check permissions.
 	user, checkAuth := ctx.Value("user").(*domain.AuthUser)
+
+	// Get player infractions
+	infractions, err := s.repo.GetByPlayer(ctx, playerID, platform)
+	if err != nil {
+		if errors.Cause(err) != domain.ErrNotFound {
+			return nil, err
+		}
+
+		infractions = []*domain.Infraction{}
+		checkAuth = false // no need to check auth if no infractions were found
+	}
+
 	if checkAuth {
 		// Get all servers
 		servers, err := s.serverRepo.GetAll(ctx)
@@ -228,6 +240,11 @@ func (s *infractionService) GetByPlayer(c context.Context, playerID, platform st
 				ID:   server.ID,
 			}, user.Identity.Id, authcheckers.HasPermission(perms.FlagViewPlayerRecords, true))
 			if err != nil {
+				s.logger.Error("Could not check user auth for server",
+					zap.String("User ID", user.Identity.Id),
+					zap.Int64("Server ID", server.ID),
+					zap.Error(err),
+				)
 				return nil, err
 			}
 
@@ -237,12 +254,6 @@ func (s *infractionService) GetByPlayer(c context.Context, playerID, platform st
 				authorizedServers[server.ID] = false
 			}
 		}
-	}
-
-	// Get player infractions
-	infractions, err := s.repo.GetByPlayer(ctx, playerID, platform)
-	if err != nil {
-		return nil, err
 	}
 
 	var outputInfractions []*domain.Infraction
@@ -276,7 +287,7 @@ func (s *infractionService) GetByPlayer(c context.Context, playerID, platform st
 		infr.IssuerName = username
 	}
 
-	return outputInfractions, err
+	return outputInfractions, nil
 }
 
 // Update updates an infraction. If a user is set inside the passed in context with the key "user" then that user's
