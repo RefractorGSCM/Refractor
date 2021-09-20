@@ -402,5 +402,131 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("Search()", func() {
+			var cols = []string{"InfractionID", "PlayerID", "Platform", "UserID", "ServerID", "Type", "Reason", "Duration",
+				"SystemAction", "CreatedAt", "ModifiedAt", "StaffName"}
+
+			g.Describe("Results found", func() {
+				var results []*domain.Infraction
+
+				g.BeforeEach(func() {
+					results = []*domain.Infraction{
+						{
+							InfractionID: 1,
+							PlayerID:     "playerid",
+							Platform:     "platform",
+							UserID:       null.NewString("userid", true),
+							ServerID:     1,
+							Type:         domain.InfractionTypeWarning,
+							Reason:       null.NewString("reason", true),
+							Duration:     null.Int{},
+							SystemAction: true,
+							CreatedAt:    null.Time{},
+							ModifiedAt:   null.Time{},
+							IssuerName:   "username",
+						},
+						{
+							InfractionID: 2,
+							PlayerID:     "playerid2",
+							Platform:     "platform2",
+							UserID:       null.NewString("userid", true),
+							ServerID:     1,
+							Type:         domain.InfractionTypeBan,
+							Reason:       null.NewString("reason", true),
+							Duration:     null.NewInt(60, true),
+							SystemAction: false,
+							CreatedAt:    null.Time{},
+							ModifiedAt:   null.Time{},
+							IssuerName:   "username",
+						},
+						{
+							InfractionID: 1,
+							PlayerID:     "playerid3",
+							Platform:     "platform3",
+							UserID:       null.NewString("userid", true),
+							ServerID:     1,
+							Type:         domain.InfractionTypeKick,
+							Reason:       null.NewString("reason", true),
+							Duration:     null.Int{},
+							SystemAction: false,
+							CreatedAt:    null.Time{},
+							ModifiedAt:   null.Time{},
+							IssuerName:   "username",
+						},
+					}
+
+					rows := sqlmock.NewRows(cols)
+
+					for _, i := range results {
+						rows.AddRow(i.InfractionID, i.PlayerID, i.Platform, i.UserID, i.ServerID, i.Type, i.Reason,
+							i.Duration, i.SystemAction, i.CreatedAt, i.ModifiedAt, i.IssuerName)
+					}
+
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT res.*, um.Username AS StaffName FROM (")).WillReturnRows(rows)
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) AS Count FROM Infractions")).WillReturnRows(sqlmock.NewRows([]string{"count"}).
+						AddRow(1000))
+				})
+
+				g.It("Should not return an error", func() {
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return the expected results", func() {
+					_, got, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal(results))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return the correct total results", func() {
+					total, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+
+					Expect(err).To(BeNil())
+					Expect(total).To(Equal(1000))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("No results found", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT res.*, um.Username AS StaffName FROM (")).WillReturnRows(
+						sqlmock.NewRows(cols))
+				})
+
+				g.It("Should not return an error", func() {
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return an empty array and a count of 0", func() {
+					total, got, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal([]*domain.Infraction{}))
+					Expect(total).To(Equal(0))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Database error", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT res.*, um.Username AS StaffName FROM (")).WillReturnError(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+
+					Expect(err).ToNot(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
 	})
 }
