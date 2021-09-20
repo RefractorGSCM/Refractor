@@ -64,3 +64,7 @@ var SearchLimitRules = RuleGroup{
 	validation.Min(0),
 	validation.Max(100),
 }
+
+var UserIDRules = RuleGroup{
+	is.UUIDv4,
+}

@@ -21,6 +21,7 @@ import (
 	"Refractor/domain"
 	"Refractor/params/rules"
 	"Refractor/params/validators"
+	"fmt"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/pkg/errors"
 	"strings"
@@ -48,6 +49,9 @@ type SearchPlayerParams struct {
 var validPlayerSearchTypes = []string{"name", "id"}
 
 func (body SearchPlayerParams) Validate() error {
+	if body.SearchParams == nil {
+		return fmt.Errorf("no search params provided")
+	}
 	if err := body.SearchParams.Validate(); err != nil {
 		return err
 	}
@@ -72,5 +76,47 @@ func (body SearchPlayerParams) Validate() error {
 
 				return nil
 			})),
+	)
+}
+
+type SearchInfractionParams struct {
+	Type     *string `json:"type" form:"type"`
+	Game     *string `json:"game" form:"game"`
+	PlayerID *string `json:"player_id" form:"player_id"`
+	Platform *string `json:"platform" form:"platform"`
+	ServerID *int64  `json:"server_id" form:"server_id"`
+	UserID   *string `json:"user_id" form:"user_id"`
+	*SearchParams
+}
+
+var validInfractionTypes = []string{domain.InfractionTypeWarning, domain.InfractionTypeMute, domain.InfractionTypeKick, domain.InfractionTypeBan}
+
+func (body SearchInfractionParams) Validate() error {
+	if body.SearchParams == nil {
+		return fmt.Errorf("no search params provided")
+	}
+	if err := body.SearchParams.Validate(); err != nil {
+		return err
+	}
+
+	return ValidateStruct(&body,
+		validation.Field(&body.Type, validation.By(validators.PtrValueInStrArray(validInfractionTypes))),
+		validation.Field(&body.Game, validation.By(validators.PtrValueInStrArray(domain.AllGames))),
+		validation.Field(&body.PlayerID, rules.PlayerIDRules...),
+		validation.Field(&body.Platform, validation.By(validators.PtrValueInStrArray(domain.AllPlatforms)),
+			validation.By(func(value interface{}) error {
+				// if body.PlayerID is set then platform is required
+				if body.PlayerID == nil {
+					return nil
+				}
+
+				platform, ok := value.(string)
+				if !ok || (ok && len(strings.TrimSpace(platform)) == 0) {
+					return errors.New("platform is required if player_id is set")
+				}
+
+				return nil
+			})),
+		validation.Field(&body.UserID, rules.UserIDRules...),
 	)
 }

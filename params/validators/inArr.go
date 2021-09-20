@@ -40,3 +40,27 @@ func ValueInStrArray(arr []string) validation.RuleFunc {
 		return errors.New(fmt.Sprintf("must be one of: %v", arr))
 	}
 }
+
+func PtrValueInStrArray(arr []string) validation.RuleFunc {
+	return func(value interface{}) error {
+		strValPtr, _ := value.(*string)
+
+		if strValPtr == nil {
+			return nil
+		}
+
+		strVal := *strValPtr
+
+		if strVal == "" {
+			return nil
+		}
+
+		for _, val := range arr {
+			if val == strVal {
+				return nil
+			}
+		}
+
+		return errors.New(fmt.Sprintf("must be one of: %v", arr))
+	}
+}
