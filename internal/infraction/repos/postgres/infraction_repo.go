@@ -198,26 +198,28 @@ func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, limit
 			FROM Infractions i
 			INNER JOIN Servers s ON i.ServerID = s.ServerID
 			WHERE
-				($1 IS NULL OR i.Type = $2) AND
-				($3 IS NULL OR i.PlayerID = $4) AND
-				($5 IS NULL OR i.UserID = $6) AND
-				($7 IS NULL OR i.ServerID = $8) AND
-				($9 IS NULL OR s.Game = $10)
+				($1::VARCHAR IS NULL OR i.Type = $2) AND
+				($3::VARCHAR IS NULL OR i.PlayerID = $4) AND
+				($5::VARCHAR IS NULL OR i.Platform = $6) AND
+				($7::VARCHAR IS NULL OR i.UserID = $8) AND
+				($9::INT IS NULL OR i.ServerID = $10) AND
+				($11::VARCHAR IS NULL OR s.Game = $12)
 			) res
 		JOIN UserMeta um ON res.UserID = um.UserID
-		LIMIT $11 OFFSET $12;
+		LIMIT $13 OFFSET $14;
 	`
 
 	var (
 		iType    = args["Type"]
 		playerID = args["PlayerID"]
+		platform = args["Platform"]
 		userID   = args["UserID"]
 		serverID = args["ServerID"]
 		game     = args["Game"]
 	)
 
-	rows, err := r.db.QueryContext(ctx, query, iType, iType, playerID, playerID, userID, userID, serverID, serverID,
-		game, game, limit, offset)
+	rows, err := r.db.QueryContext(ctx, query, iType, iType, playerID, playerID, platform, platform, userID, userID,
+		serverID, serverID, game, game, limit, offset)
 	if err != nil {
 		r.logger.Error("Could not execute infraction search query",
 			zap.Any("Filters", args),
@@ -250,15 +252,16 @@ func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, limit
 		FROM Infractions i
 		INNER JOIN Servers s ON i.ServerID = s.ServerID
 		WHERE
-			($1 IS NULL OR i.Type = $2) AND
-			($3 IS NULL OR i.PlayerID = $4) AND
-			($5 IS NULL OR i.UserID = $6) AND
-			($7 IS NULL OR i.ServerID = $8) AND
-			($9 IS NULL OR s.Game = $10)
+			($1::VARCHAR IS NULL OR i.Type = $2) AND
+			($3::VARCHAR IS NULL OR i.PlayerID = $4) AND
+		    ($5::VARCHAR IS NULL OR i.Platform = $6) AND
+			($7::VARCHAR IS NULL OR i.UserID = $8) AND
+			($9::INT IS NULL OR i.ServerID = $10) AND
+			($11::VARCHAR IS NULL OR s.Game = $12)
 	`
 
-	row := r.db.QueryRowContext(ctx, query, iType, iType, playerID, playerID, userID, userID, serverID, serverID,
-		game, game, limit, offset)
+	row := r.db.QueryRowContext(ctx, query, iType, iType, playerID, playerID, platform, platform, userID, userID, serverID, serverID,
+		game, game)
 
 	var count int
 	if err := row.Scan(&count); err != nil {

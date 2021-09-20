@@ -24,6 +24,7 @@ import (
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/perms"
+	"Refractor/pkg/structutils"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"net/http"
@@ -49,6 +50,8 @@ func ApplySearchHandler(apiGroup *echo.Group, s domain.SearchService, a domain.A
 
 	searchGroup.POST("/players", handler.SearchPlayers,
 		enforcer.CheckAuth(authcheckers.HasPermission(perms.FlagViewPlayerRecords, true)))
+	searchGroup.POST("/infractions", handler.SearchInfractions,
+		enforcer.CheckAuth(authcheckers.HasPermission(perms.FlagViewInfractionRecords, true)))
 }
 
 type searchRes struct {
@@ -69,6 +72,45 @@ func (h *searchHandler) SearchPlayers(c echo.Context) error {
 
 	// Execute search
 	total, results, err := h.service.SearchPlayers(c.Request().Context(), body.Term, body.Type, body.Platform, body.Limit, body.Offset)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Payload: &searchRes{
+			Total:   total,
+			Results: results,
+		},
+	})
+}
+
+func (h *searchHandler) SearchInfractions(c echo.Context) error {
+	// Validate request body
+	var body params.SearchInfractionParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	// Get search args
+	searchArgs, err := structutils.GetNonNilFieldMap(body)
+	if err != nil {
+		return err
+	}
+
+	if len(searchArgs) < 1 {
+		return c.JSON(http.StatusBadRequest, &domain.Response{
+			Success: false,
+			Message: "No search fields provided",
+		})
+	}
+
+	// Execute search
+	total, results, err := h.service.SearchInfractions(c.Request().Context(), searchArgs, body.Limit, body.Offset)
 	if err != nil {
 		return err
 	}

@@ -31,6 +31,8 @@ func NewGameService() domain.GameService {
 
 func (s *gameService) AddGame(game domain.Game) {
 	s.games[game.GetName()] = game
+
+	domain.AllGames = append(domain.AllGames, game.GetName())
 }
 
 func (s *gameService) GetAllGames() []domain.Game {
