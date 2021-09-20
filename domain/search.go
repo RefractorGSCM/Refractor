@@ -21,4 +21,5 @@ import "context"
 
 type SearchService interface {
 	SearchPlayers(c context.Context, term, searchType, platform string, limit, offset int) (int, []*Player, error)
+	SearchInfractions(c context.Context, args FindArgs, limit, offset int) (int, []*Infraction, error)
 }

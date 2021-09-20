@@ -55,6 +55,7 @@ type InfractionRepo interface {
 	Update(ctx context.Context, id int64, args UpdateArgs) (*Infraction, error)
 	Delete(ctx context.Context, id int64) error
 	GetByPlayer(ctx context.Context, playerID, platform string) ([]*Infraction, error)
+	Search(ctx context.Context, args FindArgs, limit, offset int) (int, []*Infraction, error)
 }
 
 type InfractionService interface {

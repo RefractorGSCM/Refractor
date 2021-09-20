@@ -185,6 +185,86 @@ func (r *infractionRepo) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
+func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, limit, offset int) (int, []*domain.Infraction, error) {
+	const op = opTag + "Search"
+
+	query := `
+		SELECT
+			res.*,
+			um.Username AS StaffName
+		FROM (
+		    SELECT
+		    	i.*
+			FROM Infractions i
+			INNER JOIN Servers s ON i.ServerID = s.ServerID
+			WHERE
+				($1 IS NULL OR i.Type = $2) AND
+				($3 IS NULL OR i.PlayerID = $4) AND
+				($5 IS NULL OR i.UserID = $6) AND
+				($7 IS NULL OR i.ServerID = $8) AND
+				($9 IS NULL OR s.Game = $10)
+			) res
+		JOIN UserMeta um ON res.UserID = um.UserID
+		LIMIT $11 OFFSET $12;
+	`
+
+	var (
+		iType    = args["Type"]
+		playerID = args["PlayerID"]
+		userID   = args["UserID"]
+		serverID = args["ServerID"]
+		game     = args["Game"]
+	)
+
+	rows, err := r.db.QueryContext(ctx, query, iType, iType, playerID, playerID, userID, userID, serverID, serverID,
+		game, game, limit, offset)
+	if err != nil {
+		r.logger.Error("Could not execute infraction search query",
+			zap.Any("Filters", args),
+			zap.Error(err),
+		)
+		return 0, nil, errors.Wrap(err, op)
+	}
+
+	var results []*domain.Infraction
+
+	for rows.Next() {
+		res := &domain.Infraction{}
+
+		if err := rows.Scan(&res.InfractionID, &res.PlayerID, &res.Platform, &res.UserID, &res.ServerID, &res.Type,
+			&res.Reason, &res.Duration, &res.SystemAction, &res.CreatedAt, &res.ModifiedAt, &res.IssuerName); err != nil {
+			r.logger.Error("Could not scan infraction search result", zap.Error(err))
+			return 0, nil, errors.Wrap(err, op)
+		}
+
+		results = append(results, res)
+	}
+
+	// Get total number of matches
+	query = `
+		SELECT COUNT(1) AS Count
+		FROM Infractions i
+		INNER JOIN Servers s ON i.ServerID = s.ServerID
+		WHERE
+			($1 IS NULL OR i.Type = $2) AND
+			($3 IS NULL OR i.PlayerID = $4) AND
+			($5 IS NULL OR i.UserID = $6) AND
+			($7 IS NULL OR i.ServerID = $8) AND
+			($9 IS NULL OR s.Game = $10)
+	`
+
+	row := r.db.QueryRowContext(ctx, query, iType, iType, playerID, playerID, userID, userID, serverID, serverID,
+		game, game, limit, offset)
+
+	var count int
+	if err := row.Scan(&count); err != nil {
+		r.logger.Error("Could not scan total search results for infraction search", zap.Error(err))
+		return 0, nil, errors.Wrap(err, op)
+	}
+
+	return count, results, nil
+}
+
 // Scan helpers
 func (r *infractionRepo) scanRow(row *sql.Row, i *domain.Infraction) error {
 	return row.Scan(&i.InfractionID, &i.PlayerID, &i.Platform, &i.UserID, &i.ServerID, &i.Type, &i.Reason, &i.Duration, &i.SystemAction, &i.CreatedAt, &i.ModifiedAt)
