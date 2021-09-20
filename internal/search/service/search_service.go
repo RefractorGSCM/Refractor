@@ -83,7 +83,7 @@ func (s searchService) SearchInfractions(c context.Context, args domain.FindArgs
 	defer cancel()
 
 	// Filter out illegal values
-	wl := whitelist.StringKeyMap([]string{"Type", "Game", "PlayerID", "ServerID", "UserID"})
+	wl := whitelist.StringKeyMap([]string{"Type", "Game", "PlayerID", "Platform", "ServerID", "UserID"})
 	args = wl.FilterKeys(args)
 
 	if len(args) == 0 {

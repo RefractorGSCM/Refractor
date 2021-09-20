@@ -22,6 +22,8 @@ import (
 	"time"
 )
 
+var AllGames []string
+
 // Game is the interface representing a game within Refractor.
 type Game interface {
 	GetName() string

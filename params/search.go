@@ -110,8 +110,13 @@ func (body SearchInfractionParams) Validate() error {
 					return nil
 				}
 
-				platform, ok := value.(string)
-				if !ok || (ok && len(strings.TrimSpace(platform)) == 0) {
+				platformPtr, ok := value.(*string)
+				if !ok {
+					return errors.New("platform is required if player_id is set")
+				}
+
+				platform := *platformPtr
+				if len(strings.TrimSpace(platform)) == 0 {
 					return errors.New("platform is required if player_id is set")
 				}
 
