@@ -240,6 +240,10 @@ func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, limit
 		results = append(results, res)
 	}
 
+	if len(results) < 1 {
+		return 0, []*domain.Infraction{}, nil
+	}
+
 	// Get total number of matches
 	query = `
 		SELECT COUNT(1) AS Count
