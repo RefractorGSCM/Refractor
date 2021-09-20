@@ -22,6 +22,7 @@ import (
 	"Refractor/domain/mocks"
 	"context"
 	"github.com/franela/goblin"
+	"github.com/guregu/null"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
@@ -38,14 +39,17 @@ func Test(t *testing.T) {
 	g.Describe("Search service", func() {
 		var service *searchService
 		var playerRepo *mocks.PlayerRepo
+		var infractionRepo *mocks.InfractionRepo
 		var ctx context.Context
 
 		g.BeforeEach(func() {
 			playerRepo = new(mocks.PlayerRepo)
+			infractionRepo = new(mocks.InfractionRepo)
 			service = &searchService{
-				playerRepo: playerRepo,
-				timeout:    time.Second * 2,
-				logger:     zap.NewNop(),
+				playerRepo:     playerRepo,
+				infractionRepo: infractionRepo,
+				timeout:        time.Second * 2,
+				logger:         zap.NewNop(),
 			}
 			ctx = context.TODO()
 		})
@@ -127,6 +131,116 @@ func Test(t *testing.T) {
 						Expect(totalCount).To(Equal(1))
 						playerRepo.AssertExpectations(t)
 					})
+				})
+			})
+		})
+
+		g.Describe("SearchInfractions()", func() {
+			g.Describe("No valid search fields were provided", func() {
+				g.It("Should return an error", func() {
+					_, _, err := service.SearchInfractions(ctx, domain.FindArgs{"Invalid": "invalid"}, 0, 0)
+
+					httpErr, ok := err.(*domain.HTTPError)
+
+					Expect(ok).To(BeTrue())
+					Expect(httpErr.Message).To(Equal("No search fields were provided"))
+				})
+			})
+
+			g.Describe("Results found", func() {
+				var results []*domain.Infraction
+
+				g.BeforeEach(func() {
+					results = []*domain.Infraction{
+						{
+							InfractionID: 1,
+							PlayerID:     "playerid",
+							Platform:     "platform",
+							UserID:       null.NewString("userid", true),
+							ServerID:     1,
+							Type:         domain.InfractionTypeWarning,
+							Reason:       null.NewString("reason", true),
+							Duration:     null.Int{},
+							SystemAction: true,
+							CreatedAt:    null.Time{},
+							ModifiedAt:   null.Time{},
+							IssuerName:   "username",
+						},
+						{
+							InfractionID: 2,
+							PlayerID:     "playerid2",
+							Platform:     "platform2",
+							UserID:       null.NewString("userid", true),
+							ServerID:     1,
+							Type:         domain.InfractionTypeBan,
+							Reason:       null.NewString("reason", true),
+							Duration:     null.NewInt(60, true),
+							SystemAction: false,
+							CreatedAt:    null.Time{},
+							ModifiedAt:   null.Time{},
+							IssuerName:   "username",
+						},
+						{
+							InfractionID: 1,
+							PlayerID:     "playerid3",
+							Platform:     "platform3",
+							UserID:       null.NewString("userid", true),
+							ServerID:     1,
+							Type:         domain.InfractionTypeKick,
+							Reason:       null.NewString("reason", true),
+							Duration:     null.Int{},
+							SystemAction: false,
+							CreatedAt:    null.Time{},
+							ModifiedAt:   null.Time{},
+							IssuerName:   "username",
+						},
+					}
+
+					infractionRepo.On("Search", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+						Return(100, results, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, _, err := service.SearchInfractions(ctx, domain.FindArgs{"UserID": "id"}, 0, 10)
+
+					Expect(err).To(BeNil())
+					mock.AssertExpectationsForObjects(t)
+					infractionRepo.AssertExpectations(t)
+				})
+
+				g.It("Should return the correct results and total count", func() {
+					total, got, err := service.SearchInfractions(ctx, domain.FindArgs{"UserID": "id"}, 0, 10)
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal(results))
+					Expect(total).To(Equal(100))
+					mock.AssertExpectationsForObjects(t)
+					infractionRepo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("No results found, func()", func() {
+				g.BeforeEach(func() {
+					infractionRepo.On("Search", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+						Return(0, []*domain.Infraction{}, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, _, err := service.SearchInfractions(ctx, domain.FindArgs{"UserID": "id"}, 0, 10)
+
+					Expect(err).To(BeNil())
+					mock.AssertExpectationsForObjects(t)
+					infractionRepo.AssertExpectations(t)
+				})
+
+				g.It("Should return an empty array and a total count of 0", func() {
+					total, got, err := service.SearchInfractions(ctx, domain.FindArgs{"UserID": "id"}, 0, 10)
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal([]*domain.Infraction{}))
+					Expect(total).To(Equal(0))
+					mock.AssertExpectationsForObjects(t)
+					infractionRepo.AssertExpectations(t)
 				})
 			})
 		})

@@ -19,23 +19,27 @@ package service
 
 import (
 	"Refractor/domain"
+	"Refractor/pkg/whitelist"
 	"context"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"net/http"
 	"time"
 )
 
 type searchService struct {
-	playerRepo domain.PlayerRepo
-	timeout    time.Duration
-	logger     *zap.Logger
+	playerRepo     domain.PlayerRepo
+	infractionRepo domain.InfractionRepo
+	timeout        time.Duration
+	logger         *zap.Logger
 }
 
-func NewSearchService(pr domain.PlayerRepo, to time.Duration, log *zap.Logger) domain.SearchService {
+func NewSearchService(pr domain.PlayerRepo, ir domain.InfractionRepo, to time.Duration, log *zap.Logger) domain.SearchService {
 	return &searchService{
-		playerRepo: pr,
-		timeout:    to,
-		logger:     log,
+		playerRepo:     pr,
+		infractionRepo: ir,
+		timeout:        to,
+		logger:         log,
 	}
 }
 
@@ -72,4 +76,35 @@ func (s searchService) SearchPlayers(c context.Context, term, searchType, platfo
 	}
 
 	return 0, nil, errors.New("unknown search type")
+}
+
+func (s searchService) SearchInfractions(c context.Context, args domain.FindArgs, limit, offset int) (int, []*domain.Infraction, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	// Filter out illegal values
+	wl := whitelist.StringKeyMap([]string{"Type", "Game", "PlayerID", "ServerID", "UserID"})
+	args = wl.FilterKeys(args)
+
+	if len(args) == 0 {
+		return 0, []*domain.Infraction{}, &domain.HTTPError{
+			Success:          false,
+			Message:          "No search fields were provided",
+			ValidationErrors: nil,
+			Status:           http.StatusBadRequest,
+		}
+	}
+
+	// Execute search
+	count, infractions, err := s.infractionRepo.Search(ctx, args, limit, offset)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return 0, []*domain.Infraction{}, nil
+		}
+
+		s.logger.Error("Could not search infractions", zap.Error(err))
+		return 0, []*domain.Infraction{}, err
+	}
+
+	return count, infractions, nil
 }
