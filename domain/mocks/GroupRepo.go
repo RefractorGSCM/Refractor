@@ -203,6 +203,29 @@ func (_m *GroupRepo) GetUserOverrides(ctx context.Context, userID string) (*doma
 	return r0, r1
 }
 
+// GetUserPrimaryGroup provides a mock function with given fields: ctx, userID
+func (_m *GroupRepo) GetUserPrimaryGroup(ctx context.Context, userID string) (*domain.Group, error) {
+	ret := _m.Called(ctx, userID)
+
+	var r0 *domain.Group
+	if rf, ok := ret.Get(0).(func(context.Context, string) *domain.Group); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Group)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // RemoveUserGroup provides a mock function with given fields: ctx, userID, groupID
 func (_m *GroupRepo) RemoveUserGroup(ctx context.Context, userID string, groupID int64) error {
 	ret := _m.Called(ctx, userID, groupID)
