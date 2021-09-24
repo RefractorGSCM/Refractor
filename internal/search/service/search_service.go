@@ -29,14 +29,17 @@ import (
 
 type searchService struct {
 	playerRepo     domain.PlayerRepo
+	playerNameRepo domain.PlayerNameRepo
 	infractionRepo domain.InfractionRepo
 	timeout        time.Duration
 	logger         *zap.Logger
 }
 
-func NewSearchService(pr domain.PlayerRepo, ir domain.InfractionRepo, to time.Duration, log *zap.Logger) domain.SearchService {
+func NewSearchService(pr domain.PlayerRepo, pnr domain.PlayerNameRepo, ir domain.InfractionRepo,
+	to time.Duration, log *zap.Logger) domain.SearchService {
 	return &searchService{
 		playerRepo:     pr,
+		playerNameRepo: pnr,
 		infractionRepo: ir,
 		timeout:        to,
 		logger:         log,
@@ -64,12 +67,17 @@ func (s searchService) SearchPlayers(c context.Context, term, searchType, platfo
 	case "id":
 		result, err := s.playerRepo.GetByID(ctx, platform, term)
 		if err != nil {
-			s.logger.Error("Could not get player by id",
-				zap.String("Platform", platform),
-				zap.String("Player ID", term),
-				zap.Error(err),
-			)
-			return 0, nil, err
+			if errors.Cause(err) != domain.ErrNotFound {
+				s.logger.Error("Could not get player by id",
+					zap.String("Platform", platform),
+					zap.String("Player ID", term),
+					zap.Error(err),
+				)
+
+				return 0, nil, err
+			}
+
+			return 0, []*domain.Player{}, nil
 		}
 
 		return 1, []*domain.Player{result}, nil
@@ -104,6 +112,22 @@ func (s searchService) SearchInfractions(c context.Context, args domain.FindArgs
 
 		s.logger.Error("Could not search infractions", zap.Error(err))
 		return 0, []*domain.Infraction{}, err
+	}
+
+	// Get player name for each infraction
+	for _, infraction := range infractions {
+		currentName, _, err := s.playerNameRepo.GetNames(ctx, infraction.PlayerID, infraction.Platform)
+		if err != nil {
+			s.logger.Error(
+				"Could not get player name for infraction",
+				zap.Int64("Infraction ID", infraction.InfractionID),
+				zap.String("Platform", infraction.Platform),
+				zap.String("Player ID", infraction.PlayerID),
+				zap.Error(err),
+			)
+		}
+
+		infraction.PlayerName = currentName
 	}
 
 	return count, infractions, nil

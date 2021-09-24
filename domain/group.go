@@ -109,6 +109,7 @@ type GroupRepo interface {
 	GetServerOverrides(ctx context.Context, serverID int64, groupID int64) (*Overrides, error)
 	SetServerOverrides(ctx context.Context, serverID int64, groupID int64, overrides *Overrides) error
 	GetServerOverridesAllGroups(ctx context.Context, serverID int64) ([]*Overrides, error)
+	GetUserPrimaryGroup(ctx context.Context, userID string) (*Group, error)
 }
 
 type GroupSetContext struct {
@@ -129,4 +130,5 @@ type GroupService interface {
 	RemoveUserGroup(c context.Context, groupctx GroupSetContext) error
 	GetServerOverridesAllGroups(c context.Context, serverID int64) ([]*Overrides, error)
 	SetServerOverrides(c context.Context, serverID, groupID int64, overrides *Overrides) (*Overrides, error)
+	GetUserPrimaryGroup(c context.Context, userID string) (*Group, error)
 }

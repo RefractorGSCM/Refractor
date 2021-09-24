@@ -474,6 +474,34 @@ func (r *groupRepo) GetServerOverridesAllGroups(ctx context.Context, serverID in
 	return overrides, nil
 }
 
+func (r *groupRepo) GetUserPrimaryGroup(ctx context.Context, userID string) (*domain.Group, error) {
+	const op = opTag + "GetUserPrimaryGroup"
+
+	query := `
+		SELECT
+			g.*
+		FROM UserGroups ug
+		INNER JOIN Groups g ON g.GroupID = ug.GroupID
+		WHERE UserID = $1 ORDER BY g.Position asc
+		fetch first row only;
+	`
+
+	row := r.db.QueryRowContext(ctx, query, userID)
+
+	group := &domain.DBGroup{}
+	if err := r.scanRow(row, group); err != nil {
+		if err == sql.ErrNoRows {
+			// If no groups were found in the database, return the base group since they have no other applicable groups.
+			return r.GetBaseGroup(ctx)
+		}
+
+		r.logger.Error("Could not scan primary user group", zap.String("User ID", userID), zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	return group.Group(), nil
+}
+
 // Scan helpers
 func (r *groupRepo) scanRow(row *sql.Row, group *domain.DBGroup) error {
 	return row.Scan(&group.ID, &group.Name, &group.Color, &group.Position, &group.Permissions, &group.CreatedAt, &group.ModifiedAt)

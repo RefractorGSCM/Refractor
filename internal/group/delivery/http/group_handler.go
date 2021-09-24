@@ -57,6 +57,7 @@ func ApplyGroupHandler(apiGroup *echo.Group, s domain.GroupService, a domain.Aut
 
 	groupGroup.POST("/", handler.CreateGroup, act, enforcer.CheckAuth(authcheckers.DenyAll))
 	groupGroup.GET("/", handler.GetGroups, act)
+	groupGroup.GET("/users/primary/:userId", handler.GetUserPrimaryGroup, act)
 	groupGroup.GET("/permissions", handler.GetPermissions)
 	groupGroup.DELETE("/:id", handler.DeleteGroup, act, enforcer.CheckAuth(authcheckers.DenyAll))
 	groupGroup.PATCH("/:id", handler.UpdateGroup, act, enforcer.CheckAuth(authcheckers.DenyAll))
@@ -150,6 +151,20 @@ func (h *groupHandler) GetGroups(c echo.Context) error {
 		Success: true,
 		Message: fmt.Sprintf("fetched %d groups", len(groups)),
 		Payload: groups,
+	})
+}
+
+func (h *groupHandler) GetUserPrimaryGroup(c echo.Context) error {
+	userID := c.Param("userId")
+
+	group, err := h.service.GetUserPrimaryGroup(c.Request().Context(), userID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Payload: group,
 	})
 }
 

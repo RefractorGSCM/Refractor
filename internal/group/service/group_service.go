@@ -328,3 +328,10 @@ func (s *groupService) SetServerOverrides(c context.Context, serverID, groupID i
 
 	return overrides, s.repo.SetServerOverrides(ctx, serverID, groupID, overrides)
 }
+
+func (s *groupService) GetUserPrimaryGroup(c context.Context, userID string) (*domain.Group, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.GetUserPrimaryGroup(ctx, userID)
+}
