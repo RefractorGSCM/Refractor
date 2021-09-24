@@ -176,7 +176,7 @@ func main() {
 		attachmentRepo, userMetaRepo, authorizer, time.Second*2, logger)
 	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
 
-	searchService := _searchService.NewSearchService(playerRepo, infractionRepo, time.Second*2, logger)
+	searchService := _searchService.NewSearchService(playerRepo, playerNameRepo, infractionRepo, time.Second*2, logger)
 	_searchHandler.ApplySearchHandler(apiGroup, searchService, authorizer, middlewareBundle, logger)
 
 	// Subscribe to events

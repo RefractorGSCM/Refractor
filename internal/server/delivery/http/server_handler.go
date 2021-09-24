@@ -119,6 +119,7 @@ type resServer struct {
 	ModifiedAt    time.Time        `json:"modified_at"`
 	OnlinePlayers []*domain.Player `json:"online_players"`
 	Status        string           `json:"status"`
+	IsFragment    bool             `json:"is_fragment"`
 }
 
 // GetServers is the route handler for /api/v1/servers
@@ -148,6 +149,7 @@ func (h *serverHandler) GetServers(c echo.Context) error {
 			Deactivated: server.Deactivated,
 			CreatedAt:   server.CreatedAt,
 			ModifiedAt:  server.ModifiedAt,
+			IsFragment:  server.IsFragment,
 		}
 
 		// Get server's data
