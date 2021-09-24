@@ -111,6 +111,29 @@ func (_m *GroupService) GetServerOverridesAllGroups(c context.Context, serverID 
 	return r0, r1
 }
 
+// GetUserPrimaryGroup provides a mock function with given fields: c, userID
+func (_m *GroupService) GetUserPrimaryGroup(c context.Context, userID string) (*domain.Group, error) {
+	ret := _m.Called(c, userID)
+
+	var r0 *domain.Group
+	if rf, ok := ret.Get(0).(func(context.Context, string) *domain.Group); ok {
+		r0 = rf(c, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Group)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(c, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // RemoveUserGroup provides a mock function with given fields: c, groupctx
 func (_m *GroupService) RemoveUserGroup(c context.Context, groupctx domain.GroupSetContext) error {
 	ret := _m.Called(c, groupctx)

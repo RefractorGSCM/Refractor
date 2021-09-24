@@ -39,14 +39,17 @@ func Test(t *testing.T) {
 	g.Describe("Search service", func() {
 		var service *searchService
 		var playerRepo *mocks.PlayerRepo
+		var playerNameRepo *mocks.PlayerNameRepo
 		var infractionRepo *mocks.InfractionRepo
 		var ctx context.Context
 
 		g.BeforeEach(func() {
 			playerRepo = new(mocks.PlayerRepo)
 			infractionRepo = new(mocks.InfractionRepo)
+			playerNameRepo = new(mocks.PlayerNameRepo)
 			service = &searchService{
 				playerRepo:     playerRepo,
+				playerNameRepo: playerNameRepo,
 				infractionRepo: infractionRepo,
 				timeout:        time.Second * 2,
 				logger:         zap.NewNop(),
@@ -198,6 +201,9 @@ func Test(t *testing.T) {
 
 					infractionRepo.On("Search", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 						Return(100, results, nil)
+
+					playerNameRepo.On("GetNames", mock.Anything, mock.Anything, mock.Anything).
+						Return("currentname", []string{"oldname"}, nil)
 				})
 
 				g.It("Should not return an error", func() {
