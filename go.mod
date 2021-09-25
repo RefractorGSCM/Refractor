@@ -16,12 +16,12 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo/v4 v4.3.0
 	github.com/lib/pq v1.8.0
+	github.com/mikroskeem/mcping v0.0.0-20210814221858-f0b64d37f7f0 // indirect
 	github.com/onsi/gomega v1.14.0
 	github.com/ory/kratos-client-go v0.7.0-alpha.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/refractorgscm/rcon v0.1.4
-	github.com/rumblefrog/go-a2s v1.0.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.18.1
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
