@@ -40,7 +40,7 @@ func NewMinecraftGame(platform domain.Platform) domain.Game {
 		},
 		platform: platform,
 		cmdOutputPatterns: &domain.CommandOutputPatterns{
-			PlayerList: regexp.MustCompile("(?P<MCUUID>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}):(?P<Name>[\\S]+)"),
+			PlayerList: regexp.MustCompile("(?P<PlayerID>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}):(?P<Name>[\\S]+)"),
 		},
 	}
 }
