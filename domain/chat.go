@@ -18,6 +18,7 @@
 package domain
 
 import (
+	"context"
 	"github.com/guregu/null"
 	"time"
 )
@@ -44,7 +45,6 @@ type ChatMessage struct {
 }
 
 type ChatRepo interface {
-	Create(message *ChatMessage) error
-	FindByID(id int64) (*ChatMessage, error)
-	FindMany(args FindArgs) ([]*ChatMessage, error)
+	Store(ctx context.Context, message *ChatMessage) error
+	GetByID(ctx context.Context, id int64) (*ChatMessage, error)
 }
