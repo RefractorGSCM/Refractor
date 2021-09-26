@@ -55,6 +55,10 @@ func NewRCONService(log *zap.Logger, gs domain.GameService) domain.RCONService {
 }
 
 func (s *rconService) CreateClient(server *domain.Server) error {
+	if !s.gameService.GameExists(server.Game) {
+		return fmt.Errorf("could not create RCON client for servers with a non-existent game: %s", server.Game)
+	}
+
 	// Get the server's game
 	game, err := s.gameService.GetGame(server.Game)
 	if err != nil {

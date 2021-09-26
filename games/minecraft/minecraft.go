@@ -46,7 +46,7 @@ func NewMinecraftGame(platform domain.Platform) domain.Game {
 }
 
 func (g *minecraft) GetName() string {
-	return "minecraft"
+	return "Minecraft"
 }
 
 func (g *minecraft) GetConfig() *domain.GameConfig {
