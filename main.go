@@ -27,6 +27,7 @@ import (
 	_authRepo "Refractor/internal/auth/repos/kratos"
 	_authService "Refractor/internal/auth/service"
 	_authorizer "Refractor/internal/authorizer"
+	_gameHandler "Refractor/internal/game/delivery/http"
 	_gameService "Refractor/internal/game/service"
 	_groupHandler "Refractor/internal/group/delivery/http"
 	_groupRepo "Refractor/internal/group/repos/postgres"
@@ -150,6 +151,7 @@ func main() {
 	gameService := _gameService.NewGameService()
 	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
 	gameService.AddGame(minecraft.NewMinecraftGame(mojang.NewMojangPlatform()))
+	_gameHandler.ApplyGameHandler(apiGroup, gameService, middlewareBundle)
 
 	playerNameRepo := _playerNameRepo.NewPlayerNameRepo(db, logger)
 	playerRepo := _playerRepo.NewPlayerRepo(db, playerNameRepo, logger)
