@@ -51,6 +51,7 @@ func NewRCONService(log *zap.Logger, gs domain.GameService) domain.RCONService {
 		quitSubs:       []domain.BroadcastSubscriber{},
 		playerListSubs: []domain.PlayerListUpdateSubscriber{},
 		statusSubs:     []domain.ServerStatusSubscriber{},
+		prevPlayers:    map[int64]map[string]*onlinePlayer{},
 	}
 }
 
@@ -95,7 +96,7 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 	}
 
 	if gameConfig.PlayerListPollingEnabled() {
-		// TODO: Start player list polling routing
+		go s.startPlayerListPolling(server.ID, game)
 	}
 
 	// Add to list of clients
@@ -111,7 +112,11 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 	for _, op := range onlinePlayers {
 		fmt.Println(op.PlayerID, op.Name)
 		for _, sub := range s.joinSubs {
-			sub(broadcast.Fields{"PlayerID": op.PlayerID, "Name": op.Name}, server.ID, game)
+			sub(broadcast.Fields{
+				"PlayerID": op.PlayerID,
+				"Platform": game.GetPlatform().GetName(),
+				"Name":     op.Name}, server.ID, game,
+			)
 		}
 	}
 
@@ -125,7 +130,67 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 
 func (s *rconService) startPlayerListPolling(serverID int64, game domain.Game) {
 	// Set up prevPlayers map for this server
+	s.prevPlayers[serverID] = map[string]*onlinePlayer{}
 
+	for {
+		time.Sleep(game.GetConfig().PlayerListPollingInterval)
+
+		client := s.clients[serverID]
+		if client == nil {
+			s.logger.Warn("Player list polling routine could not get the RCON client for this server",
+				zap.Int64("Server ID", serverID))
+			s.logger.Info("Exiting player list polling routine for server", zap.Int64("Server ID", serverID))
+			return
+		}
+
+		players, err := s.getOnlinePlayers(serverID, game)
+		if err != nil {
+			s.logger.Warn("Player list polling routine not get online players for server", zap.Int64("Server ID", serverID))
+			continue
+		}
+
+		onlinePlayers := map[string]*onlinePlayer{}
+		for _, player := range players {
+			onlinePlayers[player.PlayerID] = player
+		}
+
+		prevPlayers := s.prevPlayers[serverID]
+
+		// Check for new player joins
+		for playerGameID, player := range onlinePlayers {
+			if prevPlayers[playerGameID] == nil {
+				prevPlayers[playerGameID] = player
+
+				// Player was not online previously so broadcast join
+				for _, sub := range s.joinSubs {
+					sub(broadcast.Fields{
+						"PlayerID": player.PlayerID,
+						"Platform": game.GetPlatform().GetName(),
+						"Name":     player.Name}, serverID, game,
+					)
+				}
+			}
+		}
+
+		// Check for existing player quits
+		for prevPlayerGameID, prevPlayer := range prevPlayers {
+			if onlinePlayers[prevPlayerGameID] == nil {
+				delete(prevPlayers, prevPlayerGameID)
+
+				// Player quit so broadcast quit
+				for _, sub := range s.quitSubs {
+					sub(broadcast.Fields{
+						"PlayerID": prevPlayer.PlayerID,
+						"Platform": game.GetPlatform().GetName(),
+						"Name":     prevPlayer.Name,
+					}, serverID, game)
+				}
+			}
+		}
+
+		// Update prevPlayers for this server
+		s.prevPlayers[serverID] = prevPlayers
+	}
 }
 
 func (s *rconService) GetClients() map[int64]domain.RCONClient {
@@ -203,8 +268,6 @@ func (s *rconService) getOnlinePlayers(serverID int64, game domain.Game) ([]*onl
 	var onlinePlayers []*onlinePlayer
 
 	for _, player := range players {
-		fmt.Println(player)
-
 		fields := regexutils.MapNamedMatches(playerListPattern, player)
 
 		onlinePlayers = append(onlinePlayers, &onlinePlayer{
