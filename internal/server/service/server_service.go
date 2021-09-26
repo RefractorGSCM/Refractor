@@ -53,7 +53,15 @@ func (s *serverService) Store(c context.Context, server *domain.Server) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.Store(ctx, server)
+	if err := s.repo.Store(ctx, server); err != nil {
+		return err
+	}
+
+	if err := s.CreateServerData(server.ID); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type serverResponse struct {
@@ -96,8 +104,13 @@ func (s *serverService) GetAllAccessible(c context.Context) ([]*domain.Server, e
 
 	var results []*domain.Server
 
-	// Filter out servers the user does not have access to view
+	// Filter out servers the user does not have access to view or servers which are deactivated
 	for _, server := range allServers {
+		// Filter out deactivated servers
+		if server.Deactivated {
+			continue
+		}
+
 		hasPermission, err := s.authorizer.HasPermission(ctx, domain.AuthScope{
 			Type: domain.AuthObjServer,
 			ID:   server.ID,

@@ -38,6 +38,7 @@ type rconService struct {
 	quitSubs       []domain.BroadcastSubscriber
 	playerListSubs []domain.PlayerListUpdateSubscriber
 	statusSubs     []domain.ServerStatusSubscriber
+	prevPlayers    map[int64]map[string]*onlinePlayer
 }
 
 func NewRCONService(log *zap.Logger, gs domain.GameService) domain.RCONService {
@@ -116,6 +117,11 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 	}
 
 	return nil
+}
+
+func (s *rconService) startPlayerListPolling(serverID int64, game domain.Game) {
+	// Set up prevPlayers map for this server
+
 }
 
 func (s *rconService) GetClients() map[int64]domain.RCONClient {
