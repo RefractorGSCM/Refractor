@@ -51,14 +51,12 @@ func ApplyPlayerHandler(apiGroup *echo.Group, s domain.PlayerService, a domain.A
 	playerGroup.GET("/:platform/:id", handler.GetPlayer, enforcer.CheckAuth(authcheckers.CanViewPlayerRecords))
 }
 
-var validPlatforms = []string{"playfab"}
-
 func (h *playerHandler) GetPlayer(c echo.Context) error {
 	platform := strings.ToLower(c.Param("platform"))
 	id := c.Param("id")
 
 	validPlatform := false
-	for _, p := range validPlatforms {
+	for _, p := range domain.AllPlatforms {
 		if p == platform {
 			validPlatform = true
 			break
