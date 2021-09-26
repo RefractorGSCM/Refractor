@@ -20,6 +20,7 @@ package main
 import (
 	"Refractor/auth"
 	"Refractor/domain"
+	"Refractor/games/minecraft"
 	"Refractor/games/mordhau"
 	_attachmentRepo "Refractor/internal/attachment/repos/postgres"
 	_attachmentService "Refractor/internal/attachment/service"
@@ -55,6 +56,7 @@ import (
 	"Refractor/pkg/conf"
 	"Refractor/pkg/perms"
 	"Refractor/pkg/tmpl"
+	"Refractor/platforms/mojang"
 	"Refractor/platforms/playfab"
 	"context"
 	"database/sql"
@@ -147,6 +149,7 @@ func main() {
 
 	gameService := _gameService.NewGameService()
 	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
+	gameService.AddGame(minecraft.NewMinecraftGame(mojang.NewMojangPlatform()))
 
 	playerNameRepo := _playerNameRepo.NewPlayerNameRepo(db, logger)
 	playerRepo := _playerRepo.NewPlayerRepo(db, playerNameRepo, logger)
@@ -370,6 +373,11 @@ func SetupServerClients(rconService domain.RCONService, serverService domain.Ser
 	}
 
 	for _, server := range allServers {
+		// Skip deactivated servers
+		if server.Deactivated {
+			continue
+		}
+
 		if err := serverService.CreateServerData(server.ID); err != nil {
 			log.Error("Could not create server data", zap.Int64("Server", server.ID), zap.Error(err))
 			continue
