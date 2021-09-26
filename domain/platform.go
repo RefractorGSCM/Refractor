@@ -19,6 +19,7 @@ package domain
 
 var AllPlatforms = []string{
 	"playfab",
+	"mojang",
 }
 
 type Platform interface {
