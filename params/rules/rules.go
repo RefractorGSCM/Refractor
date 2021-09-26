@@ -33,7 +33,6 @@ var PlatformRules = RuleGroup{
 
 var PlayerIDRules = RuleGroup{
 	validation.Length(1, 80),
-	is.Alphanumeric,
 }
 
 var InfractionReasonRules = RuleGroup{
