@@ -58,6 +58,7 @@ func Test(t *testing.T) {
 				},
 				gameService:   gameService,
 				clientCreator: clientCreator,
+				prevPlayers:   map[int64]map[string]*onlinePlayer{},
 			}
 
 			mockServer = &domain.Server{
@@ -97,6 +98,7 @@ func Test(t *testing.T) {
 		g.Describe("CreateClient()", func() {
 			g.Describe("Success", func() {
 				g.BeforeEach(func() {
+					gameService.On("GameExists", mock.AnythingOfType("string")).Return(true)
 					clientCreator.On("GetClientFromConfig", mock.Anything, mock.Anything).Return(rconClient, nil)
 					rconClient.On("SetBroadcastHandler", mock.Anything)
 					rconClient.On("SetDisconnectHandler", mock.Anything)
@@ -114,6 +116,7 @@ func Test(t *testing.T) {
 
 			g.Describe("ClientCreator error", func() {
 				g.BeforeEach(func() {
+					gameService.On("GameExists", mock.AnythingOfType("string")).Return(true)
 					clientCreator.On("GetClientFromConfig", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err"))
 				})
 
@@ -126,6 +129,7 @@ func Test(t *testing.T) {
 
 			g.Describe("Client Connect error", func() {
 				g.BeforeEach(func() {
+					gameService.On("GameExists", mock.AnythingOfType("string")).Return(true)
 					clientCreator.On("GetClientFromConfig", mock.Anything, mock.Anything).Return(rconClient, nil)
 					rconClient.On("SetBroadcastHandler", mock.Anything)
 					rconClient.On("SetDisconnectHandler", mock.Anything)
