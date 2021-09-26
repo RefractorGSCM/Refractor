@@ -16,3 +16,4 @@
  */
 
 DROP TABLE IF EXISTS ChatMessages;
+DROP TRIGGER IF EXISTS update_chatmessages_modat ON ChatMessages;

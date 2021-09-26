@@ -22,7 +22,13 @@ CREATE TABLE IF NOT EXISTS ChatMessages (
     ServerID SERIAL NOT NULL,
     Message TEXT NOT NULL,
     Flagged BOOLEAN DEFAULT FALSE,
+    CreatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ModifiedAt TIMESTAMP,
 
     FOREIGN KEY (PlayerID, Platform) REFERENCES Players (PlayerID, Platform),
     FOREIGN KEY (ServerID) REFERENCES Servers (ServerID)
 );
+
+DROP TRIGGER IF EXISTS update_chatmessages_modat ON ChatMessages;
+CREATE TRIGGER update_chatmessages_modat BEFORE UPDATE ON ChatMessages
+    FOR EACH ROW EXECUTE PROCEDURE update_modified_at_column();
