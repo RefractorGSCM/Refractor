@@ -42,6 +42,8 @@ const (
 	FlagEditAnyInfractions    = FlagName("FLAG_EDIT_ANY_INFRACTIONS")
 	FlagDeleteOwnInfractions  = FlagName("FLAG_DELETE_OWN_INFRACTIONS")
 	FlagDeleteAnyInfractions  = FlagName("FLAG_DELETE_ANY_INFRACTIONS")
+	FlagReadLiveChat          = FlagName("FLAG_READ_LIVE_CHAT")
+	FlagSendLiveChat          = FlagName("FLAG_SEND_LIVE_CHAT")
 )
 
 type FlagName string
@@ -184,6 +186,18 @@ func init() {
 						  overridden on servers.`,
 			Scope: ScopeAny,
 		},
+		{
+			Name:        FlagReadLiveChat,
+			DisplayName: "Read live chat",
+			Description: `Allows users to read a server's live chat. This permission can be overridden on servers.`,
+			Scope:       ScopeAny,
+		},
+		{
+			Name:        FlagSendLiveChat,
+			DisplayName: "Send live chat",
+			Description: `Allows users to send live chat messages to a server. This permission can be overridden on servers.`,
+			Scope:       ScopeAny,
+		},
 		// ADD NEW FLAGS HERE. Do not touch any of the above permissions!
 	})
 
@@ -196,6 +210,7 @@ func init() {
 		AddFlag(GetFlag(FlagCreateKick)).
 		AddFlag(GetFlag(FlagCreateBan)).
 		AddFlag(GetFlag(FlagEditOwnInfractions)).
+		AddFlag(GetFlag(FlagReadLiveChat)).
 		GetPermission()
 }
 

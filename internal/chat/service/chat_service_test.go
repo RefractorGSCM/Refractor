@@ -134,7 +134,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should not log any errors", func() {
-					service.HandleChatReceive(body, body.ServerID)
+					service.HandleChatReceive(body, body.ServerID, nil)
 
 					Expect(recordedLogs.All()).To(Equal([]observer.LoggedEntry{}))
 					websocketService.AssertExpectations(t)
@@ -159,7 +159,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should only log one error of level Warning", func() {
-					service.HandleChatReceive(body, body.ServerID)
+					service.HandleChatReceive(body, body.ServerID, nil)
 
 					Expect(len(recordedLogs.All())).To(Equal(1))
 					repo.AssertExpectations(t)
@@ -180,7 +180,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should only log one error of level Error", func() {
-					service.HandleChatReceive(body, body.ServerID)
+					service.HandleChatReceive(body, body.ServerID, nil)
 
 					Expect(len(recordedLogs.All())).To(Equal(1))
 					repo.AssertExpectations(t)
@@ -205,7 +205,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should only log one error of level Error", func() {
-					service.HandleChatReceive(body, body.ServerID)
+					service.HandleChatReceive(body, body.ServerID, nil)
 
 					Expect(len(recordedLogs.All())).To(Equal(1))
 					repo.AssertExpectations(t)

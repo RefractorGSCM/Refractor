@@ -51,27 +51,14 @@ func (s *chatService) Store(c context.Context, message *domain.ChatMessage) erro
 	return s.repo.Store(ctx, message)
 }
 
+type sentChatMessage struct {
+	MessageID int64 `json:"id"`
+	*domain.ChatReceiveBody
+}
+
 func (s *chatService) HandleChatReceive(body *domain.ChatReceiveBody, serverID int64, game domain.Game) {
 	ctx, cancel := context.WithTimeout(context.TODO(), s.timeout)
 	defer cancel()
-
-	// Broadcast message to websocket clients
-	if err := s.websocketService.BroadcastServerMessage(&domain.WebsocketMessage{
-		Type: "chat",
-		Body: body,
-	}, serverID, authcheckers.CanViewServer); err != nil {
-		s.logger.Warn("Could not broadcast received chat message to websocket clients",
-			zap.Int64("Server ID", body.ServerID),
-			zap.String("Player ID", body.PlayerID),
-			zap.String("Platform", body.Platform),
-			zap.String("Name", body.Name),
-			zap.String("Message", body.Message),
-			zap.Bool("Sent By User", body.SentByUser),
-			zap.Error(err),
-		)
-
-		// do not return as this is not a critical error
-	}
 
 	// Get the player who sent this message to make sure that they exist. If they don't or any other error occurs, we
 	// skip logging this message.
@@ -85,14 +72,16 @@ func (s *chatService) HandleChatReceive(body *domain.ChatReceiveBody, serverID i
 		return
 	}
 
-	// Log chat message
-	if err := s.Store(ctx, &domain.ChatMessage{
+	message := &domain.ChatMessage{
 		PlayerID: player.PlayerID,
 		Platform: body.Platform,
 		ServerID: serverID,
 		Message:  body.Message,
 		Flagged:  false,
-	}); err != nil {
+	}
+
+	// Log chat message
+	if err := s.Store(ctx, message); err != nil {
 		s.logger.Error("Could not store chat message in repo",
 			zap.Int64("Server ID", body.ServerID),
 			zap.String("Player ID", body.PlayerID),
@@ -102,5 +91,26 @@ func (s *chatService) HandleChatReceive(body *domain.ChatReceiveBody, serverID i
 			zap.Bool("Sent By User", body.SentByUser),
 			zap.Error(err),
 		)
+	}
+
+	// Broadcast message to websocket clients
+	if err := s.websocketService.BroadcastServerMessage(&domain.WebsocketMessage{
+		Type: "chat",
+		Body: sentChatMessage{
+			MessageID:       message.MessageID,
+			ChatReceiveBody: body,
+		},
+	}, serverID, authcheckers.CanViewServer); err != nil {
+		s.logger.Warn("Could not broadcast received chat message to websocket clients",
+			zap.Int64("Server ID", body.ServerID),
+			zap.String("Player ID", body.PlayerID),
+			zap.String("Platform", body.Platform),
+			zap.String("Name", body.Name),
+			zap.String("Message", body.Message),
+			zap.Bool("Sent By User", body.SentByUser),
+			zap.Error(err),
+		)
+
+		// do not return as this is not a critical error
 	}
 }
