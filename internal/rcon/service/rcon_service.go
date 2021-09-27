@@ -215,12 +215,12 @@ func (s *rconService) getBroadcastHandler(serverID int64, game domain.Game) func
 		}
 
 		switch bcast.Type {
-		case broadcast.TYPE_JOIN:
+		case broadcast.TypeJoin:
 			for _, sub := range s.joinSubs {
 				sub(bcast.Fields, serverID, game)
 			}
 			break
-		case broadcast.TYPE_QUIT:
+		case broadcast.TypeQuit:
 			for _, sub := range s.quitSubs {
 				sub(bcast.Fields, serverID, game)
 			}
