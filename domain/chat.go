@@ -51,5 +51,5 @@ type ChatRepo interface {
 
 type ChatService interface {
 	Store(c context.Context, message *ChatMessage) error
-	HandleChatReceive(body *ChatReceiveBody, serverID int64)
+	HandleChatReceive(body *ChatReceiveBody, serverID int64, game Game)
 }
