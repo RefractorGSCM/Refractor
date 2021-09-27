@@ -43,8 +43,8 @@ func TestGetBroadcastType(t *testing.T) {
 			args: args{
 				broadcast: "Login: 2021.01.01-00.00.00: Test (52DAB212C79F5EC) logged in",
 				patterns: map[string]*regexp.Regexp{
-					TYPE_JOIN: mordhauJoinPattern,
-					TYPE_QUIT: mordhauQuitPattern,
+					TypeJoin: mordhauJoinPattern,
+					TypeQuit: mordhauQuitPattern,
 				},
 			},
 			want: &Broadcast{
@@ -61,8 +61,8 @@ func TestGetBroadcastType(t *testing.T) {
 			args: args{
 				broadcast: "Login: 3000.01.05-00.30.30: Us#rWith* WeIrDN@mE (537AB82CF9F82A5) logged out",
 				patterns: map[string]*regexp.Regexp{
-					TYPE_JOIN: mordhauJoinPattern,
-					TYPE_QUIT: mordhauQuitPattern,
+					TypeJoin: mordhauJoinPattern,
+					TypeQuit: mordhauQuitPattern,
 				},
 			},
 			want: &Broadcast{
@@ -79,8 +79,8 @@ func TestGetBroadcastType(t *testing.T) {
 			args: args{
 				broadcast: "invalid broadcast. no match!",
 				patterns: map[string]*regexp.Regexp{
-					TYPE_JOIN: mordhauJoinPattern,
-					TYPE_QUIT: mordhauQuitPattern,
+					TypeJoin: mordhauJoinPattern,
+					TypeQuit: mordhauQuitPattern,
 				},
 			},
 			want: nil,
