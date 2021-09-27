@@ -48,3 +48,8 @@ type ChatRepo interface {
 	Store(ctx context.Context, message *ChatMessage) error
 	GetByID(ctx context.Context, id int64) (*ChatMessage, error)
 }
+
+type ChatService interface {
+	Store(c context.Context, message *ChatMessage) error
+	HandleChatReceive(body *ChatReceiveBody, serverID int64)
+}
