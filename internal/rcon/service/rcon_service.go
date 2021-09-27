@@ -38,6 +38,7 @@ type rconService struct {
 	quitSubs       []domain.BroadcastSubscriber
 	playerListSubs []domain.PlayerListUpdateSubscriber
 	statusSubs     []domain.ServerStatusSubscriber
+	chatSubs       []domain.ChatReceiveSubscriber
 	prevPlayers    map[int64]map[string]*onlinePlayer
 }
 
@@ -51,6 +52,7 @@ func NewRCONService(log *zap.Logger, gs domain.GameService) domain.RCONService {
 		quitSubs:       []domain.BroadcastSubscriber{},
 		playerListSubs: []domain.PlayerListUpdateSubscriber{},
 		statusSubs:     []domain.ServerStatusSubscriber{},
+		chatSubs:       []domain.ChatReceiveSubscriber{},
 		prevPlayers:    map[int64]map[string]*onlinePlayer{},
 	}
 }
@@ -225,6 +227,21 @@ func (s *rconService) getBroadcastHandler(serverID int64, game domain.Game) func
 				sub(bcast.Fields, serverID, game)
 			}
 			break
+		case broadcast.TypeChat:
+			fields := bcast.Fields
+
+			msgBody := &domain.ChatReceiveBody{
+				ServerID:   serverID,
+				PlayerID:   fields["PlayerID"],
+				Platform:   game.GetPlatform().GetName(),
+				Name:       fields["Name"],
+				Message:    fields["Message"],
+				SentByUser: false,
+			}
+
+			for _, sub := range s.chatSubs {
+				sub(msgBody, serverID, game)
+			}
 		}
 	}
 }
@@ -347,4 +364,8 @@ func (s *rconService) SubscribePlayerListUpdate(sub domain.PlayerListUpdateSubsc
 
 func (s *rconService) SubscribeServerStatus(sub domain.ServerStatusSubscriber) {
 	s.statusSubs = append(s.statusSubs, sub)
+}
+
+func (s *rconService) SubscribeChat(sub domain.ChatReceiveSubscriber) {
+	s.chatSubs = append(s.chatSubs, sub)
 }
