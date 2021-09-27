@@ -51,7 +51,7 @@ func (s *chatService) Store(c context.Context, message *domain.ChatMessage) erro
 	return s.repo.Store(ctx, message)
 }
 
-func (s *chatService) HandleChatReceive(body *domain.ChatReceiveBody, serverID int64) {
+func (s *chatService) HandleChatReceive(body *domain.ChatReceiveBody, serverID int64, game domain.Game) {
 	ctx, cancel := context.WithTimeout(context.TODO(), s.timeout)
 	defer cancel()
 

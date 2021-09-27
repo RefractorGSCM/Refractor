@@ -27,6 +27,8 @@ import (
 	_authRepo "Refractor/internal/auth/repos/kratos"
 	_authService "Refractor/internal/auth/service"
 	_authorizer "Refractor/internal/authorizer"
+	_chatRepo "Refractor/internal/chat/repos/postgres"
+	_chatService "Refractor/internal/chat/service"
 	_gameHandler "Refractor/internal/game/delivery/http"
 	_gameService "Refractor/internal/game/service"
 	_groupHandler "Refractor/internal/group/delivery/http"
@@ -184,6 +186,9 @@ func main() {
 	searchService := _searchService.NewSearchService(playerRepo, playerNameRepo, infractionRepo, time.Second*2, logger)
 	_searchHandler.ApplySearchHandler(apiGroup, searchService, authorizer, middlewareBundle, logger)
 
+	chatRepo := _chatRepo.NewChatRepo(db, logger)
+	chatService := _chatService.NewChatService(chatRepo, playerRepo, websocketService, time.Second*2, logger)
+
 	// Subscribe to events
 	rconService.SubscribeJoin(playerService.HandlePlayerJoin)
 	rconService.SubscribeQuit(playerService.HandlePlayerQuit)
@@ -193,6 +198,7 @@ func main() {
 	rconService.SubscribeQuit(serverService.HandlePlayerQuit)
 	rconService.SubscribeServerStatus(serverService.HandleServerStatusChange)
 	rconService.SubscribeServerStatus(websocketService.HandleServerStatusChange)
+	rconService.SubscribeChat(chatService.HandleChatReceive)
 
 	// Connect RCON clients for all existing servers
 	if err := SetupServerClients(rconService, serverService, logger); err != nil {

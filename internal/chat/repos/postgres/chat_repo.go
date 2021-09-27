@@ -102,7 +102,7 @@ func (r *chatRepo) Store(ctx context.Context, msg *domain.ChatMessage) error {
 		return errors.Wrap(err, op)
 	}
 
-	row := stmt.QueryRow(ctx, msg.PlayerID, msg.Platform, msg.ServerID, msg.Message, msg.Flagged)
+	row := stmt.QueryRowContext(ctx, msg.PlayerID, msg.Platform, msg.ServerID, msg.Message, msg.Flagged)
 	if err != nil {
 		_ = tx.Rollback()
 		r.logger.Error("Could not execute query", zap.String("query", query), zap.Error(err))
