@@ -154,7 +154,7 @@ func (s *chatService) GetRecentByServer(c context.Context, serverID int64, count
 			continue
 		}
 
-		msg.PlayerName = currentName
+		msg.Name = currentName
 	}
 
 	return results, nil
