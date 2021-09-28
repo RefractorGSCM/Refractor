@@ -26,29 +26,39 @@ import (
 	"net"
 )
 
+type ChatSendHandler func(body *SendChatBody)
+
 type Client struct {
-	ID     int64
-	UserID string
-	Conn   net.Conn
-	Pool   *Pool
-	logger *zap.Logger
+	ID              int64
+	UserID          string
+	Conn            net.Conn
+	Pool            *Pool
+	ChatSendHandler ChatSendHandler
+	logger          *zap.Logger
 }
 
 var nextClientID int64 = 0
 
-func NewClient(userID string, conn net.Conn, pool *Pool, log *zap.Logger) *Client {
+func NewClient(userID string, conn net.Conn, pool *Pool, csh ChatSendHandler, log *zap.Logger) *Client {
 	nextClientID++
 
 	return &Client{
-		ID:     nextClientID,
-		UserID: userID,
-		Conn:   conn,
-		Pool:   pool,
-		logger: log,
+		ID:              nextClientID,
+		UserID:          userID,
+		Conn:            conn,
+		Pool:            pool,
+		ChatSendHandler: csh,
+		logger:          log,
 	}
 }
 
 const expectedExitCode = 1001
+
+type SendChatBody struct {
+	ServerID int64  `json:"server_id"`
+	Message  string `json:"message"`
+	UserID   string
+}
 
 func (c *Client) Read() {
 	defer func() {
@@ -123,6 +133,34 @@ func (c *Client) Read() {
 
 			// Continue as there's no need to log a ping message
 			continue
+		}
+
+		if msg.Type == "chat" {
+			data, err := json.Marshal(msg.Body)
+			if err != nil {
+				c.logger.Error(
+					"Could not marshal chat message",
+					zap.Int64("Client ID", c.ID),
+					zap.String("User ID", c.UserID),
+					zap.Error(err),
+				)
+				continue
+			}
+
+			body := &SendChatBody{}
+			if err := json.Unmarshal(data, body); err != nil {
+				c.logger.Error(
+					"Could not unmarshal chat send body",
+					zap.Int64("Client ID", c.ID),
+					zap.String("User ID", c.UserID),
+					zap.Error(err),
+				)
+				continue
+			}
+
+			body.UserID = c.UserID
+
+			c.ChatSendHandler(body)
 		}
 
 		c.logger.Info(
