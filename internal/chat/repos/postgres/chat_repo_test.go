@@ -171,5 +171,127 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("GetRecentByServer()", func() {
+			var rows *sqlmock.Rows
+
+			g.Describe("Results found", func() {
+				var messages []*domain.ChatMessage
+
+				g.BeforeEach(func() {
+					messages = []*domain.ChatMessage{
+						{
+							MessageID: 1,
+							PlayerID:  "playerid",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 1",
+							Flagged:   false,
+						}, {
+							MessageID: 2,
+							PlayerID:  "playerid2",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 2",
+							Flagged:   false,
+						}, {
+							MessageID: 3,
+							PlayerID:  "playerid3",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 3",
+							Flagged:   false,
+						}, {
+							MessageID: 4,
+							PlayerID:  "playerid4",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 4",
+							Flagged:   false,
+						}, {
+							MessageID: 5,
+							PlayerID:  "playerid5",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 5",
+							Flagged:   false,
+						}, {
+							MessageID: 6,
+							PlayerID:  "playerid6",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 6",
+							Flagged:   false,
+						}, {
+							MessageID: 7,
+							PlayerID:  "playerid7",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 7",
+							Flagged:   false,
+						}, {
+							MessageID: 8,
+							PlayerID:  "playerid8",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 8",
+							Flagged:   false,
+						}, {
+							MessageID: 9,
+							PlayerID:  "playerid9",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 9",
+							Flagged:   false,
+						}, {
+							MessageID: 10,
+							PlayerID:  "playerid10",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 10",
+							Flagged:   false,
+						},
+					}
+
+					rows = sqlmock.NewRows(cols)
+
+					for _, msg := range messages {
+						rows.AddRow(msg.MessageID, msg.PlayerID, msg.Platform, msg.ServerID, msg.Message, msg.Flagged, msg.CreatedAt, msg.ModifiedAt)
+					}
+
+					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT * FROM ChatMessages")).WillReturnRows(rows)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.GetRecentByServer(ctx, 1, 10)
+
+					Expect(err).To(BeNil())
+					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return the correct results", func() {
+					results, err := repo.GetRecentByServer(ctx, 1, 10)
+
+					Expect(err).To(BeNil())
+					Expect(results).To(Equal(messages))
+					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("No results found", func() {
+				g.BeforeEach(func() {
+					rows = sqlmock.NewRows(cols)
+
+					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT * FROM ChatMessages")).WillReturnRows(rows)
+				})
+
+				g.It("Should return domain.ErrNotFound error", func() {
+					_, err := repo.GetRecentByServer(ctx, 1, 10)
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
 	})
 }

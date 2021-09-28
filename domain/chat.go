@@ -47,10 +47,12 @@ type ChatMessage struct {
 type ChatRepo interface {
 	Store(ctx context.Context, message *ChatMessage) error
 	GetByID(ctx context.Context, id int64) (*ChatMessage, error)
+	GetRecentByServer(ctx context.Context, serverID int64, count int) ([]*ChatMessage, error)
 }
 
 type ChatService interface {
 	Store(c context.Context, message *ChatMessage) error
+	GetRecentByServer(c context.Context, serverID int64, count int) ([]*ChatMessage, error)
 	HandleChatReceive(body *ChatReceiveBody, serverID int64, game Game)
 	HandleUserSendChat(body *ChatSendBody)
 }
