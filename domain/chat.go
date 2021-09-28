@@ -41,7 +41,7 @@ type ChatMessage struct {
 	Flagged    bool      `json:"flagged"`
 	CreatedAt  time.Time `json:"created_at"`
 	ModifiedAt null.Time `json:"modified_at"`
-	PlayerName string    `json:"player_name,omitempty"` // not a db field, must be populated manually.
+	Name       string    `json:"name,omitempty"` // not a db field, must be populated manually.
 }
 
 type ChatRepo interface {
