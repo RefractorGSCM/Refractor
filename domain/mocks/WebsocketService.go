@@ -59,3 +59,8 @@ func (_m *WebsocketService) HandleServerStatusChange(serverID int64, status stri
 func (_m *WebsocketService) StartPool() {
 	_m.Called()
 }
+
+// SubscribeChatSend provides a mock function with given fields: sub
+func (_m *WebsocketService) SubscribeChatSend(sub domain.ChatSendSubscriber) {
+	_m.Called(sub)
+}

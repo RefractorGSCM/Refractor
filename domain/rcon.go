@@ -23,7 +23,7 @@ import (
 )
 
 type ClientCreator interface {
-	GetClientFromConfig(gameConfig *GameConfig, server *Server) (RCONClient, error)
+	GetClientFromConfig(game Game, server *Server) (RCONClient, error)
 }
 
 type RCONClient interface {
@@ -32,6 +32,7 @@ type RCONClient interface {
 	ListenForBroadcasts([]string, chan error)
 	SetBroadcastHandler(handlerFunc rcon.BroadcastHandlerFunc)
 	SetDisconnectHandler(handlerFunc rcon.DisconnectHandlerFunc)
+	GetGame() Game
 }
 
 type BroadcastSubscriber func(fields broadcast.Fields, serverID int64, game Game)
@@ -50,4 +51,5 @@ type RCONService interface {
 	SubscribePlayerListUpdate(sub PlayerListUpdateSubscriber)
 	SubscribeServerStatus(sub ServerStatusSubscriber)
 	SubscribeChat(sub ChatReceiveSubscriber)
+	SendChatMessage(body *ChatSendBody)
 }

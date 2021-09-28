@@ -13,13 +13,13 @@ type ClientCreator struct {
 	mock.Mock
 }
 
-// GetClientFromConfig provides a mock function with given fields: gameConfig, server
-func (_m *ClientCreator) GetClientFromConfig(gameConfig *domain.GameConfig, server *domain.Server) (domain.RCONClient, error) {
-	ret := _m.Called(gameConfig, server)
+// GetClientFromConfig provides a mock function with given fields: game, server
+func (_m *ClientCreator) GetClientFromConfig(game domain.Game, server *domain.Server) (domain.RCONClient, error) {
+	ret := _m.Called(game, server)
 
 	var r0 domain.RCONClient
-	if rf, ok := ret.Get(0).(func(*domain.GameConfig, *domain.Server) domain.RCONClient); ok {
-		r0 = rf(gameConfig, server)
+	if rf, ok := ret.Get(0).(func(domain.Game, *domain.Server) domain.RCONClient); ok {
+		r0 = rf(game, server)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(domain.RCONClient)
@@ -27,8 +27,8 @@ func (_m *ClientCreator) GetClientFromConfig(gameConfig *domain.GameConfig, serv
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*domain.GameConfig, *domain.Server) error); ok {
-		r1 = rf(gameConfig, server)
+	if rf, ok := ret.Get(1).(func(domain.Game, *domain.Server) error); ok {
+		r1 = rf(game, server)
 	} else {
 		r1 = ret.Error(1)
 	}

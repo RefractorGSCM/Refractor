@@ -167,7 +167,7 @@ func main() {
 
 	rconService := _rconService.NewRCONService(logger, gameService)
 
-	websocketService := _websocketService.NewWebsocketService(playerRepo, authorizer, time.Second*2, logger)
+	websocketService := _websocketService.NewWebsocketService(playerRepo, userMetaRepo, authorizer, time.Second*2, logger)
 	go websocketService.StartPool()
 	_websocketHandler.ApplyWebsocketHandler(apiServer, websocketService, middlewareBundle, logger)
 
@@ -199,6 +199,8 @@ func main() {
 	rconService.SubscribeServerStatus(serverService.HandleServerStatusChange)
 	rconService.SubscribeServerStatus(websocketService.HandleServerStatusChange)
 	rconService.SubscribeChat(chatService.HandleChatReceive)
+	websocketService.SubscribeChatSend(rconService.SendChatMessage)
+	websocketService.SubscribeChatSend(chatService.HandleUserSendChat)
 
 	// Connect RCON clients for all existing servers
 	if err := SetupServerClients(rconService, serverService, logger); err != nil {

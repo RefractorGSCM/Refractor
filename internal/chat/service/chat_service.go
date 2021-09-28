@@ -51,6 +51,22 @@ func (s *chatService) Store(c context.Context, message *domain.ChatMessage) erro
 	return s.repo.Store(ctx, message)
 }
 
+func (s *chatService) HandleUserSendChat(body *domain.ChatSendBody) {
+	if !body.SentByUser {
+		return
+	}
+
+	s.websocketService.Broadcast(&domain.WebsocketMessage{
+		Type: "chat",
+		Body: &domain.ChatReceiveBody{
+			ServerID:   body.ServerID,
+			Name:       body.Sender,
+			Message:    body.Message,
+			SentByUser: body.SentByUser,
+		},
+	})
+}
+
 type sentChatMessage struct {
 	MessageID int64 `json:"id"`
 	*domain.ChatReceiveBody

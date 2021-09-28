@@ -64,3 +64,7 @@ func (g *minecraft) GetPlayerListCommand() string {
 func (g *minecraft) GetCommandOutputPatterns() *domain.CommandOutputPatterns {
 	return g.cmdOutputPatterns
 }
+
+func (g *minecraft) GetBroadcastCommand() string {
+	return "say %s"
+}
