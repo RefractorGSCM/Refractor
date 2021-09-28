@@ -28,16 +28,18 @@ import (
 type chatService struct {
 	repo             domain.ChatRepo
 	playerRepo       domain.PlayerRepo
+	playerNameRepo   domain.PlayerNameRepo
 	websocketService domain.WebsocketService
 	timeout          time.Duration
 	logger           *zap.Logger
 }
 
-func NewChatService(repo domain.ChatRepo, pr domain.PlayerRepo, wss domain.WebsocketService,
+func NewChatService(repo domain.ChatRepo, pr domain.PlayerRepo, pnr domain.PlayerNameRepo, wss domain.WebsocketService,
 	to time.Duration, log *zap.Logger) domain.ChatService {
 	return &chatService{
 		repo:             repo,
 		playerRepo:       pr,
+		playerNameRepo:   pnr,
 		websocketService: wss,
 		timeout:          to,
 		logger:           log,
@@ -135,5 +137,25 @@ func (s *chatService) GetRecentByServer(c context.Context, serverID int64, count
 	ctx, cancel := context.WithTimeout(context.TODO(), s.timeout)
 	defer cancel()
 
-	return s.repo.GetRecentByServer(ctx, serverID, count)
+	results, err := s.repo.GetRecentByServer(ctx, serverID, count)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, msg := range results {
+		// Get player name for message
+		currentName, _, err := s.playerNameRepo.GetNames(ctx, msg.PlayerID, msg.Platform)
+		if err != nil {
+			s.logger.Error("Could not get current name for recent chat message",
+				zap.String("Platform", msg.Platform),
+				zap.String("Player ID", msg.PlayerID),
+				zap.Int64("Message ID", msg.MessageID),
+				zap.Error(err))
+			continue
+		}
+
+		msg.PlayerName = currentName
+	}
+
+	return results, nil
 }

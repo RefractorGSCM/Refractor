@@ -188,7 +188,7 @@ func main() {
 	_searchHandler.ApplySearchHandler(apiGroup, searchService, authorizer, middlewareBundle, logger)
 
 	chatRepo := _chatRepo.NewChatRepo(db, logger)
-	chatService := _chatService.NewChatService(chatRepo, playerRepo, websocketService, time.Second*2, logger)
+	chatService := _chatService.NewChatService(chatRepo, playerRepo, playerNameRepo, websocketService, time.Second*2, logger)
 	_chatHandler.ApplyChatHandler(apiGroup, chatService, authorizer, middlewareBundle, logger)
 
 	// Subscribe to events
