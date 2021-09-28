@@ -32,6 +32,17 @@ type WebsocketDirectMessage struct {
 	Message  *WebsocketMessage
 }
 
+type ChatSendBody struct {
+	ServerID int64  `json:"server_id"`
+	Message  string `json:"message"`
+	Sender   string `json:"sender"`
+
+	// SentByUser is true if this message was sent by another user
+	SentByUser bool `json:"sent_by_user"`
+}
+
+type ChatSendSubscriber func(body *ChatSendBody)
+
 type WebsocketService interface {
 	CreateClient(userID string, conn net.Conn)
 	StartPool()
@@ -40,4 +51,5 @@ type WebsocketService interface {
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 	HandlePlayerQuit(fields broadcast.Fields, serverID int64, game Game)
 	HandleServerStatusChange(serverID int64, status string)
+	SubscribeChatSend(sub ChatSendSubscriber)
 }
