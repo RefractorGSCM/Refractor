@@ -141,6 +141,23 @@ func (r *chatRepo) GetByID(ctx context.Context, id int64) (*domain.ChatMessage, 
 	return nil, errors.Wrap(domain.ErrNotFound, op)
 }
 
+func (r *chatRepo) GetRecentByServer(ctx context.Context, serverID int64, count int) ([]*domain.ChatMessage, error) {
+	const op = opTag + "GetRecentByServer"
+
+	query := "SELECT * FROM ChatMessages WHERE ServerID = $1 ORDER BY CreatedAt DESC LIMIT $2;"
+
+	results, err := r.fetch(ctx, query, serverID, count)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	if len(results) > 0 {
+		return results, nil
+	}
+
+	return nil, errors.Wrap(domain.ErrNotFound, op)
+}
+
 // Scan helpers
 func (r *chatRepo) scanRow(row *sql.Row, msg *domain.ChatMessage) error {
 	return row.Scan(&msg.MessageID, &msg.PlayerID, &msg.Platform, &msg.ServerID, &msg.Message, &msg.Flagged, &msg.CreatedAt, &msg.ModifiedAt)
