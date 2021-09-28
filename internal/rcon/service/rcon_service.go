@@ -70,7 +70,7 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 
 	gameConfig := game.GetConfig()
 
-	client, err := s.clientCreator.GetClientFromConfig(gameConfig, server)
+	client, err := s.clientCreator.GetClientFromConfig(game, server)
 	if err != nil {
 		return err
 	}
@@ -348,6 +348,33 @@ func (s *rconService) StartReconnectRoutine(server *domain.Server, data *domain.
 	}
 
 	s.logger.Info("Reconnect routine terminated", zap.Int64("Server", server.ID))
+}
+
+func (s *rconService) SendChatMessage(body *domain.ChatSendBody) {
+	client := s.clients[body.ServerID]
+
+	// Check if this client's game has chat and RCON enabled
+	conf := client.GetGame().GetConfig()
+
+	if !conf.UseRCON || !conf.EnableChat {
+		return
+	}
+
+	// If RCON and chat is enabled, then send the message
+	command := fmt.Sprintf(client.GetGame().GetBroadcastCommand(), fmt.Sprintf("[%s]: %s", body.Sender, body.Message))
+
+	if _, err := client.ExecCommand(command); err != nil {
+		s.logger.Error("Could not send user chat message over RCON",
+			zap.String("Message", body.Message),
+			zap.Int64("Server ID", body.ServerID),
+			zap.Error(err))
+		return
+	}
+
+	s.logger.Info("Chat message forwarded to server",
+		zap.String("Sender Name", body.Sender),
+		zap.String("Message", body.Message),
+		zap.Int64("Server ID", body.ServerID))
 }
 
 func (s *rconService) SubscribeJoin(sub domain.BroadcastSubscriber) {

@@ -74,3 +74,7 @@ func (g *mordhau) GetPlayerListCommand() string {
 func (g *mordhau) GetCommandOutputPatterns() *domain.CommandOutputPatterns {
 	return g.cmdOutputPatterns
 }
+
+func (g *mordhau) GetBroadcastCommand() string {
+	return "Say %s"
+}

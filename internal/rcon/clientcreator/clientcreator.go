@@ -26,19 +26,26 @@ import (
 type clientCreator struct{}
 
 type Client struct {
+	game   domain.Game
 	Server *domain.Server
 	*rcon.Client
+}
+
+func (c *Client) GetGame() domain.Game {
+	return c.game
 }
 
 func NewClientCreator() domain.ClientCreator {
 	return &clientCreator{}
 }
 
-func (c *clientCreator) GetClientFromConfig(gameConfig *domain.GameConfig, server *domain.Server) (domain.RCONClient, error) {
+func (c *clientCreator) GetClientFromConfig(game domain.Game, server *domain.Server) (domain.RCONClient, error) {
 	port, err := strconv.ParseUint(server.RCONPort, 10, 16)
 	if err != nil {
 		return nil, err
 	}
+
+	gameConfig := game.GetConfig()
 
 	// Create RCON client
 	client := rcon.NewClient(&rcon.ClientConfig{
@@ -53,6 +60,7 @@ func (c *clientCreator) GetClientFromConfig(gameConfig *domain.GameConfig, serve
 	})
 
 	return &Client{
+		game:   game,
 		Server: server,
 		Client: client,
 	}, nil

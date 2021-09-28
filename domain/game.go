@@ -31,6 +31,7 @@ type Game interface {
 	GetPlatform() Platform
 	GetPlayerListCommand() string
 	GetCommandOutputPatterns() *CommandOutputPatterns
+	GetBroadcastCommand() string
 }
 
 type CommandOutputPatterns struct {

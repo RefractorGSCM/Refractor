@@ -3,6 +3,8 @@
 package mocks
 
 import (
+	domain "Refractor/domain"
+
 	rcon "github.com/refractorgscm/rcon"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -45,6 +47,22 @@ func (_m *RCONClient) ExecCommand(_a0 string) (string, error) {
 	}
 
 	return r0, r1
+}
+
+// GetGame provides a mock function with given fields:
+func (_m *RCONClient) GetGame() domain.Game {
+	ret := _m.Called()
+
+	var r0 domain.Game
+	if rf, ok := ret.Get(0).(func() domain.Game); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.Game)
+		}
+	}
+
+	return r0
 }
 
 // ListenForBroadcasts provides a mock function with given fields: _a0, _a1
