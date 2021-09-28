@@ -42,6 +42,7 @@ func Test(t *testing.T) {
 	g.Describe("Chat Service", func() {
 		var repo *mocks.ChatRepo
 		var playerRepo *mocks.PlayerRepo
+		var playerNameRepo *mocks.PlayerNameRepo
 		var websocketService *mocks.WebsocketService
 		var service *chatService
 		var ctx context.Context
@@ -49,11 +50,13 @@ func Test(t *testing.T) {
 		g.BeforeEach(func() {
 			repo = new(mocks.ChatRepo)
 			playerRepo = new(mocks.PlayerRepo)
+			playerNameRepo = new(mocks.PlayerNameRepo)
 			websocketService = new(mocks.WebsocketService)
 
 			service = &chatService{
 				repo:             repo,
 				playerRepo:       playerRepo,
+				playerNameRepo:   playerNameRepo,
 				websocketService: websocketService,
 				timeout:          time.Second * 2,
 				logger:           zap.NewNop(),
@@ -223,80 +226,92 @@ func Test(t *testing.T) {
 				g.BeforeEach(func() {
 					messages = []*domain.ChatMessage{
 						{
-							MessageID: 1,
-							PlayerID:  "playerid",
-							Platform:  "platform",
-							ServerID:  1,
-							Message:   "message 1",
-							Flagged:   false,
+							MessageID:  1,
+							PlayerID:   "playerid",
+							Platform:   "platform",
+							ServerID:   1,
+							Message:    "message 1",
+							Flagged:    false,
+							PlayerName: "playername",
 						}, {
-							MessageID: 2,
-							PlayerID:  "playerid2",
-							Platform:  "platform",
-							ServerID:  1,
-							Message:   "message 2",
-							Flagged:   false,
+							MessageID:  2,
+							PlayerID:   "playerid2",
+							Platform:   "platform",
+							ServerID:   1,
+							Message:    "message 2",
+							Flagged:    false,
+							PlayerName: "playername",
 						}, {
-							MessageID: 3,
-							PlayerID:  "playerid3",
-							Platform:  "platform",
-							ServerID:  1,
-							Message:   "message 3",
-							Flagged:   false,
+							MessageID:  3,
+							PlayerID:   "playerid3",
+							Platform:   "platform",
+							ServerID:   1,
+							Message:    "message 3",
+							Flagged:    false,
+							PlayerName: "playername",
 						}, {
-							MessageID: 4,
-							PlayerID:  "playerid4",
-							Platform:  "platform",
-							ServerID:  1,
-							Message:   "message 4",
-							Flagged:   false,
+							MessageID:  4,
+							PlayerID:   "playerid4",
+							Platform:   "platform",
+							ServerID:   1,
+							Message:    "message 4",
+							Flagged:    false,
+							PlayerName: "playername",
 						}, {
-							MessageID: 5,
-							PlayerID:  "playerid5",
-							Platform:  "platform",
-							ServerID:  1,
-							Message:   "message 5",
-							Flagged:   false,
+							MessageID:  5,
+							PlayerID:   "playerid5",
+							Platform:   "platform",
+							ServerID:   1,
+							Message:    "message 5",
+							Flagged:    false,
+							PlayerName: "playername",
 						}, {
-							MessageID: 6,
-							PlayerID:  "playerid6",
-							Platform:  "platform",
-							ServerID:  1,
-							Message:   "message 6",
-							Flagged:   false,
+							MessageID:  6,
+							PlayerID:   "playerid6",
+							Platform:   "platform",
+							ServerID:   1,
+							Message:    "message 6",
+							Flagged:    false,
+							PlayerName: "playername",
 						}, {
-							MessageID: 7,
-							PlayerID:  "playerid7",
-							Platform:  "platform",
-							ServerID:  1,
-							Message:   "message 7",
-							Flagged:   false,
+							MessageID:  7,
+							PlayerID:   "playerid7",
+							Platform:   "platform",
+							ServerID:   1,
+							Message:    "message 7",
+							Flagged:    false,
+							PlayerName: "playername",
 						}, {
-							MessageID: 8,
-							PlayerID:  "playerid8",
-							Platform:  "platform",
-							ServerID:  1,
-							Message:   "message 8",
-							Flagged:   false,
+							MessageID:  8,
+							PlayerID:   "playerid8",
+							Platform:   "platform",
+							ServerID:   1,
+							Message:    "message 8",
+							Flagged:    false,
+							PlayerName: "playername",
 						}, {
-							MessageID: 9,
-							PlayerID:  "playerid9",
-							Platform:  "platform",
-							ServerID:  1,
-							Message:   "message 9",
-							Flagged:   false,
+							MessageID:  9,
+							PlayerID:   "playerid9",
+							Platform:   "platform",
+							ServerID:   1,
+							Message:    "message 9",
+							Flagged:    false,
+							PlayerName: "playername",
 						}, {
-							MessageID: 10,
-							PlayerID:  "playerid10",
-							Platform:  "platform",
-							ServerID:  1,
-							Message:   "message 10",
-							Flagged:   false,
+							MessageID:  10,
+							PlayerID:   "playerid10",
+							Platform:   "platform",
+							ServerID:   1,
+							Message:    "message 10",
+							Flagged:    false,
+							PlayerName: "playername",
 						},
 					}
 
 					repo.On("GetRecentByServer", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int")).
 						Return(messages, nil)
+					playerNameRepo.On("GetNames", mock.Anything, mock.Anything, mock.Anything).
+						Return("playername", nil, nil)
 				})
 
 				g.It("Should not return an error", func() {
