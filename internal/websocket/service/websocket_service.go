@@ -29,28 +29,56 @@ import (
 )
 
 type websocketService struct {
-	pool       *websocket.Pool
-	playerRepo domain.PlayerRepo
-	authorizer domain.Authorizer
-	timeout    time.Duration
-	logger     *zap.Logger
+	pool         *websocket.Pool
+	playerRepo   domain.PlayerRepo
+	userMetaRepo domain.UserMetaRepo
+	authorizer   domain.Authorizer
+	timeout      time.Duration
+	logger       *zap.Logger
+	chatSendSubs []domain.ChatSendSubscriber
 }
 
-func NewWebsocketService(pr domain.PlayerRepo, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.WebsocketService {
+func NewWebsocketService(pr domain.PlayerRepo, umr domain.UserMetaRepo, a domain.Authorizer,
+	to time.Duration, log *zap.Logger) domain.WebsocketService {
 	return &websocketService{
-		pool:       websocket.NewPool(log),
-		playerRepo: pr,
-		authorizer: a,
-		timeout:    to,
-		logger:     log,
+		pool:         websocket.NewPool(log),
+		playerRepo:   pr,
+		userMetaRepo: umr,
+		authorizer:   a,
+		timeout:      to,
+		logger:       log,
+		chatSendSubs: []domain.ChatSendSubscriber{},
 	}
 }
 
 func (s *websocketService) CreateClient(userID string, conn net.Conn) {
-	client := websocket.NewClient(userID, conn, s.pool, s.logger)
+	client := websocket.NewClient(userID, conn, s.pool, s.sendChatHandler, s.logger)
 
 	s.pool.Register <- client
 	client.Read()
+}
+
+func (s *websocketService) sendChatHandler(body *websocket.SendChatBody) {
+	ctx, cancel := context.WithTimeout(context.TODO(), s.timeout)
+	defer cancel()
+
+	// get user's name
+	username, err := s.userMetaRepo.GetUsername(ctx, body.UserID)
+	if err != nil {
+		s.logger.Error("Could not get user username", zap.String("User ID", body.UserID), zap.Error(err))
+		return
+	}
+
+	transformed := &domain.ChatSendBody{
+		ServerID:   body.ServerID,
+		Message:    body.Message,
+		Sender:     username,
+		SentByUser: true,
+	}
+
+	for _, sub := range s.chatSendSubs {
+		sub(transformed)
+	}
 }
 
 func (s *websocketService) StartPool() {
@@ -169,4 +197,8 @@ func (s *websocketService) HandleServerStatusChange(serverID int64, status strin
 		s.logger.Warn("Could not broadcast server status message", zap.Error(err))
 		return
 	}
+}
+
+func (s *websocketService) SubscribeChatSend(sub domain.ChatSendSubscriber) {
+	s.chatSendSubs = append(s.chatSendSubs, sub)
 }
