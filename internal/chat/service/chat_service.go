@@ -130,3 +130,10 @@ func (s *chatService) HandleChatReceive(body *domain.ChatReceiveBody, serverID i
 		// do not return as this is not a critical error
 	}
 }
+
+func (s *chatService) GetRecentByServer(c context.Context, serverID int64, count int) ([]*domain.ChatMessage, error) {
+	ctx, cancel := context.WithTimeout(context.TODO(), s.timeout)
+	defer cancel()
+
+	return s.repo.GetRecentByServer(ctx, serverID, count)
+}

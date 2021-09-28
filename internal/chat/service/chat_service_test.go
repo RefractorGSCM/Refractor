@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/franela/goblin"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -210,6 +211,120 @@ func Test(t *testing.T) {
 					Expect(len(recordedLogs.All())).To(Equal(1))
 					repo.AssertExpectations(t)
 					playerRepo.AssertExpectations(t)
+					repo.AssertExpectations(t)
+				})
+			})
+		})
+
+		g.Describe("GetRecentByServer()", func() {
+			g.Describe("Results found", func() {
+				var messages []*domain.ChatMessage
+
+				g.BeforeEach(func() {
+					messages = []*domain.ChatMessage{
+						{
+							MessageID: 1,
+							PlayerID:  "playerid",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 1",
+							Flagged:   false,
+						}, {
+							MessageID: 2,
+							PlayerID:  "playerid2",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 2",
+							Flagged:   false,
+						}, {
+							MessageID: 3,
+							PlayerID:  "playerid3",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 3",
+							Flagged:   false,
+						}, {
+							MessageID: 4,
+							PlayerID:  "playerid4",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 4",
+							Flagged:   false,
+						}, {
+							MessageID: 5,
+							PlayerID:  "playerid5",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 5",
+							Flagged:   false,
+						}, {
+							MessageID: 6,
+							PlayerID:  "playerid6",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 6",
+							Flagged:   false,
+						}, {
+							MessageID: 7,
+							PlayerID:  "playerid7",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 7",
+							Flagged:   false,
+						}, {
+							MessageID: 8,
+							PlayerID:  "playerid8",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 8",
+							Flagged:   false,
+						}, {
+							MessageID: 9,
+							PlayerID:  "playerid9",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 9",
+							Flagged:   false,
+						}, {
+							MessageID: 10,
+							PlayerID:  "playerid10",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "message 10",
+							Flagged:   false,
+						},
+					}
+
+					repo.On("GetRecentByServer", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int")).
+						Return(messages, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.GetRecentByServer(ctx, 1, 10)
+
+					Expect(err).To(BeNil())
+					repo.AssertExpectations(t)
+				})
+
+				g.It("Should return the correct results", func() {
+					results, err := service.GetRecentByServer(ctx, 1, 10)
+
+					Expect(err).To(BeNil())
+					Expect(results).To(Equal(messages))
+					repo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("No results found", func() {
+				g.BeforeEach(func() {
+					repo.On("GetRecentByServer", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int")).
+						Return(nil, domain.ErrNotFound)
+				})
+
+				g.It("Should return domain.ErrNotFound error", func() {
+					_, err := service.GetRecentByServer(ctx, 1, 10)
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
 					repo.AssertExpectations(t)
 				})
 			})
