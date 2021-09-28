@@ -91,7 +91,7 @@ func (h *infractionHandler) GetByID(c echo.Context) error {
 
 	infractionID, err := strconv.ParseInt(infractionIDString, 10, 64)
 	if err != nil {
-		return domain.NewHTTPError(fmt.Errorf("invalid server id"), http.StatusBadRequest, "")
+		return domain.NewHTTPError(fmt.Errorf("invalid infraction id"), http.StatusBadRequest, "")
 	}
 
 	user, ok := c.Get("user").(*domain.AuthUser)

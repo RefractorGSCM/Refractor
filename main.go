@@ -27,6 +27,7 @@ import (
 	_authRepo "Refractor/internal/auth/repos/kratos"
 	_authService "Refractor/internal/auth/service"
 	_authorizer "Refractor/internal/authorizer"
+	_chatHandler "Refractor/internal/chat/delivery/http"
 	_chatRepo "Refractor/internal/chat/repos/postgres"
 	_chatService "Refractor/internal/chat/service"
 	_gameHandler "Refractor/internal/game/delivery/http"
@@ -188,6 +189,7 @@ func main() {
 
 	chatRepo := _chatRepo.NewChatRepo(db, logger)
 	chatService := _chatService.NewChatService(chatRepo, playerRepo, websocketService, time.Second*2, logger)
+	_chatHandler.ApplyChatHandler(apiGroup, chatService, authorizer, middlewareBundle, logger)
 
 	// Subscribe to events
 	rconService.SubscribeJoin(playerService.HandlePlayerJoin)
