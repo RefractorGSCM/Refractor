@@ -60,6 +60,36 @@ func (_m *ChatRepo) GetRecentByServer(ctx context.Context, serverID int64, count
 	return r0, r1
 }
 
+// Search provides a mock function with given fields: ctx, args, limit, offset
+func (_m *ChatRepo) Search(ctx context.Context, args domain.FindArgs, limit int, offset int) (int, []*domain.ChatMessage, error) {
+	ret := _m.Called(ctx, args, limit, offset)
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func(context.Context, domain.FindArgs, int, int) int); ok {
+		r0 = rf(ctx, args, limit, offset)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	var r1 []*domain.ChatMessage
+	if rf, ok := ret.Get(1).(func(context.Context, domain.FindArgs, int, int) []*domain.ChatMessage); ok {
+		r1 = rf(ctx, args, limit, offset)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]*domain.ChatMessage)
+		}
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(context.Context, domain.FindArgs, int, int) error); ok {
+		r2 = rf(ctx, args, limit, offset)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // Store provides a mock function with given fields: ctx, message
 func (_m *ChatRepo) Store(ctx context.Context, message *domain.ChatMessage) error {
 	ret := _m.Called(ctx, message)

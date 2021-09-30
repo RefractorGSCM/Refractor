@@ -41,16 +41,19 @@ func Test(t *testing.T) {
 		var playerRepo *mocks.PlayerRepo
 		var playerNameRepo *mocks.PlayerNameRepo
 		var infractionRepo *mocks.InfractionRepo
+		var chatRepo *mocks.ChatRepo
 		var ctx context.Context
 
 		g.BeforeEach(func() {
 			playerRepo = new(mocks.PlayerRepo)
 			infractionRepo = new(mocks.InfractionRepo)
 			playerNameRepo = new(mocks.PlayerNameRepo)
+			chatRepo = new(mocks.ChatRepo)
 			service = &searchService{
 				playerRepo:     playerRepo,
 				playerNameRepo: playerNameRepo,
 				infractionRepo: infractionRepo,
+				chatRepo:       chatRepo,
 				timeout:        time.Second * 2,
 				logger:         zap.NewNop(),
 			}
@@ -244,6 +247,104 @@ func Test(t *testing.T) {
 
 					Expect(err).To(BeNil())
 					Expect(got).To(Equal([]*domain.Infraction{}))
+					Expect(total).To(Equal(0))
+					mock.AssertExpectationsForObjects(t)
+					infractionRepo.AssertExpectations(t)
+				})
+			})
+		})
+
+		g.Describe("SearchChatMessages()", func() {
+			g.Describe("No valid search fields were provided", func() {
+				g.It("Should return an error", func() {
+					_, _, err := service.SearchChatMessages(ctx, domain.FindArgs{"Invalid": "invalid"}, 0, 0)
+
+					httpErr, ok := err.(*domain.HTTPError)
+
+					Expect(ok).To(BeTrue())
+					Expect(httpErr.Message).To(Equal("No search fields were provided"))
+				})
+			})
+
+			g.Describe("Results found", func() {
+				var results []*domain.ChatMessage
+
+				g.BeforeEach(func() {
+					results = []*domain.ChatMessage{
+						{
+							MessageID: 1,
+							PlayerID:  "playerid1",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "test message 1",
+							Flagged:   false,
+							Name:      "currentname",
+						},
+						{
+							MessageID: 2,
+							PlayerID:  "playerid2",
+							Platform:  "platform",
+							ServerID:  2,
+							Message:   "test message 2",
+							Flagged:   false,
+							Name:      "currentname",
+						},
+						{
+							MessageID: 3,
+							PlayerID:  "playerid3",
+							Platform:  "platform",
+							ServerID:  3,
+							Message:   "test message 3",
+							Flagged:   false,
+							Name:      "currentname",
+						},
+					}
+
+					chatRepo.On("Search", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+						Return(100, results, nil)
+
+					playerNameRepo.On("GetNames", mock.Anything, mock.Anything, mock.Anything).
+						Return("currentname", []string{"oldname"}, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, _, err := service.SearchChatMessages(ctx, domain.FindArgs{"ServerID": 1}, 0, 10)
+
+					Expect(err).To(BeNil())
+					mock.AssertExpectationsForObjects(t)
+					infractionRepo.AssertExpectations(t)
+				})
+
+				g.It("Should return the correct results and total count", func() {
+					total, got, err := service.SearchChatMessages(ctx, domain.FindArgs{"ServerID": 1}, 0, 10)
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal(results))
+					Expect(total).To(Equal(100))
+					mock.AssertExpectationsForObjects(t)
+					infractionRepo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("No results found", func() {
+				g.BeforeEach(func() {
+					chatRepo.On("Search", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+						Return(0, []*domain.ChatMessage{}, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, _, err := service.SearchChatMessages(ctx, domain.FindArgs{"ServerID": 1}, 0, 10)
+
+					Expect(err).To(BeNil())
+					mock.AssertExpectationsForObjects(t)
+					infractionRepo.AssertExpectations(t)
+				})
+
+				g.It("Should return an empty array and a total count of 0", func() {
+					total, got, err := service.SearchChatMessages(ctx, domain.FindArgs{"ServerID": 1}, 0, 10)
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal([]*domain.ChatMessage{}))
 					Expect(total).To(Equal(0))
 					mock.AssertExpectationsForObjects(t)
 					infractionRepo.AssertExpectations(t)

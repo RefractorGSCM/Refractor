@@ -184,12 +184,12 @@ func main() {
 		attachmentRepo, userMetaRepo, authorizer, time.Second*2, logger)
 	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
 
-	searchService := _searchService.NewSearchService(playerRepo, playerNameRepo, infractionRepo, time.Second*2, logger)
-	_searchHandler.ApplySearchHandler(apiGroup, searchService, authorizer, middlewareBundle, logger)
-
 	chatRepo := _chatRepo.NewChatRepo(db, logger)
 	chatService := _chatService.NewChatService(chatRepo, playerRepo, playerNameRepo, websocketService, time.Second*2, logger)
 	_chatHandler.ApplyChatHandler(apiGroup, chatService, authorizer, middlewareBundle, logger)
+
+	searchService := _searchService.NewSearchService(playerRepo, playerNameRepo, infractionRepo, chatRepo, time.Second*2, logger)
+	_searchHandler.ApplySearchHandler(apiGroup, searchService, authorizer, middlewareBundle, logger)
 
 	// Subscribe to events
 	rconService.SubscribeJoin(playerService.HandlePlayerJoin)
