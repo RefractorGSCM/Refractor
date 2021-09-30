@@ -412,6 +412,19 @@ func Test(t *testing.T) {
 					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
 				})
 			})
+
+			g.Describe("TSQuery error", func() {
+				g.BeforeEach(func() {
+					mockRepo.ExpectQuery("SELECT MessageID, PlayerID, Platform").WillReturnError(fmt.Errorf("syntax error in tsquery"))
+				})
+
+				g.It("Should return a domain.ErrInvalidQuery error", func() {
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrInvalidQuery))
+					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+				})
+			})
 		})
 	})
 }
