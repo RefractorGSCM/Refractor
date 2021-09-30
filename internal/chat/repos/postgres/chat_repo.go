@@ -24,6 +24,7 @@ import (
 	"database/sql"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"strings"
 )
 
 const opTag = "ChatRepo.Postgres."
@@ -175,12 +176,12 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offs
 		    ModifiedAt
 		FROM ChatMessages cm
 		WHERE
-			($1 IS NULL OR cm.PlayerID = $1) AND
-			($2 IS NULL OR cm.Platform = $2) AND
-			($3 IS NULL OR cm.ServerID = $3) AND
-			(($5 IS NULL OR $6 IS NULL) OR CreatedAt BETWEEN $5 AND $6) AND
-			($7 IS NULL OR MessageVectors @@ TO_TSQUERY($7))
-		LIMIT $8 OFFSET $9;
+			($1::VARCHAR IS NULL OR cm.PlayerID = $2) AND
+			($3::VARCHAR IS NULL OR cm.Platform = $4) AND
+			($5::INT IS NULL OR cm.ServerID = $6) AND
+			(($7::BIGINT IS NULL OR $8::BIGINT IS NULL) OR CreatedAt BETWEEN TO_TIMESTAMP($9) AND TO_TIMESTAMP($10)) AND
+			($11::VARCHAR IS NULL OR MessageVectors @@ TO_TSQUERY($12))
+		LIMIT $13 OFFSET $14;
 	`
 
 	var (
@@ -192,9 +193,13 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offs
 		searchQuery = args["Query"]
 	)
 
-	results, err := r.fetch(ctx, query, playerID, platform, serverID, startDate, endDate,
-		searchQuery, limit, offset)
+	results, err := r.fetch(ctx, query, playerID, playerID, platform, platform, serverID, serverID, startDate, endDate,
+		startDate, endDate, searchQuery, searchQuery, limit, offset)
 	if err != nil {
+		if strings.Contains(errors.Cause(err).Error(), "syntax error in tsquery") {
+			return 0, nil, errors.Wrap(domain.ErrInvalidQuery, op)
+		}
+
 		return 0, nil, errors.Wrap(err, op)
 	}
 
@@ -208,14 +213,15 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offs
 			COUNT(1) AS Count
 		FROM ChatMessages cm
 		WHERE
-			($1 IS NULL OR cm.PlayerID = $1) AND
-			($2 IS NULL OR cm.Platform = $2) AND
-			($3 IS NULL OR cm.ServerID = $3) AND
-			(($5 IS NULL OR $6 IS NULL) OR CreatedAt BETWEEN $5 AND $6) AND
-			($7 IS NULL OR MessageVectors @@ TO_TSQUERY($7));
+			($1::VARCHAR IS NULL OR cm.PlayerID = $2) AND
+			($3::VARCHAR IS NULL OR cm.Platform = $4) AND
+			($5::INT IS NULL OR cm.ServerID = $6) AND
+			(($7::BIGINT IS NULL OR $8::BIGINT IS NULL) OR CreatedAt BETWEEN TO_TIMESTAMP($9) AND TO_TIMESTAMP($10)) AND
+			($11::VARCHAR IS NULL OR MessageVectors @@ TO_TSQUERY($12));
 	`
 
-	row := r.db.QueryRowContext(ctx, query, playerID, platform, serverID, startDate, endDate, searchQuery)
+	row := r.db.QueryRowContext(ctx, query, playerID, playerID, platform, platform, serverID, serverID, startDate, endDate,
+		startDate, endDate, searchQuery, searchQuery)
 
 	var resultCount int
 	if err := row.Scan(&resultCount); err != nil {

@@ -24,10 +24,11 @@ import (
 )
 
 var (
-	ErrConflict = errors.New("conflict")  // action cannot be performed
-	ErrInvalid  = errors.New("invalid")   // validation failed
-	ErrNotFound = errors.New("not found") // entity does not exist
-	ErrNoArgs   = errors.New("no args")   // no arguments provided
+	ErrConflict     = errors.New("conflict")      // action cannot be performed
+	ErrInvalid      = errors.New("invalid")       // validation failed
+	ErrNotFound     = errors.New("not found")     // entity does not exist
+	ErrNoArgs       = errors.New("no args")       // no arguments provided
+	ErrInvalidQuery = errors.New("invalid query") // an invalid search/find query was provided
 )
 
 type ClientError interface {
