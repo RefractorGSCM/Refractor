@@ -52,6 +52,8 @@ func ApplySearchHandler(apiGroup *echo.Group, s domain.SearchService, a domain.A
 		enforcer.CheckAuth(authcheckers.HasPermission(perms.FlagViewPlayerRecords, true)))
 	searchGroup.POST("/infractions", handler.SearchInfractions,
 		enforcer.CheckAuth(authcheckers.HasPermission(perms.FlagViewInfractionRecords, true)))
+	searchGroup.POST("/chat", handler.SearchChatMessages,
+		enforcer.CheckAuth(authcheckers.HasPermission(perms.FlagViewChatRecords, true)))
 }
 
 type searchRes struct {
@@ -111,6 +113,45 @@ func (h *searchHandler) SearchInfractions(c echo.Context) error {
 
 	// Execute search
 	total, results, err := h.service.SearchInfractions(c.Request().Context(), searchArgs, body.Limit, body.Offset)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Payload: &searchRes{
+			Total:   total,
+			Results: results,
+		},
+	})
+}
+
+func (h *searchHandler) SearchChatMessages(c echo.Context) error {
+	// Validate request body
+	var body params.SearchMessagesParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	// Get search args
+	searchArgs, err := structutils.GetNonNilFieldMap(body)
+	if err != nil {
+		return err
+	}
+
+	if len(searchArgs) < 1 {
+		return c.JSON(http.StatusBadRequest, &domain.Response{
+			Success: false,
+			Message: "No search fields provided",
+		})
+	}
+
+	// Execute search
+	total, results, err := h.service.SearchChatMessages(c.Request().Context(), searchArgs, body.Limit, body.Offset)
 	if err != nil {
 		return err
 	}

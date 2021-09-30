@@ -159,6 +159,16 @@ func (s searchService) SearchChatMessages(c context.Context, args domain.FindArg
 			return 0, []*domain.ChatMessage{}, nil
 		}
 
+		// Check if this is an invalid query error
+		if errors.Cause(err) == domain.ErrInvalidQuery {
+			return 0, []*domain.ChatMessage{}, &domain.HTTPError{
+				Success:          false,
+				Message:          "Input error",
+				ValidationErrors: map[string]string{"query": "invalid query"},
+				Status:           http.StatusBadRequest,
+			}
+		}
+
 		s.logger.Error("Could not search infractions", zap.Error(err))
 		return 0, []*domain.ChatMessage{}, err
 	}
