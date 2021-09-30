@@ -22,7 +22,6 @@ import (
 	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
-	"github.com/guregu/null"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -128,7 +127,8 @@ func (r *chatRepo) Store(ctx context.Context, msg *domain.ChatMessage) error {
 func (r *chatRepo) GetByID(ctx context.Context, id int64) (*domain.ChatMessage, error) {
 	const op = opTag + "GetByID"
 
-	query := `SELECT * FROM ChatMessages WHERE MessageID = $1;`
+	query := `SELECT MessageID, PlayerID, Platform, ServerID, Message, Flagged, CreatedAt, ModifiedAt
+				FROM ChatMessages WHERE MessageID = $1;`
 
 	results, err := r.fetch(ctx, query, id)
 	if err != nil {
@@ -145,7 +145,8 @@ func (r *chatRepo) GetByID(ctx context.Context, id int64) (*domain.ChatMessage, 
 func (r *chatRepo) GetRecentByServer(ctx context.Context, serverID int64, count int) ([]*domain.ChatMessage, error) {
 	const op = opTag + "GetRecentByServer"
 
-	query := "SELECT * FROM ChatMessages WHERE ServerID = $1 ORDER BY CreatedAt DESC LIMIT $2;"
+	query := `SELECT MessageID, PlayerID, Platform, ServerID, Message, Flagged, CreatedAt, ModifiedAt
+			FROM ChatMessages WHERE ServerID = $1 ORDER BY CreatedAt DESC LIMIT $2;`
 
 	results, err := r.fetch(ctx, query, serverID, count)
 	if err != nil {
@@ -160,21 +161,77 @@ func (r *chatRepo) GetRecentByServer(ctx context.Context, serverID int64, count 
 }
 
 func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offset int) (int, []*domain.ChatMessage, error) {
-	//const op = opTag + "Search"
-	//
-	//query := `
-	//
-	//`
-	panic("implement me")
+	const op = opTag + "Search"
+
+	query := `
+		SELECT
+			MessageID,
+		    PlayerID,
+		    Platform,
+		    ServerID,
+		    Message,
+		    Flagged,
+		    CreatedAt,
+		    ModifiedAt
+		FROM ChatMessages cm
+		WHERE
+			($1 IS NULL OR cm.PlayerID = $1) AND
+			($2 IS NULL OR cm.Platform = $2) AND
+			($3 IS NULL OR cm.ServerID = $3) AND
+			(($5 IS NULL OR $6 IS NULL) OR CreatedAt BETWEEN $5 AND $6) AND
+			($7 IS NULL OR MessageVectors @@ TO_TSQUERY($7))
+		LIMIT $8 OFFSET $9;
+	`
+
+	var (
+		playerID    = args["PlayerID"]
+		platform    = args["Platform"]
+		serverID    = args["ServerID"]
+		startDate   = args["StartDate"]
+		endDate     = args["EndDate"]
+		searchQuery = args["Query"]
+	)
+
+	results, err := r.fetch(ctx, query, playerID, platform, serverID, startDate, endDate,
+		searchQuery, limit, offset)
+	if err != nil {
+		return 0, nil, errors.Wrap(err, op)
+	}
+
+	if len(results) == 0 {
+		return 0, []*domain.ChatMessage{}, nil
+	}
+
+	// Get total results count
+	query = `
+		SELECT
+			COUNT(1) AS Count
+		FROM ChatMessages cm
+		WHERE
+			($1 IS NULL OR cm.PlayerID = $1) AND
+			($2 IS NULL OR cm.Platform = $2) AND
+			($3 IS NULL OR cm.ServerID = $3) AND
+			(($5 IS NULL OR $6 IS NULL) OR CreatedAt BETWEEN $5 AND $6) AND
+			($7 IS NULL OR MessageVectors @@ TO_TSQUERY($7));
+	`
+
+	row := r.db.QueryRowContext(ctx, query, playerID, platform, serverID, startDate, endDate, searchQuery)
+
+	var resultCount int
+	if err := row.Scan(&resultCount); err != nil {
+		r.logger.Error("Could not get total result count while searching chat messages",
+			zap.Error(err))
+		return 0, nil, errors.Wrap(err, op)
+	}
+
+	return resultCount, results, err
 }
 
 // Scan helpers
 func (r *chatRepo) scanRow(row *sql.Row, msg *domain.ChatMessage) error {
-	var vecs null.String // we don't need this value scanned
-	return row.Scan(&msg.MessageID, &msg.PlayerID, &msg.Platform, &msg.ServerID, &msg.Message, &msg.Flagged, &msg.CreatedAt, &msg.ModifiedAt, &vecs)
+	return row.Scan(&msg.MessageID, &msg.PlayerID, &msg.Platform, &msg.ServerID, &msg.Message, &msg.Flagged, &msg.CreatedAt, &msg.ModifiedAt)
 }
 
 func (r *chatRepo) scanRows(rows *sql.Rows, msg *domain.ChatMessage) error {
-	var vecs null.String // we don't need this value scanned
-	return rows.Scan(&msg.MessageID, &msg.PlayerID, &msg.Platform, &msg.ServerID, &msg.Message, &msg.Flagged, &msg.CreatedAt, &msg.ModifiedAt, &vecs)
+	return rows.Scan(&msg.MessageID, &msg.PlayerID, &msg.Platform, &msg.ServerID, &msg.Message, &msg.Flagged, &msg.CreatedAt, &msg.ModifiedAt)
 }

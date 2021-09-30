@@ -137,7 +137,7 @@ func Test(t *testing.T) {
 
 			g.Describe("Result found", func() {
 				g.BeforeEach(func() {
-					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT * FROM ChatMessages")).WillReturnRows(sqlmock.NewRows(cols).
+					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT MessageID, PlayerID, Platform")).WillReturnRows(sqlmock.NewRows(cols).
 						AddRow(chatMessage.MessageID, chatMessage.PlayerID, chatMessage.Platform, chatMessage.ServerID,
 							chatMessage.Message, chatMessage.Flagged, chatMessage.CreatedAt, chatMessage.ModifiedAt))
 				})
@@ -160,7 +160,7 @@ func Test(t *testing.T) {
 
 			g.Describe("Result not found", func() {
 				g.BeforeEach(func() {
-					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT * FROM ChatMessages")).WillReturnRows(sqlmock.NewRows(cols))
+					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT MessageID, PlayerID, Platform")).WillReturnRows(sqlmock.NewRows(cols))
 				})
 
 				g.It("Should return domain.ErrNotFound", func() {
@@ -259,7 +259,7 @@ func Test(t *testing.T) {
 						rows.AddRow(msg.MessageID, msg.PlayerID, msg.Platform, msg.ServerID, msg.Message, msg.Flagged, msg.CreatedAt, msg.ModifiedAt)
 					}
 
-					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT * FROM ChatMessages")).WillReturnRows(rows)
+					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT MessageID, PlayerID, Platform")).WillReturnRows(rows)
 				})
 
 				g.It("Should not return an error", func() {
@@ -282,13 +282,133 @@ func Test(t *testing.T) {
 				g.BeforeEach(func() {
 					rows = sqlmock.NewRows(cols)
 
-					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT * FROM ChatMessages")).WillReturnRows(rows)
+					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT MessageID, PlayerID, Platform")).WillReturnRows(rows)
 				})
 
 				g.It("Should return domain.ErrNotFound error", func() {
 					_, err := repo.GetRecentByServer(ctx, 1, 10)
 
 					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
+
+		g.Describe("Search()", func() {
+			g.Describe("Results found", func() {
+				var results []*domain.ChatMessage
+
+				g.BeforeEach(func() {
+					results = []*domain.ChatMessage{
+						{
+							MessageID: 1,
+							PlayerID:  "playerid1",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "test message 1",
+							Flagged:   false,
+						},
+						{
+							MessageID: 2,
+							PlayerID:  "playerid2",
+							Platform:  "platform",
+							ServerID:  2,
+							Message:   "test message 2",
+							Flagged:   false,
+						},
+						{
+							MessageID: 3,
+							PlayerID:  "playerid3",
+							Platform:  "platform",
+							ServerID:  3,
+							Message:   "test message 3",
+							Flagged:   false,
+						},
+						{
+							MessageID: 4,
+							PlayerID:  "playerid4",
+							Platform:  "platform",
+							ServerID:  4,
+							Message:   "test message 4",
+							Flagged:   false,
+						},
+						{
+							MessageID: 5,
+							PlayerID:  "playerid5",
+							Platform:  "platform",
+							ServerID:  5,
+							Message:   "test message 1",
+							Flagged:   false,
+						},
+					}
+
+					rows := sqlmock.NewRows(cols)
+
+					for _, msg := range results {
+						rows.AddRow(msg.MessageID, msg.PlayerID, msg.Platform, msg.ServerID, msg.Message, msg.Flagged,
+							msg.CreatedAt, msg.ModifiedAt)
+					}
+
+					mockRepo.ExpectQuery(regexp.QuoteMeta(regexp.QuoteMeta("SELECT MessageID, PlayerID, Platform"))).WillReturnRows(rows)
+					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) AS Count FROM ChatMessages")).WillReturnRows(sqlmock.NewRows([]string{"Count"}).
+						AddRow(10))
+				})
+
+				g.It("Should not return an error", func() {
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, 5, 0)
+
+					Expect(err).To(BeNil())
+					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return the expected results", func() {
+					_, got, err := repo.Search(ctx, domain.FindArgs{}, 5, 0)
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal(results))
+					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return the correct number of total results", func() {
+					total, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+
+					Expect(err).To(BeNil())
+					Expect(total).To(Equal(10))
+					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("No results found", func() {
+				g.BeforeEach(func() {
+					mockRepo.ExpectQuery("SELECT MessageID, PlayerID, Platform").WillReturnRows(sqlmock.NewRows(cols))
+				})
+
+				g.It("Should not return an error", func() {
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+
+					Expect(err).To(BeNil())
+					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return an empty array and a count of 0", func() {
+					total, got, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal([]*domain.ChatMessage{}))
+					Expect(total).To(Equal(0))
+					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Database error", func() {
+				g.BeforeEach(func() {
+					mockRepo.ExpectQuery("SELECT MessageID, PlayerID, Platform").WillReturnError(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+
+					Expect(err).ToNot(BeNil())
 					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
 				})
 			})
