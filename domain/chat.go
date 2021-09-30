@@ -48,6 +48,7 @@ type ChatRepo interface {
 	Store(ctx context.Context, message *ChatMessage) error
 	GetByID(ctx context.Context, id int64) (*ChatMessage, error)
 	GetRecentByServer(ctx context.Context, serverID int64, count int) ([]*ChatMessage, error)
+	Search(ctx context.Context, args FindArgs, limit, offset int) (int, []*ChatMessage, error)
 }
 
 type ChatService interface {
