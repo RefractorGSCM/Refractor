@@ -31,16 +31,18 @@ type searchService struct {
 	playerRepo     domain.PlayerRepo
 	playerNameRepo domain.PlayerNameRepo
 	infractionRepo domain.InfractionRepo
+	chatRepo       domain.ChatRepo
 	timeout        time.Duration
 	logger         *zap.Logger
 }
 
-func NewSearchService(pr domain.PlayerRepo, pnr domain.PlayerNameRepo, ir domain.InfractionRepo,
+func NewSearchService(pr domain.PlayerRepo, pnr domain.PlayerNameRepo, ir domain.InfractionRepo, cr domain.ChatRepo,
 	to time.Duration, log *zap.Logger) domain.SearchService {
 	return &searchService{
 		playerRepo:     pr,
 		playerNameRepo: pnr,
 		infractionRepo: ir,
+		chatRepo:       cr,
 		timeout:        to,
 		logger:         log,
 	}
@@ -131,4 +133,52 @@ func (s searchService) SearchInfractions(c context.Context, args domain.FindArgs
 	}
 
 	return count, infractions, nil
+}
+
+func (s searchService) SearchChatMessages(c context.Context, args domain.FindArgs, limit, offset int) (int, []*domain.ChatMessage, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	// Filter out illegal values
+	wl := whitelist.StringKeyMap([]string{"PlayerID", "Platform", "ServerID", "StartDate", "EndDate", "Query"})
+	args = wl.FilterKeys(args)
+
+	if len(args) == 0 {
+		return 0, []*domain.ChatMessage{}, &domain.HTTPError{
+			Success:          false,
+			Message:          "No search fields were provided",
+			ValidationErrors: nil,
+			Status:           http.StatusBadRequest,
+		}
+	}
+
+	// Run search
+	count, messages, err := s.chatRepo.Search(ctx, args, limit, offset)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return 0, []*domain.ChatMessage{}, nil
+		}
+
+		s.logger.Error("Could not search infractions", zap.Error(err))
+		return 0, []*domain.ChatMessage{}, err
+	}
+
+	// Get player name for each chat message
+	for _, msg := range messages {
+		currentName, _, err := s.playerNameRepo.GetNames(ctx, msg.PlayerID, msg.Platform)
+		if err != nil {
+			s.logger.Error(
+				"Could not get player name for chat message",
+				zap.Int64("Message ID", msg.MessageID),
+				zap.String("Platform", msg.Platform),
+				zap.String("Player ID", msg.PlayerID),
+				zap.Int64("Server ID", msg.ServerID),
+				zap.Error(err),
+			)
+		}
+
+		msg.Name = currentName
+	}
+
+	return count, messages, nil
 }
