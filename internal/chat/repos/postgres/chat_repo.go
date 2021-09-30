@@ -22,6 +22,7 @@ import (
 	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
+	"github.com/guregu/null"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -86,8 +87,8 @@ func (r *chatRepo) fetch(ctx context.Context, query string, args ...interface{})
 func (r *chatRepo) Store(ctx context.Context, msg *domain.ChatMessage) error {
 	const op = opTag + "Store"
 
-	query := `INSERT INTO ChatMessages (PlayerID, Platform, ServerID, Message, Flagged)
-			VALUES ($1, $2, $3, $4, $5) RETURNING MessageID;`
+	query := `INSERT INTO ChatMessages (PlayerID, Platform, ServerID, Message, Flagged, MessageVectors)
+			VALUES ($1, $2, $3, $4, $5, to_tsvector($6)) RETURNING MessageID;`
 
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -102,7 +103,7 @@ func (r *chatRepo) Store(ctx context.Context, msg *domain.ChatMessage) error {
 		return errors.Wrap(err, op)
 	}
 
-	row := stmt.QueryRowContext(ctx, msg.PlayerID, msg.Platform, msg.ServerID, msg.Message, msg.Flagged)
+	row := stmt.QueryRowContext(ctx, msg.PlayerID, msg.Platform, msg.ServerID, msg.Message, msg.Flagged, msg.Message)
 	if err != nil {
 		_ = tx.Rollback()
 		r.logger.Error("Could not execute query", zap.String("query", query), zap.Error(err))
@@ -158,11 +159,22 @@ func (r *chatRepo) GetRecentByServer(ctx context.Context, serverID int64, count 
 	return nil, errors.Wrap(domain.ErrNotFound, op)
 }
 
+func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offset int) (int, []*domain.ChatMessage, error) {
+	//const op = opTag + "Search"
+	//
+	//query := `
+	//
+	//`
+	panic("implement me")
+}
+
 // Scan helpers
 func (r *chatRepo) scanRow(row *sql.Row, msg *domain.ChatMessage) error {
-	return row.Scan(&msg.MessageID, &msg.PlayerID, &msg.Platform, &msg.ServerID, &msg.Message, &msg.Flagged, &msg.CreatedAt, &msg.ModifiedAt)
+	var vecs null.String // we don't need this value scanned
+	return row.Scan(&msg.MessageID, &msg.PlayerID, &msg.Platform, &msg.ServerID, &msg.Message, &msg.Flagged, &msg.CreatedAt, &msg.ModifiedAt, &vecs)
 }
 
 func (r *chatRepo) scanRows(rows *sql.Rows, msg *domain.ChatMessage) error {
-	return rows.Scan(&msg.MessageID, &msg.PlayerID, &msg.Platform, &msg.ServerID, &msg.Message, &msg.Flagged, &msg.CreatedAt, &msg.ModifiedAt)
+	var vecs null.String // we don't need this value scanned
+	return rows.Scan(&msg.MessageID, &msg.PlayerID, &msg.Platform, &msg.ServerID, &msg.Message, &msg.Flagged, &msg.CreatedAt, &msg.ModifiedAt, &vecs)
 }
