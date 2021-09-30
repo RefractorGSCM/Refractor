@@ -24,6 +24,7 @@ import (
 	"fmt"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/pkg/errors"
+	"math"
 	"strings"
 )
 
@@ -111,7 +112,7 @@ func (body SearchInfractionParams) Validate() error {
 				}
 
 				platformPtr, ok := value.(*string)
-				if !ok {
+				if !ok || platformPtr == nil {
 					return errors.New("platform is required if player_id is set")
 				}
 
@@ -123,5 +124,77 @@ func (body SearchInfractionParams) Validate() error {
 				return nil
 			})),
 		validation.Field(&body.UserID, rules.UserIDRules...),
+	)
+}
+
+type SearchMessagesParams struct {
+	PlayerID  *string `json:"player_id" form:"player_id"`
+	Platform  *string `json:"platform" form:"platform"`
+	ServerID  *int64  `json:"server_id" form:"server_id"`
+	StartDate *int64  `json:"start_date" form:"start_date"`
+	EndDate   *int64  `json:"end_date" form:"end_date"`
+	Query     *string `json:"query" form:"query"`
+	*SearchParams
+}
+
+func (body SearchMessagesParams) Validate() error {
+	if body.SearchParams == nil {
+		return fmt.Errorf("no search params provided")
+	}
+	if err := body.SearchParams.Validate(); err != nil {
+		return err
+	}
+
+	return ValidateStruct(&body,
+		validation.Field(&body.PlayerID, rules.PlayerIDRules...),
+		validation.Field(&body.Platform, validation.By(validators.PtrValueInStrArray(domain.AllPlatforms)),
+			validation.By(func(value interface{}) error {
+				// if body.PlayerID is set then platform is required
+				if body.PlayerID == nil {
+					return nil
+				}
+
+				platformPtr, ok := value.(*string)
+				if !ok || platformPtr == nil {
+					return errors.New("platform is required if player_id is set")
+				}
+
+				platform := *platformPtr
+				if len(strings.TrimSpace(platform)) == 0 {
+					return errors.New("platform is required if player_id is set")
+				}
+
+				return nil
+			})),
+		validation.Field(&body.ServerID, validation.Min(1), validation.Max(math.MaxInt32)),
+		validation.Field(&body.StartDate, validation.Min(1), validation.Max(math.MaxInt64),
+			validation.By(func(value interface{}) error {
+				// if body.EndDate is set then StartDate is required
+				if body.EndDate == nil {
+					return nil
+				}
+
+				startDatePtr, ok := value.(*int64)
+				if !ok || startDatePtr == nil {
+					return errors.New("start_date is required if start_date is set")
+				}
+
+				return nil
+			})),
+		validation.Field(&body.EndDate, validation.Min(1), validation.Max(math.MaxInt64),
+			validation.By(func(value interface{}) error {
+				// if body.StartDate is set then EndDate is required
+				if body.StartDate == nil {
+					return nil
+				}
+
+				endDatePtr, ok := value.(*int64)
+				if !ok || endDatePtr == nil {
+					return errors.New("end_date is required if start_date is set")
+				}
+
+				return nil
+			})),
+		validation.Field(&body.Query, validation.Length(0, 128)),
 	)
 }
