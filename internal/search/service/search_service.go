@@ -140,7 +140,7 @@ func (s searchService) SearchChatMessages(c context.Context, args domain.FindArg
 	defer cancel()
 
 	// Filter out illegal values
-	wl := whitelist.StringKeyMap([]string{"PlayerID", "Platform", "ServerID", "StartDate", "EndDate", "Query"})
+	wl := whitelist.StringKeyMap([]string{"PlayerID", "Platform", "ServerID", "Game", "StartDate", "EndDate", "Query"})
 	args = wl.FilterKeys(args)
 
 	if len(args) == 0 {
