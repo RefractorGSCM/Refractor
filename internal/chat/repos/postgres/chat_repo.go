@@ -22,6 +22,7 @@ import (
 	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"strings"
@@ -182,7 +183,7 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offs
 			($3::INT IS NULL OR cm.ServerID = $3) AND
 			($4::VARCHAR IS NULL OR s.Game = $4) AND
 			(($5::BIGINT IS NULL OR $6::BIGINT IS NULL) OR cm.CreatedAt BETWEEN TO_TIMESTAMP($5) AND TO_TIMESTAMP($6)) AND
-			($7::VARCHAR IS NULL OR cm.MessageVectors @@ TO_TSQUERY($7))
+			($7::VARCHAR IS NULL OR cm.MessageVectors @@ PLAINTO_TSQUERY($7))
 		LIMIT $8 OFFSET $9;
 	`
 
@@ -195,6 +196,19 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offs
 		endDate     = args["EndDate"]
 		searchQuery = args["Query"]
 	)
+
+	var toQueryMethod = "PLAINTO_TSQUERY"
+	searchStrPtr, ok := searchQuery.(*string)
+	if ok && searchStrPtr != nil {
+		var searchStr = *searchStrPtr
+
+		if searchQuery != "" && strings.Split(searchStr, " ")[0] == "query:" {
+			searchStr = searchStr[len("query: "):]
+			toQueryMethod = "TO_TSQUERY"
+		}
+
+		searchQuery = searchStr
+	}
 
 	//results, err := r.fetch(ctx, query, playerID, playerID, platform, platform, serverID, serverID, game, game,
 	//	startDate, endDate, startDate, endDate, searchQuery, searchQuery, limit, offset)
@@ -212,7 +226,7 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offs
 	}
 
 	// Get total results count
-	query = `
+	query = fmt.Sprintf(`
 		SELECT
 			COUNT(1) AS Count
 		FROM ChatMessages cm
@@ -223,8 +237,8 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offs
 			($3::INT IS NULL OR cm.ServerID = $3) AND
 		    ($4::VARCHAR IS NULL OR s.Game = $4) AND
 			(($5::BIGINT IS NULL OR $6::BIGINT IS NULL) OR cm.CreatedAt BETWEEN TO_TIMESTAMP($5) AND TO_TIMESTAMP($6)) AND
-			($7::VARCHAR IS NULL OR cm.MessageVectors @@ TO_TSQUERY($7));
-	`
+			($7::VARCHAR IS NULL OR cm.MessageVectors @@ %s($7));
+	`, toQueryMethod)
 
 	row := r.db.QueryRowContext(ctx, query, playerID, platform, serverID, game, startDate, endDate, searchQuery)
 
