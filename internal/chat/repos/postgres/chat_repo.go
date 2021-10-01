@@ -166,35 +166,39 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offs
 
 	query := `
 		SELECT
-			MessageID,
-		    PlayerID,
-		    Platform,
-		    ServerID,
-		    Message,
-		    Flagged,
-		    CreatedAt,
-		    ModifiedAt
+			cm.MessageID,
+		    cm.PlayerID,
+		    cm.Platform,
+		    cm.ServerID,
+		    cm.Message,
+		    cm.Flagged,
+		    cm.CreatedAt,
+		    cm.ModifiedAt
 		FROM ChatMessages cm
+		JOIN Servers s ON s.ServerID = cm.ServerID
 		WHERE
-			($1::VARCHAR IS NULL OR cm.PlayerID = $2) AND
-			($3::VARCHAR IS NULL OR cm.Platform = $4) AND
-			($5::INT IS NULL OR cm.ServerID = $6) AND
-			(($7::BIGINT IS NULL OR $8::BIGINT IS NULL) OR CreatedAt BETWEEN TO_TIMESTAMP($9) AND TO_TIMESTAMP($10)) AND
-			($11::VARCHAR IS NULL OR MessageVectors @@ TO_TSQUERY($12))
-		LIMIT $13 OFFSET $14;
+			($1::VARCHAR IS NULL OR cm.PlayerID = $1) AND
+			($2::VARCHAR IS NULL OR cm.Platform = $2) AND
+			($3::INT IS NULL OR cm.ServerID = $3) AND
+			($4::VARCHAR IS NULL OR s.Game = $4) AND
+			(($5::BIGINT IS NULL OR $6::BIGINT IS NULL) OR cm.CreatedAt BETWEEN TO_TIMESTAMP($5) AND TO_TIMESTAMP($6)) AND
+			($7::VARCHAR IS NULL OR cm.MessageVectors @@ TO_TSQUERY($7))
+		LIMIT $8 OFFSET $9;
 	`
 
 	var (
 		playerID    = args["PlayerID"]
 		platform    = args["Platform"]
+		game        = args["Game"]
 		serverID    = args["ServerID"]
 		startDate   = args["StartDate"]
 		endDate     = args["EndDate"]
 		searchQuery = args["Query"]
 	)
 
-	results, err := r.fetch(ctx, query, playerID, playerID, platform, platform, serverID, serverID, startDate, endDate,
-		startDate, endDate, searchQuery, searchQuery, limit, offset)
+	//results, err := r.fetch(ctx, query, playerID, playerID, platform, platform, serverID, serverID, game, game,
+	//	startDate, endDate, startDate, endDate, searchQuery, searchQuery, limit, offset)
+	results, err := r.fetch(ctx, query, playerID, platform, serverID, game, startDate, endDate, searchQuery, limit, offset)
 	if err != nil {
 		if strings.Contains(errors.Cause(err).Error(), "syntax error in tsquery") {
 			return 0, nil, errors.Wrap(domain.ErrInvalidQuery, op)
@@ -212,16 +216,17 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offs
 		SELECT
 			COUNT(1) AS Count
 		FROM ChatMessages cm
+		JOIN Servers s ON s.ServerID = cm.ServerID
 		WHERE
-			($1::VARCHAR IS NULL OR cm.PlayerID = $2) AND
-			($3::VARCHAR IS NULL OR cm.Platform = $4) AND
-			($5::INT IS NULL OR cm.ServerID = $6) AND
-			(($7::BIGINT IS NULL OR $8::BIGINT IS NULL) OR CreatedAt BETWEEN TO_TIMESTAMP($9) AND TO_TIMESTAMP($10)) AND
-			($11::VARCHAR IS NULL OR MessageVectors @@ TO_TSQUERY($12));
+			($1::VARCHAR IS NULL OR cm.PlayerID = $1) AND
+			($2::VARCHAR IS NULL OR cm.Platform = $2) AND
+			($3::INT IS NULL OR cm.ServerID = $3) AND
+		    ($4::VARCHAR IS NULL OR s.Game = $4) AND
+			(($5::BIGINT IS NULL OR $6::BIGINT IS NULL) OR cm.CreatedAt BETWEEN TO_TIMESTAMP($5) AND TO_TIMESTAMP($6)) AND
+			($7::VARCHAR IS NULL OR cm.MessageVectors @@ TO_TSQUERY($7));
 	`
 
-	row := r.db.QueryRowContext(ctx, query, playerID, playerID, platform, platform, serverID, serverID, startDate, endDate,
-		startDate, endDate, searchQuery, searchQuery)
+	row := r.db.QueryRowContext(ctx, query, playerID, platform, serverID, game, startDate, endDate, searchQuery)
 
 	var resultCount int
 	if err := row.Scan(&resultCount); err != nil {

@@ -131,6 +131,7 @@ type SearchMessagesParams struct {
 	PlayerID  *string `json:"player_id" form:"player_id"`
 	Platform  *string `json:"platform" form:"platform"`
 	ServerID  *int64  `json:"server_id" form:"server_id"`
+	Game      *string `json:"game" form:"game"`
 	StartDate *int64  `json:"start_date" form:"start_date"`
 	EndDate   *int64  `json:"end_date" form:"end_date"`
 	Query     *string `json:"query" form:"query"`
@@ -167,6 +168,7 @@ func (body SearchMessagesParams) Validate() error {
 				return nil
 			})),
 		validation.Field(&body.ServerID, validation.Min(1), validation.Max(math.MaxInt32)),
+		validation.Field(&body.Game, validation.By(validators.PtrValueInStrArray(domain.AllGames))),
 		validation.Field(&body.StartDate, validation.Min(1), validation.Max(math.MaxInt64),
 			validation.By(func(value interface{}) error {
 				// if body.EndDate is set then StartDate is required
