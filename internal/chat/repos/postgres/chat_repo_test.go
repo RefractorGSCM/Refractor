@@ -349,7 +349,7 @@ func Test(t *testing.T) {
 							msg.CreatedAt, msg.ModifiedAt)
 					}
 
-					mockRepo.ExpectQuery(regexp.QuoteMeta(regexp.QuoteMeta("SELECT MessageID, PlayerID, Platform"))).WillReturnRows(rows)
+					mockRepo.ExpectQuery("SELECT cm.MessageID, cm.PlayerID, cm.Platform").WillReturnRows(rows)
 					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) AS Count FROM ChatMessages")).WillReturnRows(sqlmock.NewRows([]string{"Count"}).
 						AddRow(10))
 				})
@@ -380,7 +380,7 @@ func Test(t *testing.T) {
 
 			g.Describe("No results found", func() {
 				g.BeforeEach(func() {
-					mockRepo.ExpectQuery("SELECT MessageID, PlayerID, Platform").WillReturnRows(sqlmock.NewRows(cols))
+					mockRepo.ExpectQuery("SELECT cm.MessageID, cm.PlayerID, cm.Platform").WillReturnRows(sqlmock.NewRows(cols))
 				})
 
 				g.It("Should not return an error", func() {
@@ -402,7 +402,7 @@ func Test(t *testing.T) {
 
 			g.Describe("Database error", func() {
 				g.BeforeEach(func() {
-					mockRepo.ExpectQuery("SELECT MessageID, PlayerID, Platform").WillReturnError(fmt.Errorf("err"))
+					mockRepo.ExpectQuery("SELECT cm.MessageID, cm.PlayerID, cm.Platform").WillReturnError(fmt.Errorf("err"))
 				})
 
 				g.It("Should return an error", func() {
@@ -415,7 +415,7 @@ func Test(t *testing.T) {
 
 			g.Describe("TSQuery error", func() {
 				g.BeforeEach(func() {
-					mockRepo.ExpectQuery("SELECT MessageID, PlayerID, Platform").WillReturnError(fmt.Errorf("syntax error in tsquery"))
+					mockRepo.ExpectQuery("SELECT cm.MessageID, cm.PlayerID, cm.Platform").WillReturnError(fmt.Errorf("syntax error in tsquery"))
 				})
 
 				g.It("Should return a domain.ErrInvalidQuery error", func() {
