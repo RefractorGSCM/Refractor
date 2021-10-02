@@ -40,8 +40,9 @@ func ApplyGameHandler(apiGroup *echo.Group, s domain.GameService, mware domain.M
 }
 
 type resGame struct {
-	Name     string `json:"name"`
-	Platform string `json:"platform"`
+	Name        string `json:"name"`
+	Platform    string `json:"platform"`
+	ChatEnabled bool   `json:"chat_enabled"`
 }
 
 func (h *gameHandler) GetGames(c echo.Context) error {
@@ -50,8 +51,9 @@ func (h *gameHandler) GetGames(c echo.Context) error {
 	var res []*resGame
 	for _, g := range allGames {
 		res = append(res, &resGame{
-			Name:     g.GetName(),
-			Platform: g.GetPlatform().GetName(),
+			Name:        g.GetName(),
+			Platform:    g.GetPlatform().GetName(),
+			ChatEnabled: g.GetConfig().EnableChat,
 		})
 	}
 
