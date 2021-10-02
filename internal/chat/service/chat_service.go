@@ -21,6 +21,7 @@ import (
 	"Refractor/authcheckers"
 	"Refractor/domain"
 	"context"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"time"
 )
@@ -139,6 +140,10 @@ func (s *chatService) GetRecentByServer(c context.Context, serverID int64, count
 
 	results, err := s.repo.GetRecentByServer(ctx, serverID, count)
 	if err != nil {
+		if errors.Cause(err) == domain.ErrNotFound {
+			return []*domain.ChatMessage{}, nil
+		}
+
 		return nil, err
 	}
 
