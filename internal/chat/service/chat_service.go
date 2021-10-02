@@ -139,6 +139,10 @@ func (s *chatService) GetRecentByServer(c context.Context, serverID int64, count
 
 	results, err := s.repo.GetRecentByServer(ctx, serverID, count)
 	if err != nil {
+		if err == domain.ErrNotFound {
+			return []*domain.ChatMessage{}, nil
+		}
+
 		return nil, err
 	}
 

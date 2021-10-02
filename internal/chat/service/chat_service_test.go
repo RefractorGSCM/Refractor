@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"github.com/franela/goblin"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -336,10 +335,11 @@ func Test(t *testing.T) {
 						Return(nil, domain.ErrNotFound)
 				})
 
-				g.It("Should return domain.ErrNotFound error", func() {
-					_, err := service.GetRecentByServer(ctx, 1, 10)
+				g.It("Should not return an error, and should return an empty slice", func() {
+					got, err := service.GetRecentByServer(ctx, 1, 10)
 
-					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal([]*domain.ChatMessage{}))
 					repo.AssertExpectations(t)
 				})
 			})
