@@ -25,15 +25,15 @@ type FlaggedWord struct {
 }
 
 type FlaggedWordRepo interface {
-	Store(ctx context.Context, word string) error
+	Store(ctx context.Context, word *FlaggedWord) error
 	GetAll(ctx context.Context) ([]*FlaggedWord, error)
-	Update(ctx context.Context, newWord string) (*FlaggedWord, error)
+	Update(ctx context.Context, id int64, newWord string) (*FlaggedWord, error)
 	Delete(ctx context.Context, id int64) error
 }
 
 type FlaggedWordService interface {
-	Store(c context.Context, word string) error
+	Store(c context.Context, word *FlaggedWord) error
 	GetAll(c context.Context) ([]*FlaggedWord, error)
-	Update(c context.Context, newWord string) (*FlaggedWord, error)
+	Update(c context.Context, id int64, newWord string) (*FlaggedWord, error)
 	Delete(c context.Context, id int64) error
 }
