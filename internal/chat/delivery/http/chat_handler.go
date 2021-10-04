@@ -20,6 +20,8 @@ package http
 import (
 	"Refractor/authcheckers"
 	"Refractor/domain"
+	"Refractor/params"
+	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/perms"
 	"fmt"
@@ -30,19 +32,26 @@ import (
 )
 
 type chatHandler struct {
-	service domain.ChatService
-	logger  *zap.Logger
+	service            domain.ChatService
+	flaggedWordService domain.FlaggedWordService
+	logger             *zap.Logger
 }
 
 func ApplyChatHandler(apiGroup *echo.Group, service domain.ChatService,
-	authorizer domain.Authorizer, mware domain.Middleware, log *zap.Logger) {
+	fws domain.FlaggedWordService, authorizer domain.Authorizer, mware domain.Middleware, log *zap.Logger) {
 	handler := &chatHandler{
-		service: service,
-		logger:  log,
+		service:            service,
+		flaggedWordService: fws,
+		logger:             log,
 	}
 
 	// Create the chat routing group
 	chatGroup := apiGroup.Group("/chat", mware.ProtectMiddleware, mware.ActivationMiddleware)
+
+	// Create an app enforcer to authorize the user on the various chat endpoints
+	rEnforcer := middleware.NewEnforcer(authorizer, domain.AuthScope{
+		Type: domain.AuthObjRefractor,
+	}, log)
 
 	// Create a server enforcer to authorize the user on the various chat endpoints
 	sEnforcer := middleware.NewEnforcer(authorizer, domain.AuthScope{
@@ -52,6 +61,10 @@ func ApplyChatHandler(apiGroup *echo.Group, service domain.ChatService,
 
 	chatGroup.GET("/recent/:serverId", handler.GetRecentServerMessages,
 		sEnforcer.CheckAuth(authcheckers.HasOneOfPermissions(true, perms.FlagReadLiveChat, perms.FlagViewChatRecords)))
+	chatGroup.GET("/flagged", handler.GetAllFlaggedWords, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
+	chatGroup.POST("/flagged", handler.CreateFlaggedWord, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
+	chatGroup.PATCH("/flagged/:id", handler.UpdateFlaggedWord, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
+	chatGroup.DELETE("/flagged/:id", handler.DeleteFlaggedWord, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
 }
 
 const defaultRecentMessagesCount = 20
@@ -97,5 +110,91 @@ func (h *chatHandler) GetRecentServerMessages(c echo.Context) error {
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
 		Payload: messages,
+	})
+}
+
+func (h *chatHandler) GetAllFlaggedWords(c echo.Context) error {
+	allFlaggedWords, err := h.flaggedWordService.GetAll(c.Request().Context())
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Payload: allFlaggedWords,
+	})
+}
+
+func (h *chatHandler) CreateFlaggedWord(c echo.Context) error {
+	// Validate request body
+	var body params.CreateFlaggedWordParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	newWord := &domain.FlaggedWord{
+		Word: body.Word,
+	}
+
+	if err := h.flaggedWordService.Store(c.Request().Context(), newWord); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusCreated, &domain.Response{
+		Success: true,
+		Message: "Created",
+		Payload: newWord,
+	})
+}
+
+func (h *chatHandler) UpdateFlaggedWord(c echo.Context) error {
+	flaggedWordIDString := c.Param("id")
+
+	flaggedWordID, err := strconv.ParseInt(flaggedWordIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid flagged word id"), http.StatusBadRequest, "")
+	}
+
+	// Validate request body
+	var body params.UpdateFlaggedWordParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	updated, err := h.flaggedWordService.Update(c.Request().Context(), flaggedWordID, *body.Word)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusCreated, &domain.Response{
+		Success: true,
+		Message: "Updated",
+		Payload: updated,
+	})
+}
+
+func (h *chatHandler) DeleteFlaggedWord(c echo.Context) error {
+	flaggedWordIDString := c.Param("id")
+
+	flaggedWordID, err := strconv.ParseInt(flaggedWordIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid flagged word id"), http.StatusBadRequest, "")
+	}
+
+	if err := h.flaggedWordService.Delete(c.Request().Context(), flaggedWordID); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Deleted",
 	})
 }

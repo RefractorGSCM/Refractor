@@ -37,6 +37,10 @@ func RequireAdmin(permissions *bitperms.Permissions) (bool, error) {
 		return true, nil
 	}
 
+	if permissions.CheckFlag(perms.GetFlag(perms.FlagSuperAdmin)) {
+		return true, nil
+	}
+
 	return false, nil
 }
 

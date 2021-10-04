@@ -30,6 +30,8 @@ import (
 	_chatHandler "Refractor/internal/chat/delivery/http"
 	_chatRepo "Refractor/internal/chat/repos/postgres"
 	_chatService "Refractor/internal/chat/service"
+	_flaggedWordRepo "Refractor/internal/flaggedword/repos/postgres"
+	_flaggedWordService "Refractor/internal/flaggedword/service"
 	_gameHandler "Refractor/internal/game/delivery/http"
 	_gameService "Refractor/internal/game/service"
 	_groupHandler "Refractor/internal/group/delivery/http"
@@ -184,9 +186,12 @@ func main() {
 		attachmentRepo, userMetaRepo, authorizer, time.Second*2, logger)
 	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
 
+	flaggedWordRepo := _flaggedWordRepo.NewFlaggedWordRepo(db, logger)
+	flaggedWordService := _flaggedWordService.NewFlaggedWordService(flaggedWordRepo, time.Second*2, logger)
+
 	chatRepo := _chatRepo.NewChatRepo(db, logger)
 	chatService := _chatService.NewChatService(chatRepo, playerRepo, playerNameRepo, websocketService, time.Second*2, logger)
-	_chatHandler.ApplyChatHandler(apiGroup, chatService, authorizer, middlewareBundle, logger)
+	_chatHandler.ApplyChatHandler(apiGroup, chatService, flaggedWordService, authorizer, middlewareBundle, logger)
 
 	searchService := _searchService.NewSearchService(playerRepo, playerNameRepo, infractionRepo, chatRepo, time.Second*2, logger)
 	_searchHandler.ApplySearchHandler(apiGroup, searchService, authorizer, middlewareBundle, logger)
