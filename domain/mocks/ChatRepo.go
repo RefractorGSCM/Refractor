@@ -37,6 +37,29 @@ func (_m *ChatRepo) GetByID(ctx context.Context, id int64) (*domain.ChatMessage,
 	return r0, r1
 }
 
+// GetFlaggedMessages provides a mock function with given fields: ctx, count, serverIDs
+func (_m *ChatRepo) GetFlaggedMessages(ctx context.Context, count int, serverIDs []int64) ([]*domain.ChatMessage, error) {
+	ret := _m.Called(ctx, count, serverIDs)
+
+	var r0 []*domain.ChatMessage
+	if rf, ok := ret.Get(0).(func(context.Context, int, []int64) []*domain.ChatMessage); ok {
+		r0 = rf(ctx, count, serverIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*domain.ChatMessage)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int, []int64) error); ok {
+		r1 = rf(ctx, count, serverIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetRecentByServer provides a mock function with given fields: ctx, serverID, count
 func (_m *ChatRepo) GetRecentByServer(ctx context.Context, serverID int64, count int) ([]*domain.ChatMessage, error) {
 	ret := _m.Called(ctx, serverID, count)

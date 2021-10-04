@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/franela/goblin"
 	. "github.com/onsi/gomega"
+	kratos "github.com/ory/kratos-client-go"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -42,8 +43,10 @@ func Test(t *testing.T) {
 		var repo *mocks.ChatRepo
 		var playerRepo *mocks.PlayerRepo
 		var playerNameRepo *mocks.PlayerNameRepo
+		var serverService *mocks.ServerService
 		var websocketService *mocks.WebsocketService
 		var flaggedWordService *mocks.FlaggedWordService
+		var authorizer *mocks.Authorizer
 		var service *chatService
 		var ctx context.Context
 
@@ -51,15 +54,19 @@ func Test(t *testing.T) {
 			repo = new(mocks.ChatRepo)
 			playerRepo = new(mocks.PlayerRepo)
 			playerNameRepo = new(mocks.PlayerNameRepo)
+			serverService = new(mocks.ServerService)
 			websocketService = new(mocks.WebsocketService)
 			flaggedWordService = new(mocks.FlaggedWordService)
+			authorizer = new(mocks.Authorizer)
 
 			service = &chatService{
 				repo:               repo,
 				playerRepo:         playerRepo,
 				playerNameRepo:     playerNameRepo,
+				serverService:      serverService,
 				websocketService:   websocketService,
 				flaggedWordService: flaggedWordService,
+				authorizer:         authorizer,
 				timeout:            time.Second * 2,
 				logger:             zap.NewNop(),
 			}
@@ -349,6 +356,173 @@ func Test(t *testing.T) {
 					Expect(err).To(BeNil())
 					Expect(got).To(Equal([]*domain.ChatMessage{}))
 					repo.AssertExpectations(t)
+				})
+			})
+		})
+
+		g.Describe("GetFlaggedMessages()", func() {
+			var servers []*domain.Server
+			var messages []*domain.ChatMessage
+
+			g.BeforeEach(func() {
+				servers = []*domain.Server{
+					{
+						ID: 1,
+					},
+					{
+						ID: 2,
+					},
+					{
+						ID: 3,
+					},
+				}
+
+				messages = []*domain.ChatMessage{
+					{
+						MessageID: 1,
+						PlayerID:  "playerid1",
+						Platform:  "platform",
+						ServerID:  1,
+						Message:   "message 1",
+						Flagged:   true,
+					},
+					{
+						MessageID: 2,
+						PlayerID:  "playerid2",
+						Platform:  "platform",
+						ServerID:  1,
+						Message:   "message 2",
+						Flagged:   true,
+					},
+					{
+						MessageID: 3,
+						PlayerID:  "playerid3",
+						Platform:  "platform",
+						ServerID:  3,
+						Message:   "message 3",
+						Flagged:   true,
+					},
+				}
+			})
+
+			g.Describe("User was not provided in context", func() {
+				g.AfterEach(func() {
+					authorizer.AssertNotCalled(t, "HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+				})
+
+				g.Describe("Results found", func() {
+					g.BeforeEach(func() {
+						serverService.On("GetAll", mock.Anything).Return(servers, nil)
+						repo.On("GetFlaggedMessages", mock.Anything, mock.Anything, mock.Anything).Return(messages, nil)
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := service.GetFlaggedMessages(ctx, 20)
+
+						Expect(err).To(BeNil())
+						serverService.AssertExpectations(t)
+						repo.AssertExpectations(t)
+					})
+
+					g.It("Should return the correct results", func() {
+						got, err := service.GetFlaggedMessages(ctx, 20)
+
+						Expect(err).To(BeNil())
+						Expect(got).To(Equal(messages))
+						serverService.AssertExpectations(t)
+						repo.AssertExpectations(t)
+					})
+				})
+
+				g.Describe("No servers found", func() {
+					g.BeforeEach(func() {
+						serverService.On("GetAll", mock.Anything).Return(nil, domain.ErrNotFound)
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := service.GetFlaggedMessages(ctx, 20)
+
+						Expect(err).To(BeNil())
+						serverService.AssertExpectations(t)
+					})
+
+					g.It("Should return an empty slice", func() {
+						got, err := service.GetFlaggedMessages(ctx, 20)
+
+						Expect(err).To(BeNil())
+						Expect(got).To(Equal([]*domain.ChatMessage{}))
+						serverService.AssertExpectations(t)
+					})
+				})
+
+				g.Describe("No results found", func() {
+					g.BeforeEach(func() {
+						serverService.On("GetAll", mock.Anything).Return(servers, nil)
+						repo.On("GetFlaggedMessages", mock.Anything, mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := service.GetFlaggedMessages(ctx, 20)
+
+						Expect(err).To(BeNil())
+						serverService.AssertExpectations(t)
+					})
+
+					g.It("Should return an empty slice", func() {
+						got, err := service.GetFlaggedMessages(ctx, 20)
+
+						Expect(err).To(BeNil())
+						Expect(got).To(Equal([]*domain.ChatMessage{}))
+						serverService.AssertExpectations(t)
+					})
+				})
+			})
+
+			g.Describe("User was provided in context", func() {
+				g.BeforeEach(func() {
+					au := &domain.AuthUser{
+						Session: &kratos.Session{
+							Identity: kratos.Identity{
+								Id: "testuserid",
+							},
+						},
+					}
+
+					ctx = context.WithValue(ctx, "user", au)
+				})
+
+				g.Describe("Results were found", func() {
+					g.BeforeEach(func() {
+						messages = append([]*domain.ChatMessage{}, messages[0], messages[2])
+
+						serverService.On("GetAll", mock.Anything).Return(servers, nil)
+						repo.On("GetFlaggedMessages", mock.Anything, mock.Anything, mock.Anything).Return(messages, nil)
+						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+							Return(true, nil).Once() // server ID 1
+						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+							Return(false, nil).Once() // server ID 2
+						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+							Return(true, nil).Once() // server ID 3
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := service.GetFlaggedMessages(ctx, 20)
+
+						Expect(err).To(BeNil())
+						serverService.AssertExpectations(t)
+						authorizer.AssertExpectations(t)
+						repo.AssertExpectations(t)
+					})
+
+					g.It("Should return the correct values", func() {
+						got, err := service.GetFlaggedMessages(ctx, 20)
+
+						Expect(err).To(BeNil())
+						Expect(got).To(Equal(messages))
+						serverService.AssertExpectations(t)
+						authorizer.AssertExpectations(t)
+						repo.AssertExpectations(t)
+					})
 				})
 			})
 		})

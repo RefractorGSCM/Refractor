@@ -141,6 +141,10 @@ func (r *serverRepo) GetAll(ctx context.Context) ([]*domain.Server, error) {
 		return nil, errors.Wrap(err, op)
 	}
 
+	if len(results) < 1 {
+		return nil, errors.Wrap(domain.ErrNotFound, op)
+	}
+
 	return results, nil
 }
 
