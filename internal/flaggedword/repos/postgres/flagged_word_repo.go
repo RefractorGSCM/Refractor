@@ -28,8 +28,9 @@ import (
 const opTag = "FlaggedWordRepo.Postgres."
 
 type repo struct {
-	db     *sql.DB
-	logger *zap.Logger
+	db           *sql.DB
+	logger       *zap.Logger
+	flaggedWords map[int64]*domain.FlaggedWord
 }
 
 func NewFlaggedWordRepo(db *sql.DB, log *zap.Logger) domain.FlaggedWordRepo {
@@ -101,6 +102,10 @@ func (r *repo) Store(ctx context.Context, word *domain.FlaggedWord) error {
 func (r *repo) GetAll(ctx context.Context) ([]*domain.FlaggedWord, error) {
 	const op = opTag + "GetAll"
 
+	if len(r.flaggedWords) > 0 {
+		return r.getFromCache(), nil
+	}
+
 	query := "SELECT * FROM FlaggedWords;"
 
 	results, err := r.fetch(ctx, query)
@@ -138,6 +143,9 @@ func (r *repo) Update(ctx context.Context, id int64, newWord string) (*domain.Fl
 		return nil, errors.Wrap(err, op)
 	}
 
+	// Update in cache
+	r.flaggedWords[updated.ID] = updated
+
 	return updated, nil
 }
 
@@ -162,7 +170,20 @@ func (r *repo) Delete(ctx context.Context, id int64) error {
 		return errors.Wrap(domain.ErrNotFound, op)
 	}
 
+	// Delete from cache
+	delete(r.flaggedWords, id)
+
 	return nil
+}
+
+func (r *repo) getFromCache() []*domain.FlaggedWord {
+	var words []*domain.FlaggedWord
+
+	for _, word := range r.flaggedWords {
+		words = append(words, word)
+	}
+
+	return words
 }
 
 // Scan helpers
