@@ -27,29 +27,40 @@ import (
 )
 
 type chatService struct {
-	repo             domain.ChatRepo
-	playerRepo       domain.PlayerRepo
-	playerNameRepo   domain.PlayerNameRepo
-	websocketService domain.WebsocketService
-	timeout          time.Duration
-	logger           *zap.Logger
+	repo               domain.ChatRepo
+	playerRepo         domain.PlayerRepo
+	playerNameRepo     domain.PlayerNameRepo
+	websocketService   domain.WebsocketService
+	flaggedWordService domain.FlaggedWordService
+	timeout            time.Duration
+	logger             *zap.Logger
 }
 
 func NewChatService(repo domain.ChatRepo, pr domain.PlayerRepo, pnr domain.PlayerNameRepo, wss domain.WebsocketService,
-	to time.Duration, log *zap.Logger) domain.ChatService {
+	fws domain.FlaggedWordService, to time.Duration, log *zap.Logger) domain.ChatService {
 	return &chatService{
-		repo:             repo,
-		playerRepo:       pr,
-		playerNameRepo:   pnr,
-		websocketService: wss,
-		timeout:          to,
-		logger:           log,
+		repo:               repo,
+		playerRepo:         pr,
+		playerNameRepo:     pnr,
+		websocketService:   wss,
+		flaggedWordService: fws,
+		timeout:            to,
+		logger:             log,
 	}
 }
 
 func (s *chatService) Store(c context.Context, message *domain.ChatMessage) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
+
+	// Check if this message contains any flagged words
+	shouldBeFlagged, err := s.flaggedWordService.MessageContainsFlaggedWord(ctx, message.Message)
+	if err != nil {
+		s.logger.Error("Could not check if message contains flagged word", zap.Error(err))
+		// do not return as this is not a critical error and storing the chat message is more important than flagging it
+	}
+
+	message.Flagged = shouldBeFlagged
 
 	return s.repo.Store(ctx, message)
 }
