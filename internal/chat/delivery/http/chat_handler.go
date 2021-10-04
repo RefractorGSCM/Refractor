@@ -24,6 +24,7 @@ import (
 	"Refractor/pkg/api"
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/perms"
+	"context"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -65,6 +66,7 @@ func ApplyChatHandler(apiGroup *echo.Group, service domain.ChatService,
 	chatGroup.POST("/flagged", handler.CreateFlaggedWord, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
 	chatGroup.PATCH("/flagged/:id", handler.UpdateFlaggedWord, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
 	chatGroup.DELETE("/flagged/:id", handler.DeleteFlaggedWord, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
+	chatGroup.GET("/recent/flagged", handler.GetRecentFlaggedMessages)
 }
 
 const defaultRecentMessagesCount = 20
@@ -196,5 +198,23 @@ func (h *chatHandler) DeleteFlaggedWord(c echo.Context) error {
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
 		Message: "Deleted",
+	})
+}
+
+func (h *chatHandler) GetRecentFlaggedMessages(c echo.Context) error {
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	ctx := context.WithValue(c.Request().Context(), "user", user)
+	messages, err := h.service.GetFlaggedMessages(ctx, 10)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Payload: messages,
 	})
 }

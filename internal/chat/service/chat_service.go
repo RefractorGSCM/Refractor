@@ -20,6 +20,7 @@ package service
 import (
 	"Refractor/authcheckers"
 	"Refractor/domain"
+	"Refractor/pkg/perms"
 	"context"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -30,20 +31,24 @@ type chatService struct {
 	repo               domain.ChatRepo
 	playerRepo         domain.PlayerRepo
 	playerNameRepo     domain.PlayerNameRepo
+	serverService      domain.ServerService
 	websocketService   domain.WebsocketService
 	flaggedWordService domain.FlaggedWordService
+	authorizer         domain.Authorizer
 	timeout            time.Duration
 	logger             *zap.Logger
 }
 
-func NewChatService(repo domain.ChatRepo, pr domain.PlayerRepo, pnr domain.PlayerNameRepo, wss domain.WebsocketService,
-	fws domain.FlaggedWordService, to time.Duration, log *zap.Logger) domain.ChatService {
+func NewChatService(repo domain.ChatRepo, pr domain.PlayerRepo, pnr domain.PlayerNameRepo, ss domain.ServerService,
+	wss domain.WebsocketService, fws domain.FlaggedWordService, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.ChatService {
 	return &chatService{
 		repo:               repo,
 		playerRepo:         pr,
 		playerNameRepo:     pnr,
+		serverService:      ss,
 		websocketService:   wss,
 		flaggedWordService: fws,
+		authorizer:         a,
 		timeout:            to,
 		logger:             log,
 	}
@@ -171,6 +176,67 @@ func (s *chatService) GetRecentByServer(c context.Context, serverID int64, count
 		}
 
 		msg.Name = currentName
+	}
+
+	return results, nil
+}
+
+// GetFlaggedMessages returns n (count) amount of recent flagged messages.
+//
+// If a user is provided in context under the key "user", the user will be authorized against servers by their ability
+// to view chat records.
+//
+// If no user is provided, we assume this is a system call and skip authorization.
+func (s *chatService) GetFlaggedMessages(c context.Context, count int) ([]*domain.ChatMessage, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	// Get servers the user has permission to view chat records of
+	allServers, err := s.serverService.GetAll(ctx)
+	if err != nil {
+		if errors.Cause(err) == domain.ErrNotFound {
+			return []*domain.ChatMessage{}, nil
+		}
+
+		return nil, err
+	}
+	user, checkAuth := ctx.Value("user").(*domain.AuthUser)
+
+	var authorizedServers []int64
+
+	for _, server := range allServers {
+		if server.Deactivated {
+			continue
+		}
+
+		if checkAuth {
+			hasPermission, err := s.authorizer.HasPermission(ctx, domain.AuthScope{
+				Type: domain.AuthObjServer,
+				ID:   server.ID,
+			}, user.Identity.Id, authcheckers.HasPermission(perms.FlagViewChatRecords, true))
+			if err != nil {
+				s.logger.Error("Could not check if user has permission to view chat records on this server",
+					zap.Error(err))
+				return nil, err
+			}
+
+			if hasPermission {
+				authorizedServers = append(authorizedServers, server.ID)
+			}
+			continue
+		}
+
+		// if we're not checking auth, just add server to the list
+		authorizedServers = append(authorizedServers, server.ID)
+	}
+
+	results, err := s.repo.GetFlaggedMessages(ctx, count, authorizedServers)
+	if err != nil {
+		if errors.Cause(err) == domain.ErrNotFound {
+			return []*domain.ChatMessage{}, nil
+		}
+
+		return nil, err
 	}
 
 	return results, nil
