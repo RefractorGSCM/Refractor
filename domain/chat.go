@@ -75,4 +75,5 @@ type FlaggedWordService interface {
 	GetAll(c context.Context) ([]*FlaggedWord, error)
 	Update(c context.Context, id int64, newWord string) (*FlaggedWord, error)
 	Delete(c context.Context, id int64) error
+	MessageContainsFlaggedWord(c context.Context, message string) (bool, error)
 }
