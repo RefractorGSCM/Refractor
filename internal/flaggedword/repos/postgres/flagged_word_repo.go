@@ -126,7 +126,7 @@ func (r *repo) Update(ctx context.Context, id int64, newWord string) (*domain.Fl
 		return nil, errors.Wrap(err, op)
 	}
 
-	row := stmt.QueryRowContext(ctx, id)
+	row := stmt.QueryRowContext(ctx, newWord, id)
 
 	updated := &domain.FlaggedWord{}
 	if err := r.scanRow(row, updated); err != nil {
