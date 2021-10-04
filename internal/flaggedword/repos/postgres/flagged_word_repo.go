@@ -35,8 +35,9 @@ type repo struct {
 
 func NewFlaggedWordRepo(db *sql.DB, log *zap.Logger) domain.FlaggedWordRepo {
 	return &repo{
-		db:     db,
-		logger: log,
+		db:           db,
+		logger:       log,
+		flaggedWords: map[int64]*domain.FlaggedWord{},
 	}
 }
 

@@ -259,5 +259,116 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("MessageContainsFlaggedWord()", func() {
+			g.Describe("Message contains flagged word", func() {
+				var flaggedWords []*domain.FlaggedWord
+
+				g.BeforeEach(func() {
+					flaggedWords = []*domain.FlaggedWord{
+						{
+							ID:   1,
+							Word: "test",
+						},
+						{
+							ID:   2,
+							Word: "fLAG",
+						},
+						{
+							ID:   3,
+							Word: "WorD",
+						},
+					}
+
+					repo.On("GetAll", mock.Anything).Return(flaggedWords, nil)
+				})
+
+				g.Describe("Message contains flagged word of the same case", func() {
+					var message string
+
+					g.BeforeEach(func() {
+						message = "this is a test message"
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := service.MessageContainsFlaggedWord(ctx, message)
+
+						Expect(err).To(BeNil())
+						repo.AssertExpectations(t)
+					})
+
+					g.It("Should return true", func() {
+						containsFlaggedWord, err := service.MessageContainsFlaggedWord(ctx, message)
+
+						Expect(err).To(BeNil())
+						Expect(containsFlaggedWord).To(BeTrue())
+						repo.AssertExpectations(t)
+					})
+				})
+
+				g.Describe("Message contains flagged word of mixed case", func() {
+					var message string
+
+					g.BeforeEach(func() {
+						message = "this is a TeST message flag"
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := service.MessageContainsFlaggedWord(ctx, message)
+
+						Expect(err).To(BeNil())
+						repo.AssertExpectations(t)
+					})
+
+					g.It("Should return true", func() {
+						containsFlaggedWord, err := service.MessageContainsFlaggedWord(ctx, message)
+
+						Expect(err).To(BeNil())
+						Expect(containsFlaggedWord).To(BeTrue())
+						repo.AssertExpectations(t)
+					})
+				})
+			})
+
+			g.Describe("Message does not contain any flagged words", func() {
+				var flaggedWords []*domain.FlaggedWord
+				var message string
+
+				g.BeforeEach(func() {
+					flaggedWords = []*domain.FlaggedWord{
+						{
+							ID:   1,
+							Word: "test",
+						},
+						{
+							ID:   2,
+							Word: "FlaG",
+						},
+						{
+							ID:   3,
+							Word: "WorD",
+						},
+					}
+
+					repo.On("GetAll", mock.Anything).Return(flaggedWords, nil)
+					message = "does not contain any flagged messages"
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.MessageContainsFlaggedWord(ctx, message)
+
+					Expect(err).To(BeNil())
+					repo.AssertExpectations(t)
+				})
+
+				g.It("Should return false", func() {
+					containsFlaggedWord, err := service.MessageContainsFlaggedWord(ctx, message)
+
+					Expect(err).To(BeNil())
+					Expect(containsFlaggedWord).To(BeFalse())
+					repo.AssertExpectations(t)
+				})
+			})
+		})
 	})
 }
