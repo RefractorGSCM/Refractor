@@ -15,25 +15,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package domain
+package params
 
-import "context"
+import (
+	validation "github.com/go-ozzo/ozzo-validation"
+)
 
-type FlaggedWord struct {
-	ID   int64  `json:"id"`
-	Word string `json:"word"`
+type CreateFlaggedWordParams struct {
+	Word string `json:"string"`
 }
 
-type FlaggedWordRepo interface {
-	Store(ctx context.Context, word *FlaggedWord) error
-	GetAll(ctx context.Context) ([]*FlaggedWord, error)
-	Update(ctx context.Context, id int64, newWord string) (*FlaggedWord, error)
-	Delete(ctx context.Context, id int64) error
+func (body CreateFlaggedWordParams) Validate() error {
+	return ValidateStruct(&body,
+		validation.Field(&body.Word, validation.Required, validation.Length(1, 100)))
 }
 
-type FlaggedWordService interface {
-	Store(c context.Context, word *FlaggedWord) error
-	GetAll(c context.Context) ([]*FlaggedWord, error)
-	Update(c context.Context, id int64, newWord string) (*FlaggedWord, error)
-	Delete(c context.Context, id int64) error
+type UpdateFlaggedWordParams struct {
+	Word *string `json:"string"`
+}
+
+func (body UpdateFlaggedWordParams) Validate() error {
+	return ValidateStruct(&body,
+		validation.Field(&body.Word, validation.Length(1, 100)))
 }

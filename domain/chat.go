@@ -57,3 +57,22 @@ type ChatService interface {
 	HandleChatReceive(body *ChatReceiveBody, serverID int64, game Game)
 	HandleUserSendChat(body *ChatSendBody)
 }
+
+type FlaggedWord struct {
+	ID   int64  `json:"id"`
+	Word string `json:"word"`
+}
+
+type FlaggedWordRepo interface {
+	Store(ctx context.Context, word *FlaggedWord) error
+	GetAll(ctx context.Context) ([]*FlaggedWord, error)
+	Update(ctx context.Context, id int64, newWord string) (*FlaggedWord, error)
+	Delete(ctx context.Context, id int64) error
+}
+
+type FlaggedWordService interface {
+	Store(c context.Context, word *FlaggedWord) error
+	GetAll(c context.Context) ([]*FlaggedWord, error)
+	Update(c context.Context, id int64, newWord string) (*FlaggedWord, error)
+	Delete(c context.Context, id int64) error
+}

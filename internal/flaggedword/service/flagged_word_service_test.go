@@ -141,18 +141,11 @@ func Test(t *testing.T) {
 					repo.On("GetAll", mock.Anything).Return(nil, domain.ErrNotFound)
 				})
 
-				g.It("Should return a domain.ErrNotFound error", func() {
-					_, err := service.GetAll(ctx)
-
-					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
-					repo.AssertExpectations(t)
-				})
-
-				g.It("Should return nil", func() {
+				g.It("Should return an empty array and no error", func() {
 					got, err := service.GetAll(ctx)
 
-					Expect(err).ToNot(BeNil())
-					Expect(got).To(BeNil())
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal([]*domain.FlaggedWord{}))
 					repo.AssertExpectations(t)
 				})
 			})

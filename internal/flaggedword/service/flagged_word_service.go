@@ -20,6 +20,7 @@ package service
 import (
 	"Refractor/domain"
 	"context"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"time"
 )
@@ -49,7 +50,16 @@ func (s *flaggedWordService) GetAll(c context.Context) ([]*domain.FlaggedWord, e
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.GetAll(ctx)
+	flaggedWords, err := s.repo.GetAll(ctx)
+	if err != nil {
+		if errors.Cause(err) == domain.ErrNotFound {
+			return []*domain.FlaggedWord{}, nil
+		}
+
+		return nil, err
+	}
+
+	return flaggedWords, nil
 }
 
 func (s *flaggedWordService) Update(c context.Context, id int64, newWord string) (*domain.FlaggedWord, error) {
