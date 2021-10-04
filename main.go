@@ -190,7 +190,7 @@ func main() {
 	flaggedWordService := _flaggedWordService.NewFlaggedWordService(flaggedWordRepo, time.Second*2, logger)
 
 	chatRepo := _chatRepo.NewChatRepo(db, logger)
-	chatService := _chatService.NewChatService(chatRepo, playerRepo, playerNameRepo, websocketService, time.Second*2, logger)
+	chatService := _chatService.NewChatService(chatRepo, playerRepo, playerNameRepo, websocketService, flaggedWordService, time.Second*2, logger)
 	_chatHandler.ApplyChatHandler(apiGroup, chatService, flaggedWordService, authorizer, middlewareBundle, logger)
 
 	searchService := _searchService.NewSearchService(playerRepo, playerNameRepo, infractionRepo, chatRepo, time.Second*2, logger)

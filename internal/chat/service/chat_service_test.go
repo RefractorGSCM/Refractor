@@ -43,6 +43,7 @@ func Test(t *testing.T) {
 		var playerRepo *mocks.PlayerRepo
 		var playerNameRepo *mocks.PlayerNameRepo
 		var websocketService *mocks.WebsocketService
+		var flaggedWordService *mocks.FlaggedWordService
 		var service *chatService
 		var ctx context.Context
 
@@ -51,14 +52,16 @@ func Test(t *testing.T) {
 			playerRepo = new(mocks.PlayerRepo)
 			playerNameRepo = new(mocks.PlayerNameRepo)
 			websocketService = new(mocks.WebsocketService)
+			flaggedWordService = new(mocks.FlaggedWordService)
 
 			service = &chatService{
-				repo:             repo,
-				playerRepo:       playerRepo,
-				playerNameRepo:   playerNameRepo,
-				websocketService: websocketService,
-				timeout:          time.Second * 2,
-				logger:           zap.NewNop(),
+				repo:               repo,
+				playerRepo:         playerRepo,
+				playerNameRepo:     playerNameRepo,
+				websocketService:   websocketService,
+				flaggedWordService: flaggedWordService,
+				timeout:            time.Second * 2,
+				logger:             zap.NewNop(),
 			}
 
 			ctx = context.TODO()
@@ -79,6 +82,7 @@ func Test(t *testing.T) {
 
 			g.Describe("Successful store", func() {
 				g.BeforeEach(func() {
+					flaggedWordService.On("MessageContainsFlaggedWord", mock.Anything, mock.Anything).Return(false, nil)
 					repo.On("Store", mock.Anything, mock.Anything).Return(nil)
 				})
 
@@ -92,6 +96,7 @@ func Test(t *testing.T) {
 
 			g.Describe("Repo error", func() {
 				g.BeforeEach(func() {
+					flaggedWordService.On("MessageContainsFlaggedWord", mock.Anything, mock.Anything).Return(false, nil)
 					repo.On("Store", mock.Anything, mock.Anything).Return(fmt.Errorf("err"))
 				})
 
@@ -133,6 +138,7 @@ func Test(t *testing.T) {
 						Platform:    body.Platform,
 						CurrentName: body.Name,
 					}, nil)
+					flaggedWordService.On("MessageContainsFlaggedWord", mock.Anything, mock.Anything).Return(false, nil)
 					repo.On("Store", mock.Anything, mock.Anything).Return(nil)
 				})
 
@@ -159,6 +165,7 @@ func Test(t *testing.T) {
 						CurrentName: body.Name,
 					}, nil)
 					repo.On("Store", mock.Anything, mock.Anything).Return(nil)
+					flaggedWordService.On("MessageContainsFlaggedWord", mock.Anything, mock.Anything).Return(false, nil)
 				})
 
 				g.It("Should only log one error of level Warning", func() {
@@ -205,6 +212,7 @@ func Test(t *testing.T) {
 						CurrentName: body.Name,
 					}, nil)
 					repo.On("Store", mock.Anything, mock.Anything).Return(fmt.Errorf("repo err"))
+					flaggedWordService.On("MessageContainsFlaggedWord", mock.Anything, mock.Anything).Return(false, nil)
 				})
 
 				g.It("Should only log one error of level Error", func() {
