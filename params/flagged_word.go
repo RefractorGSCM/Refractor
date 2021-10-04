@@ -22,7 +22,7 @@ import (
 )
 
 type CreateFlaggedWordParams struct {
-	Word string `json:"string"`
+	Word string `json:"word"`
 }
 
 func (body CreateFlaggedWordParams) Validate() error {
@@ -31,7 +31,7 @@ func (body CreateFlaggedWordParams) Validate() error {
 }
 
 type UpdateFlaggedWordParams struct {
-	Word *string `json:"string"`
+	Word *string `json:"word"`
 }
 
 func (body UpdateFlaggedWordParams) Validate() error {
