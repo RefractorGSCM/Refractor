@@ -32,6 +32,7 @@ type Config struct {
 	DBSource            string `mapstructure:"DB_SOURCE"`
 	KratosPublic        string `mapstructure:"KRATOS_PUBLIC_ROOT"`
 	KratosAdmin         string `mapstructure:"KRATOS_ADMIN_ROOT"`
+	FrontendRoot 		string `mapstructure:"FRONTEND_ROOT"`
 	Mode                string `mapstructure:"MODE"`
 	InitialUserEmail    string `mapstructure:"INITIAL_USER_EMAIL"`
 	InitialUserUsername string `mapstructure:"INITIAL_USER_USERNAME"`
@@ -49,6 +50,7 @@ func LoadConfig() (*Config, error) {
 		RequireEnv("DB_SOURCE").
 		RequireEnv("KRATOS_PUBLIC_ROOT").
 		RequireEnv("KRATOS_ADMIN_ROOT").
+		RequireEnv("FRONTEND_ROOT").
 		RequireEnv("SMTP_CONNECTION_URI").
 		RequireEnv("ENCRYPTION_KEY").
 		RequireEnv("INITIAL_USER_EMAIL").
@@ -63,6 +65,7 @@ func LoadConfig() (*Config, error) {
 		DBSource:            os.Getenv("DB_SOURCE"),
 		KratosPublic:        os.Getenv("KRATOS_PUBLIC_ROOT"),
 		KratosAdmin:         os.Getenv("KRATOS_ADMIN_ROOT"),
+		FrontendRoot:        os.Getenv("FRONTEND_ROOT"),
 		InitialUserEmail:    os.Getenv("INITIAL_USER_EMAIL"),
 		InitialUserUsername: os.Getenv("INITIAL_USER_USERNAME"),
 		SmtpConnectionUri:   os.Getenv("SMTP_CONNECTION_URI"),

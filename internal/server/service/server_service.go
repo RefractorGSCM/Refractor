@@ -25,6 +25,7 @@ import (
 	"Refractor/pkg/perms"
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"time"
 )
@@ -99,6 +100,10 @@ func (s *serverService) GetAllAccessible(c context.Context) ([]*domain.Server, e
 
 	allServers, err := s.repo.GetAll(ctx)
 	if err != nil {
+		if errors.Cause(err) == domain.ErrNotFound {
+			return []*domain.Server{}, nil
+		}
+		
 		return nil, err
 	}
 

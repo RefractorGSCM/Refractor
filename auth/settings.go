@@ -94,8 +94,8 @@ func (h *publicHandlers) SettingsHandler(c echo.Context) error {
 		Messages:           []Message{},
 		ShowProfile:        true,
 		Success:            false,
-		SuccessRedirectURL: "http://127.0.0.1:3000", // TODO: don't hardcode these values
-		BackRedirectURL:    "http://127.0.0.1:3000",
+		SuccessRedirectURL: h.config.FrontendRoot,
+		BackRedirectURL:    h.config.FrontendRoot,
 	}
 
 	// If this flow was initialized by an account recovery, we do not want to show the profile update form
