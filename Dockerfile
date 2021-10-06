@@ -11,8 +11,8 @@ ENV GO111MODULE=on \
 
 WORKDIR /build
 
-COPY ./go.mod .
-COPY ./go.sum .
+COPY src/go.mod .
+COPY src/go.sum .
 RUN go mod download
 
 COPY . .
@@ -26,6 +26,8 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /var/refractor
 
+# Create directories where folders containing static assets are located. This is likely not the ideal way to do this.
+# However, it works fine! If many more static assets are added, a more scalable solution would be warranted.
 RUN mkdir ./auth
 RUN mkdir ./auth/templates
 RUN mkdir ./auth/static

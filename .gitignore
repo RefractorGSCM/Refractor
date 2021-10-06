@@ -6,13 +6,13 @@ data/
 
 # the quickstart script will automatically create these files from their starting values
 # in the defaults folder so we don't need to track changes to them, only their defaults.
-./deploy/kratos/kratos.yml
-./deploy/postgres/init.sql
-./deploy/nginx/app.conf
-./deploy/backup
-./docker-compose.yml
+/deploy/kratos/kratos.yml
+/deploy/postgres/init.sql
+/deploy/nginx/app.conf
+/deploy/backup/
+/docker-compose.yml
 
 # Ignore frontend
-./Refractor-Svelte
+/Refractor-Svelte
 
 .neversetup
