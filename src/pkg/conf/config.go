@@ -32,7 +32,7 @@ type Config struct {
 	DBSource            string `mapstructure:"DB_SOURCE"`
 	KratosPublic        string `mapstructure:"KRATOS_PUBLIC_ROOT"`
 	KratosAdmin         string `mapstructure:"KRATOS_ADMIN_ROOT"`
-	FrontendRoot 		string `mapstructure:"FRONTEND_ROOT"`
+	FrontendRoot        string `mapstructure:"FRONTEND_ROOT"`
 	Mode                string `mapstructure:"MODE"`
 	InitialUserEmail    string `mapstructure:"INITIAL_USER_EMAIL"`
 	InitialUserUsername string `mapstructure:"INITIAL_USER_USERNAME"`
@@ -42,7 +42,7 @@ type Config struct {
 
 // LoadConfig reads configuration from a file or environment variables.
 func LoadConfig() (*Config, error) {
-	if err := godotenv.Load("app.env"); err == nil {
+	if err := godotenv.Load("../app.env"); err == nil {
 		log.Println("Environment variables loaded from app.env file")
 	}
 

@@ -11,7 +11,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=kratos
     volumes:
-    - ./deploy/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    - ./dev/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - intranet
 
@@ -24,7 +24,7 @@ services:
       - DSN=postgres://postgres:password@postgresd:5432/kratos?sslmode=disable&max_conns=20&max_idle_conns=4
     volumes:
       - type: bind
-        source: ./deploy/kratos
+        source: ./dev/kratos
         target: /etc/config/kratos
     command: -c /etc/config/kratos/kratos.dev.yml migrate sql -e --yes
     restart: on-failure
@@ -49,7 +49,7 @@ services:
     command: serve -c /etc/config/kratos/kratos.dev.yml --dev --watch-courier
     volumes:
       - type: bind
-        source: ./deploy/kratos
+        source: ./dev/kratos
         target: /etc/config/kratos
     networks:
       - intranet
