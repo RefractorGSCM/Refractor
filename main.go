@@ -80,7 +80,6 @@ import (
 	"go.uber.org/zap"
 	"log"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -249,8 +248,7 @@ func setupLogger(mode string) (*zap.Logger, error) {
 func setupDatabase(dbDriver, dbSource string) (*sql.DB, string, error) {
 	switch dbDriver {
 	case "postgres":
-		trimmedURI := strings.Replace(dbSource, "postgres://", "", 1)
-		db, err := setupPostgres(trimmedURI)
+		db, err := setupPostgres(dbSource)
 		return db, "postgres", err
 	default:
 		return nil, "", fmt.Errorf("unsupported database driver: %s", dbDriver)
@@ -262,7 +260,22 @@ func setupDatabase(dbDriver, dbSource string) (*sql.DB, string, error) {
 var migrationFS embed.FS
 
 func setupPostgres(dbURI string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", dbURI)
+	uri, err := url.Parse(dbURI)
+	if err != nil {
+		return nil, errors.Wrap(err, "Could not parse database URI")
+	}
+
+	var passwordString = ""
+	if password, ok := uri.User.Password(); ok {
+		passwordString = fmt.Sprintf("password=%s", password)
+	}
+
+	path := uri.Path[1:] // remove leading / from path
+
+	connInfo := fmt.Sprintf("host=%s port=%s user=%s %s dbname=%s sslmode=disable",
+		uri.Hostname(), uri.Port(), uri.User.Username(), passwordString, path)
+
+	db, err := sql.Open("postgres", connInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -386,6 +399,11 @@ func SetupServerClients(rconService domain.RCONService, serverService domain.Ser
 
 	allServers, err := serverService.GetAll(ctx)
 	if err != nil {
+		if errors.Cause(err) == domain.ErrNotFound {
+			// if no servers exist, return as there's nothing to do.
+			return nil
+		}
+
 		log.Error("Could not get all servers", zap.Error(err))
 		return err
 	}

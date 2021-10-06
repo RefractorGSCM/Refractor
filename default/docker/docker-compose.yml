@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   postgresd:
-    container_name: "refractor_postgres"
+    container_name: "postgresd"
     image: postgres:9.6
     ports:
       - "5432:5432"
@@ -21,7 +21,7 @@ services:
       - postgresd
     image: oryd/kratos:v0.6.3-alpha.1
     environment:
-      - DSN={{DSN}}
+      - DSN={{KRATOS_DSN}}
     volumes:
       - type: bind
         source: ./deploy/kratos
@@ -42,7 +42,7 @@ services:
       - "4434:4434" # admin
     restart: unless-stopped
     environment:
-      - DSN={{DSN}}
+      - DSN={{KRATOS_DSN}}
       - LOG_LEVEL=trace
       - COURIER_SMTP_CONNECTION_URI={{SMTP_URI}}
       - COURIER_SMTP_FROM_ADDRESS={{SMTP_FROM}}
@@ -55,28 +55,30 @@ services:
       - intranet
 
   nginx:
-    container_name: "refractor-nginx"
+    container_name: "nginx"
     image: nginx:1.15-alpine
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx:/etc/nginx/conf.d
+      - ./deploy/nginx:/etc/nginx/conf.d
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/www:/var/www/certbot
     depends_on:
       - refractor
+      - certbot
     networks:
       - intranet
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
   
   certbot:
     image: certbot/certbot
+    restart: unless-stopped
     container_name: refractor_certbot
     volumes:
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/www:/var/www/certbot
-    command: certonly --webroot --webroot-path=/var/www/html --email {{EMAIL}} --agree-tos --no-eff-email --staging -d {{DOMAIN}}
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; echo \"renew check\"; sleep 10 & wait $${!}; done;'"
 
   refractor:
     container_name: "refractor"
@@ -90,12 +92,14 @@ services:
     environment:
       - MODE=production
       - DB_DRIVER=postgres
-      - DB_SOURCE={{DSN}}
+      - DB_SOURCE={{REFRACTOR_DSN}}
       - KRATOS_PUBLIC_ROOT=https://{{DOMAIN}}/kp
-      - KRATOS_ADMIN_ROOT=http://refractor_kratos:4434
+      - KRATOS_ADMIN_ROOT=http://refractor-kratos:4434
+      - FRONTEND_ROOT={{DOMAIN}}
       - SMTP_CONNECTION_URI={{SMTP_URI}}
       - INITIAL_USER_EMAIL={{INITIAL_USER_EMAIL}}
       - INITIAL_USER_USERNAME={{INITIAL_USER_USERNAME}}
+      - ENCRYPTION_KEY={{ENCRYPTION_KEY}}
     volumes:
       - ./data/refractor:/opt/refractor
     networks:

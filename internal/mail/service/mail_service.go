@@ -42,9 +42,15 @@ func NewMailService(config *conf.Config) (domain.MailService, error) {
 	username := uri.User.Username()
 	password, _ := uri.User.Password()
 
-	port, err := strconv.ParseInt(uri.Port(), 10, 32)
-	if err != nil {
-		return nil, err
+	var port int64
+	if uri.Port() != "" {
+		var err error
+		port, err = strconv.ParseInt(uri.Port(), 10, 32)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		port = 587 // default SMTP outgoing port
 	}
 
 	dialer := gomail.NewDialer(uri.Hostname(), int(port), username, password)
