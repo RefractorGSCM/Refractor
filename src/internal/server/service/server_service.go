@@ -103,7 +103,7 @@ func (s *serverService) GetAllAccessible(c context.Context) ([]*domain.Server, e
 		if errors.Cause(err) == domain.ErrNotFound {
 			return []*domain.Server{}, nil
 		}
-		
+
 		return nil, err
 	}
 
