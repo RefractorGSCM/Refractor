@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This is the quickstart script for Refractor.
+
 # Use tput to determine the right sequences for bold/colored text
 bold=$(tput bold)
 reset=$(tput sgr 0)
