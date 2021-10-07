@@ -4,7 +4,7 @@ services:
   refractor-frontend:
     container_name: "refractor-frontend"
     build:
-      dockerfile: Dockerfile
+      dockerfile: src/Dockerfile
       context: ./Refractor-Svelte
     ports:
       - "3000:3000"

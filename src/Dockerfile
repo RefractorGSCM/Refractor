@@ -11,11 +11,11 @@ ENV GO111MODULE=on \
 
 WORKDIR /build
 
-COPY src/go.mod .
-COPY src/go.sum .
+COPY go.mod .
+COPY go.sum .
 RUN go mod download
 
-COPY . .
+COPY .. .
 
 RUN go build -ldflags "-s -w" -o refractor-bin ./main.go
 

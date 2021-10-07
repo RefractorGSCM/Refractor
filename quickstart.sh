@@ -6,10 +6,13 @@
 bold=$(tput bold)
 reset=$(tput sgr 0)
 red=$(tput setaf 1)
+white=$(tput setaf 7)
+bg_red=$(tput setab 1)
+bg_black=$(tput setab 0)
 yellow=$(tput setaf 3)
 green=$(tput setaf 2)
 
-clear
+clear -x
 echo "${bold}WELCOME TO THE REFRACTOR QUICKSTART SCRIPT${reset}"
 echo ""
 echo "This script will collect some information from you and then automatically configure and deploy Refractor for you."
@@ -23,15 +26,22 @@ echo ""
 echo "Would you like to ${bold}test${reset} or ${bold}deploy${reset}?"
 read -p "> (test/deploy): " run_mode
 
-clear
-
 staging=1
-if [ "$run_mode,," == "deploy,," ]; then
-  staging=0
-  echo "${bold}${red}RUNNING IN DEPLOY MODE${reset}"
-else
-  echo "${bold}${green}RUNNING IN TEST MODE${reset}"
-fi
+function draw_heading() {
+  if [ "$run_mode,," == "deploy,," ]; then
+    staging=0
+    echo "${bold}${white}${bg_red}  !!!  RUNNING IN DEPLOY MODE  !!!  ${reset}"
+  else
+    echo "${bold}${white}${bg_black}     RUNNING IN TEST MODE     ${reset}"
+  fi
+}
+
+function reset_screen() {
+  clear
+  draw_heading
+}
+
+reset_screen
 
 # Make sure docker-compose is installed
 if ! [ -x "$(command -v docker-compose)" ]; then
@@ -45,6 +55,9 @@ if [ ! -d "./Refractor-Svelte" ]; then
   echo "${bold}${yellow}Refractor-Svelte was not found. Cloning it with git now...${reset}"
   git clone git@github.com:RefractorGSCM/Refractor-Svelte.git
 fi
+
+# Ensure the deploy folders are created
+mkdir ./deploy/kratos ./deploy/postgres ./deploy/nginx ./deploy/svelte 2> /dev/null
 
 initial_setup=false
 # Check if the various config files exist. If they don't, then copy them from defaults.
@@ -277,7 +290,7 @@ docker-compose -f docker-compose.yml -f compose-frontend-svelte.yml run --rm --e
     -subj '/CN=localhost'" certbot
 echo
 
-clear
+reset_screen
 echo "${bold}The various docker containers will now be built.${reset}"
 echo ""
 echo "You will see large amount of console output you may or may not recognize. Please let the script run uninterrupted."
@@ -329,6 +342,8 @@ docker-compose -f docker-compose.yml -f compose-frontend-svelte.yml restart ngin
 echo "If you received a message from nginx mentioning an unknown or disconnected host ${bold}refractor${reset}, something prevented the backend from starting."
 echo "You should run ${bold}docker logs refractor${reset} to see what the issue is."
 echo "Once the issue was fixed and the backend is functioning normally, you must restart the proxy using ${bold}docker restart nginx${reset}"
+echo ""
+echo "If you didn't get any errors, then you're all set!"
 echo ""
 echo "Enjoy Refractor!"
 echo ""
