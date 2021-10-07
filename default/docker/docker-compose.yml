@@ -70,7 +70,7 @@ services:
     networks:
       - intranet
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-  
+
   certbot:
     image: certbot/certbot
     restart: unless-stopped
@@ -88,7 +88,7 @@ services:
       - kratos
     build:
       dockerfile: Dockerfile
-      context: .
+      context: ./src
     environment:
       - MODE=production
       - DB_DRIVER=postgres
