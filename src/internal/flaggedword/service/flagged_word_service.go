@@ -84,6 +84,10 @@ func (s *flaggedWordService) MessageContainsFlaggedWord(c context.Context, messa
 
 	flaggedWords, err := s.repo.GetAll(ctx)
 	if err != nil {
+		if errors.Cause(err) == domain.ErrNotFound {
+			return false, nil
+		}
+
 		return false, err
 	}
 
