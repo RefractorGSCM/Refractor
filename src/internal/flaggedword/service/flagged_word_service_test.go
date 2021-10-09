@@ -369,6 +369,27 @@ func Test(t *testing.T) {
 					repo.AssertExpectations(t)
 				})
 			})
+
+			g.Describe("No flagged words are set", func() {
+				g.BeforeEach(func() {
+					repo.On("GetAll", mock.Anything).Return(nil, domain.ErrNotFound)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.MessageContainsFlaggedWord(ctx, "msg")
+
+					Expect(err).To(BeNil())
+					repo.AssertExpectations(t)
+				})
+
+				g.It("Should return false", func() {
+					got, err := service.MessageContainsFlaggedWord(ctx, "msg")
+
+					Expect(err).To(BeNil())
+					Expect(got).To(BeFalse())
+					repo.AssertExpectations(t)
+				})
+			})
 		})
 	})
 }
