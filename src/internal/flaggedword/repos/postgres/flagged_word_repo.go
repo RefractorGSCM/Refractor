@@ -34,11 +34,16 @@ type repo struct {
 }
 
 func NewFlaggedWordRepo(db *sql.DB, log *zap.Logger) domain.FlaggedWordRepo {
-	return &repo{
+	repo := &repo{
 		db:           db,
 		logger:       log,
 		flaggedWords: map[int64]*domain.FlaggedWord{},
 	}
+
+	// Preload cache
+	_, _ = repo.GetAll(context.TODO())
+
+	return repo
 }
 
 func (r *repo) fetch(ctx context.Context, query string, args ...interface{}) ([]*domain.FlaggedWord, error) {
@@ -97,6 +102,8 @@ func (r *repo) Store(ctx context.Context, word *domain.FlaggedWord) error {
 
 	word.ID = id
 
+	r.flaggedWords[id] = word
+
 	return nil
 }
 
@@ -115,6 +122,11 @@ func (r *repo) GetAll(ctx context.Context) ([]*domain.FlaggedWord, error) {
 	}
 
 	if len(results) > 0 {
+		// Cache results
+		for _, result := range results {
+			r.flaggedWords[result.ID] = result
+		}
+
 		return results, nil
 	}
 
