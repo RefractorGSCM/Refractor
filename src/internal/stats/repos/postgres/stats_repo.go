@@ -95,7 +95,7 @@ func (r *statsRepo) GetTotalNewPlayersInRange(ctx context.Context, start, end ti
 	return count, nil
 }
 
-func (r *statsRepo) GetTotalOnlinePlayersInRange(ctx context.Context, start, end time.Time) (int, error) {
+func (r *statsRepo) GetUniquePlayersInRange(ctx context.Context, start, end time.Time) (int, error) {
 	const op = opTag + "GetTotalNewPlayersInRange"
 
 	query := "SELECT COUNT(1) FROM Players WHERE CreatedAt BETWEEN $1 AND $2;"
