@@ -239,5 +239,20 @@ func (s *chatService) GetFlaggedMessages(c context.Context, count int) ([]*domai
 		return nil, err
 	}
 
+	for _, msg := range results {
+		// Get player name for message
+		currentName, _, err := s.playerNameRepo.GetNames(ctx, msg.PlayerID, msg.Platform)
+		if err != nil {
+			s.logger.Error("Could not get current name for flagged chat message",
+				zap.String("Platform", msg.Platform),
+				zap.String("Player ID", msg.PlayerID),
+				zap.Int64("Message ID", msg.MessageID),
+				zap.Error(err))
+			continue
+		}
+
+		msg.Name = currentName
+	}
+
 	return results, nil
 }
