@@ -167,5 +167,27 @@ func Test(t *testing.T) {
 				Expect(mock.ExpectationsWereMet()).To(BeNil())
 			})
 		})
+
+		g.Describe("GetTotalChatMessages()", func() {
+			g.BeforeEach(func() {
+				mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM ChatMessages")).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(60))
+			})
+
+			g.It("Should not return an error", func() {
+				_, err := repo.GetTotalChatMessages(ctx)
+
+				Expect(err).To(BeNil())
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+
+			g.It("Should return the correct count", func() {
+				count, err := repo.GetTotalChatMessages(ctx)
+
+				Expect(err).To(BeNil())
+				Expect(count).To(Equal(60))
+				Expect(mock.ExpectationsWereMet()).To(BeNil())
+			})
+		})
 	})
 }

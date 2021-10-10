@@ -124,3 +124,17 @@ func (r *statsRepo) GetUniquePlayersInRange(ctx context.Context, start, end time
 
 	return count, nil
 }
+
+func (r *statsRepo) GetTotalChatMessages(ctx context.Context) (int, error) {
+	const op = opTag + "GetTotalChatMessages"
+
+	query := "SELECT COUNT(1) FROM ChatMessages;"
+
+	count, err := r.fetchCount(ctx, query)
+	if err != nil {
+		r.logger.Error("Could not get total chat messages count", zap.Error(err))
+		return 0, errors.Wrap(err, op)
+	}
+
+	return count, nil
+}
