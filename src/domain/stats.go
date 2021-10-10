@@ -28,6 +28,7 @@ type Stats struct {
 	UniquePlayersLastDay  int `json:"unique_players_last_day"`
 	TotalInfractions      int `json:"total_infractions"`
 	NewInfractionsLastDay int `json:"new_infractions_last_day"`
+	TotalChatMessages     int `json:"total_chat_messages"`
 }
 
 type StatsRepo interface {
@@ -36,6 +37,7 @@ type StatsRepo interface {
 	GetTotalNewPlayersInRange(ctx context.Context, start, end time.Time) (int, error)
 	GetTotalNewInfractionsInRange(ctx context.Context, start, end time.Time) (int, error)
 	GetUniquePlayersInRange(ctx context.Context, start, end time.Time) (int, error)
+	GetTotalChatMessages(ctx context.Context) (int, error)
 }
 
 type StatsService interface {

@@ -70,5 +70,10 @@ func (s *statsService) GetStats(c context.Context) (*domain.Stats, error) {
 		return nil, err
 	}
 
+	stats.TotalChatMessages, err = s.repo.GetTotalChatMessages(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
