@@ -52,10 +52,15 @@ func (s *statsService) GetStats(c context.Context) (*domain.Stats, error) {
 		return nil, err
 	}
 
-	now := time.Now()
-	oneDayAgo := now.Add(-24 * time.Hour)
+	now := time.Now().UTC()
+	oneDayAgo := now.Add(-24 * time.Hour).UTC()
 
 	stats.NewPlayersLastDay, err = s.repo.GetTotalNewPlayersInRange(ctx, oneDayAgo, now)
+	if err != nil {
+		return nil, err
+	}
+
+	stats.NewInfractionsLastDay, err = s.repo.GetTotalNewInfractionsInRange(ctx, oneDayAgo, now)
 	if err != nil {
 		return nil, err
 	}

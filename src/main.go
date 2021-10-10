@@ -51,6 +51,9 @@ import (
 	_serverHandler "Refractor/internal/server/delivery/http"
 	_postgresServerRepo "Refractor/internal/server/repos/postgres"
 	_serverService "Refractor/internal/server/service"
+	_statsHandler "Refractor/internal/stats/delivery/http"
+	_statsRepo "Refractor/internal/stats/repos/postgres"
+	_statsService "Refractor/internal/stats/service"
 	_userHandler "Refractor/internal/user/delivery/http"
 	_userRepo "Refractor/internal/user/repos/postgres"
 	_userService "Refractor/internal/user/service"
@@ -195,6 +198,10 @@ func main() {
 
 	searchService := _searchService.NewSearchService(playerRepo, playerNameRepo, infractionRepo, chatRepo, time.Second*2, logger)
 	_searchHandler.ApplySearchHandler(apiGroup, searchService, authorizer, middlewareBundle, logger)
+
+	statsRepo := _statsRepo.NewStatsRepo(db, logger)
+	statsService := _statsService.NewStatsService(statsRepo, time.Second*2)
+	_statsHandler.ApplyStatsHandler(apiGroup, statsService, authorizer, middlewareBundle, logger)
 
 	// Subscribe to events
 	rconService.SubscribeJoin(playerService.HandlePlayerJoin)
