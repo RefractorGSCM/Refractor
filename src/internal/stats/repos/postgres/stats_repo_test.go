@@ -124,21 +124,21 @@ func Test(t *testing.T) {
 			})
 		})
 
-		g.Describe("GetTotalOnlinePlayersInRange()", func() {
+		g.Describe("GetUniquePlayersInRange()", func() {
 			g.BeforeEach(func() {
 				mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM Players")).
 					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(60))
 			})
 
 			g.It("Should not return an error", func() {
-				_, err := repo.GetTotalOnlinePlayersInRange(ctx, time.Now(), time.Now())
+				_, err := repo.GetUniquePlayersInRange(ctx, time.Now(), time.Now())
 
 				Expect(err).To(BeNil())
 				Expect(mock.ExpectationsWereMet()).To(BeNil())
 			})
 
 			g.It("Should return the correct count", func() {
-				count, err := repo.GetTotalOnlinePlayersInRange(ctx, time.Now(), time.Now())
+				count, err := repo.GetUniquePlayersInRange(ctx, time.Now(), time.Now())
 
 				Expect(err).To(BeNil())
 				Expect(count).To(Equal(60))
