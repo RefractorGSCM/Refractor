@@ -21,6 +21,7 @@ import (
 	"Refractor/domain"
 	"context"
 	"database/sql"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"time"
@@ -84,9 +85,9 @@ func (r *statsRepo) GetTotalInfractions(ctx context.Context) (int, error) {
 func (r *statsRepo) GetTotalNewPlayersInRange(ctx context.Context, start, end time.Time) (int, error) {
 	const op = opTag + "GetTotalNewPlayersInRange"
 
-	query := "SELECT COUNT(1) FROM Players WHERE CreatedAt BETWEEN $1 AND $2;"
+	query := "SELECT COUNT(1) FROM Players WHERE CreatedAt BETWEEN $1::TIMESTAMP AND $2::TIMESTAMP;"
 
-	count, err := r.fetchCount(ctx, query, start, end)
+	count, err := r.fetchCount(ctx, query, pq.FormatTimestamp(start), pq.FormatTimestamp(end))
 	if err != nil {
 		r.logger.Error("Could not get new players in range count", zap.Error(err))
 		return 0, errors.Wrap(err, op)
@@ -95,12 +96,27 @@ func (r *statsRepo) GetTotalNewPlayersInRange(ctx context.Context, start, end ti
 	return count, nil
 }
 
-func (r *statsRepo) GetUniquePlayersInRange(ctx context.Context, start, end time.Time) (int, error) {
+func (r *statsRepo) GetTotalNewInfractionsInRange(ctx context.Context, start, end time.Time) (int, error) {
 	const op = opTag + "GetTotalNewPlayersInRange"
 
-	query := "SELECT COUNT(1) FROM Players WHERE CreatedAt BETWEEN $1 AND $2;"
+	query := "SELECT COUNT(1) FROM Infractions WHERE CreatedAt BETWEEN $1::TIMESTAMP AND $2::TIMESTAMP;"
+
+	count, err := r.fetchCount(ctx, query, pq.FormatTimestamp(start), pq.FormatTimestamp(end))
+	if err != nil {
+		r.logger.Error("Could not get new infractions in range count", zap.Error(err))
+		return 0, errors.Wrap(err, op)
+	}
+
+	return count, nil
+}
+
+func (r *statsRepo) GetUniquePlayersInRange(ctx context.Context, start, end time.Time) (int, error) {
+	const op = opTag + "GetUniquePlayersInRange"
+
+	query := "SELECT COUNT(1) FROM Players WHERE LastSeen BETWEEN $1 AND $2;"
 
 	count, err := r.fetchCount(ctx, query, start, end)
+
 	if err != nil {
 		r.logger.Error("Could not get total total players in range count", zap.Error(err))
 		return 0, errors.Wrap(err, op)

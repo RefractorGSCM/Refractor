@@ -23,16 +23,18 @@ import (
 )
 
 type Stats struct {
-	TotalPlayers         int `json:"total_players"`
-	TotalInfractions     int `json:"total_infractions"`
-	NewPlayersLastDay    int `json:"new_players_last_day"`
-	UniquePlayersLastDay int `json:"unique_players_last_day"`
+	TotalPlayers          int `json:"total_players"`
+	NewPlayersLastDay     int `json:"new_players_last_day"`
+	UniquePlayersLastDay  int `json:"unique_players_last_day"`
+	TotalInfractions      int `json:"total_infractions"`
+	NewInfractionsLastDay int `json:"new_infractions_last_day"`
 }
 
 type StatsRepo interface {
 	GetTotalPlayers(ctx context.Context) (int, error)
 	GetTotalInfractions(ctx context.Context) (int, error)
 	GetTotalNewPlayersInRange(ctx context.Context, start, end time.Time) (int, error)
+	GetTotalNewInfractionsInRange(ctx context.Context, start, end time.Time) (int, error)
 	GetUniquePlayersInRange(ctx context.Context, start, end time.Time) (int, error)
 }
 
