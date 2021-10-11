@@ -74,6 +74,43 @@ func (_m *InfractionRepo) GetByPlayer(ctx context.Context, playerID string, plat
 	return r0, r1
 }
 
+// GetLinkedChatMessages provides a mock function with given fields: ctx, id
+func (_m *InfractionRepo) GetLinkedChatMessages(ctx context.Context, id int64) ([]*domain.ChatMessage, error) {
+	ret := _m.Called(ctx, id)
+
+	var r0 []*domain.ChatMessage
+	if rf, ok := ret.Get(0).(func(context.Context, int64) []*domain.ChatMessage); ok {
+		r0 = rf(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*domain.ChatMessage)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
+		r1 = rf(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// LinkChatMessage provides a mock function with given fields: ctx, id, messageID
+func (_m *InfractionRepo) LinkChatMessage(ctx context.Context, id int64, messageID int64) error {
+	ret := _m.Called(ctx, id, messageID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) error); ok {
+		r0 = rf(ctx, id, messageID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Search provides a mock function with given fields: ctx, args, limit, offset
 func (_m *InfractionRepo) Search(ctx context.Context, args domain.FindArgs, limit int, offset int) (int, []*domain.Infraction, error) {
 	ret := _m.Called(ctx, args, limit, offset)
@@ -125,6 +162,20 @@ func (_m *InfractionRepo) Store(ctx context.Context, infraction *domain.Infracti
 	}
 
 	return r0, r1
+}
+
+// UnlinkChatMessage provides a mock function with given fields: ctx, id, messageID
+func (_m *InfractionRepo) UnlinkChatMessage(ctx context.Context, id int64, messageID int64) error {
+	ret := _m.Called(ctx, id, messageID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) error); ok {
+		r0 = rf(ctx, id, messageID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // Update provides a mock function with given fields: ctx, id, args
