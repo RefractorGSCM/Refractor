@@ -44,6 +44,7 @@ func Test(t *testing.T) {
 	g.Describe("Infraction Service", func() {
 		var mockRepo *mocks.InfractionRepo
 		var playerRepo *mocks.PlayerRepo
+		var playerNameRepo *mocks.PlayerNameRepo
 		var serverRepo *mocks.ServerRepo
 		var userMetaRepo *mocks.UserMetaRepo
 		var authorizer *mocks.Authorizer
@@ -53,12 +54,14 @@ func Test(t *testing.T) {
 		g.BeforeEach(func() {
 			mockRepo = new(mocks.InfractionRepo)
 			playerRepo = new(mocks.PlayerRepo)
+			playerNameRepo = new(mocks.PlayerNameRepo)
 			serverRepo = new(mocks.ServerRepo)
 			userMetaRepo = new(mocks.UserMetaRepo)
 			authorizer = new(mocks.Authorizer)
 			service = &infractionService{
 				repo:            mockRepo,
 				playerRepo:      playerRepo,
+				playerNameRepo:  playerNameRepo,
 				serverRepo:      serverRepo,
 				userMetaRepo:    userMetaRepo,
 				authorizer:      authorizer,
@@ -844,6 +847,8 @@ func Test(t *testing.T) {
 
 					mockRepo.On("GetLinkedChatMessages", mock.Anything, mock.AnythingOfType("int64")).
 						Return(expected, nil)
+					playerNameRepo.On("GetNames", mock.Anything, mock.Anything, mock.Anything).
+						Return("name", []string{}, nil)
 				})
 
 				g.It("Should not return an error", func() {

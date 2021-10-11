@@ -184,7 +184,7 @@ func main() {
 	attachmentRepo := _attachmentRepo.NewAttachmentRepo(db, logger)
 	attachmentService := _attachmentService.NewAttachmentService(attachmentRepo, infractionRepo, authorizer, time.Second*2, logger)
 
-	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, serverRepo,
+	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, playerNameRepo, serverRepo,
 		attachmentRepo, userMetaRepo, authorizer, time.Second*2, logger)
 	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
 
