@@ -22,6 +22,7 @@ import (
 	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -270,6 +271,104 @@ func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, limit
 	}
 
 	return count, results, nil
+}
+
+func (r *infractionRepo) GetLinkedChatMessages(ctx context.Context, id int64) ([]*domain.ChatMessage, error) {
+	const op = opTag + "GetLinkedChatMessages"
+
+	// This query makes the infraction repo dependent on the chat messages table being present in postgres.
+	// This could be problematic if we ever switch to storing chat messages elsewhere, but for now this is the
+	// most efficient way of doing it, both in terms of development time and performance.
+	//
+	// If this becomes a problem in the future, this method could instead be made to return a slice of IDs
+	// which can then be used to fetch messages from another repo.
+
+	query := `
+		SELECT
+			cm.MessageID,
+		    cm.PlayerID,
+		    cm.Platform,
+		    cm.ServerID,
+		    cm.Message,
+		    cm.Flagged,
+		    cm.CreatedAt,
+		    cm.ModifiedAt
+		FROM InfractionChatMessages icm
+		INNER JOIN ChatMessages cm on cm.MessageID = icm.MessageID
+		WHERE icm.InfractionID = 1;
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, id)
+	if err != nil {
+		r.logger.Error("Could not execute linked infraction-chatmessages query", zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	messages := make([]*domain.ChatMessage, 0)
+	for rows.Next() {
+		msg := &domain.ChatMessage{}
+
+		if err := rows.Scan(&msg.MessageID, &msg.PlayerID, &msg.Platform, &msg.ServerID, &msg.Message,
+			&msg.Flagged, &msg.CreatedAt, &msg.ModifiedAt); err != nil {
+			r.logger.Error("Could not scan chat message", zap.Error(err))
+			return nil, errors.Wrap(err, op)
+		}
+
+		messages = append(messages, msg)
+	}
+
+	return messages, nil
+}
+
+const pgForeignKeyErrCode = pq.ErrorCode("23503")
+
+func (r *infractionRepo) LinkChatMessage(ctx context.Context, id int64, messageID int64) error {
+	const op = opTag + "LinkChatMessage"
+
+	query := "INSERT INTO InfractionChatMessages (InfractionID, MessageID) VALUES ($1, $2);"
+
+	_, err := r.db.ExecContext(ctx, query, id, messageID)
+	if err != nil {
+		if pgErr, ok := err.(pq.Error); ok {
+			if pgErr.Code == pgForeignKeyErrCode {
+				return errors.Wrap(domain.ErrNotFound, op)
+			}
+		}
+
+		r.logger.Error("Could not link chat message to infraction",
+			zap.Int64("Infraction ID", id),
+			zap.Int64("Message ID", messageID),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	return nil
+}
+
+func (r *infractionRepo) UnlinkChatMessage(ctx context.Context, id int64, messageID int64) error {
+	const op = opTag + "UnlinkChatMessage"
+
+	query := "DELETE FROM InfractionChatMessages WHERE InfractionID = $1 AND MessageID = $2;"
+
+	res, err := r.db.ExecContext(ctx, query, id, messageID)
+	if err != nil {
+		r.logger.Error("Could not unlink chat message to infraction",
+			zap.Int64("Infraction ID", id),
+			zap.Int64("Message ID", messageID),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	if rows, err := res.RowsAffected(); err != nil {
+		r.logger.Error("Could not get affected rows", zap.Error(err))
+		return errors.Wrap(err, op)
+	} else if rows < 1 {
+		return errors.Wrap(domain.ErrNotFound, op)
+	}
+
+	return nil
 }
 
 // Scan helpers

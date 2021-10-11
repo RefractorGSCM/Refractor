@@ -25,6 +25,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/franela/goblin"
 	"github.com/guregu/null"
+	"github.com/lib/pq"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -522,6 +523,190 @@ func Test(t *testing.T) {
 
 				g.It("Should return an error", func() {
 					_, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+
+					Expect(err).ToNot(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
+
+		g.Describe("GetLinkedChatMessages()", func() {
+			var expected []*domain.ChatMessage
+
+			g.Describe("Linked messages found", func() {
+				g.BeforeEach(func() {
+					expected = []*domain.ChatMessage{
+						{
+							MessageID: 1,
+							PlayerID:  "playerid1",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "msg1",
+							Flagged:   true,
+						},
+						{
+							MessageID: 2,
+							PlayerID:  "playerid2",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "msg2",
+							Flagged:   true,
+						},
+						{
+							MessageID: 3,
+							PlayerID:  "playerid3",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "msg33",
+							Flagged:   true,
+						},
+					}
+
+					rows := sqlmock.NewRows([]string{
+						"MessageID", "PlayerID", "Platform", "ServerID", "Message", "Flagged", "CreatedAt", "ModifiedAt",
+					})
+
+					for _, r := range expected {
+						rows.AddRow(r.MessageID, r.PlayerID, r.Platform, r.ServerID, r.Message, r.Flagged, r.CreatedAt, r.ModifiedAt)
+					}
+
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT cm.MessageID")).WillReturnRows(rows)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.GetLinkedChatMessages(ctx, 1)
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return the correct results", func() {
+					got, err := repo.GetLinkedChatMessages(ctx, 1)
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal(expected))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("No linked messages found", func() {
+				g.BeforeEach(func() {
+					expected = []*domain.ChatMessage{}
+
+					rows := sqlmock.NewRows([]string{
+						"MessageID", "PlayerID", "Platform", "ServerID", "Message", "Flagged", "CreatedAt", "ModifiedAt",
+					})
+
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT cm.MessageID")).WillReturnRows(rows)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.GetLinkedChatMessages(ctx, 1)
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return an empty slice", func() {
+					got, err := repo.GetLinkedChatMessages(ctx, 1)
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal(expected))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Database error", func() {
+				g.BeforeEach(func() {
+					expected = []*domain.ChatMessage{}
+
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT cm.MessageID")).WillReturnError(fmt.Errorf("err"))
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.GetLinkedChatMessages(ctx, 1)
+
+					Expect(err).ToNot(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
+
+		g.Describe("LinkChatMessage()", func() {
+			g.Describe("Successful link", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("INSERT INTO InfractionChatMessages").WillReturnResult(sqlmock.NewResult(0, 1))
+				})
+
+				g.It("Should not return an error", func() {
+					err := repo.LinkChatMessage(ctx, 1, 1)
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Foreign key error (chat message or infraction ids are invalid)", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("INSERT INTO InfractionChatMessages").WillReturnError(pq.Error{Code: "23503"}) // code for postgres FK errors
+				})
+
+				g.It("Should return a domain.ErrNotFound error", func() {
+					err := repo.LinkChatMessage(ctx, 1, 1)
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Unexpected database error", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("INSERT INTO InfractionChatMessages").WillReturnError(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					err := repo.LinkChatMessage(ctx, 1, 1)
+
+					Expect(err).ToNot(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
+
+		g.Describe("LinkChatMessage()", func() {
+			g.Describe("Successful unlink", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("DELETE FROM InfractionChatMessages").WillReturnResult(sqlmock.NewResult(0, 1))
+				})
+
+				g.It("Should not return an error", func() {
+					err := repo.UnlinkChatMessage(ctx, 1, 1)
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Link not found", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("DELETE FROM InfractionChatMessages").WillReturnResult(sqlmock.NewResult(0, 0))
+				})
+
+				g.It("Should return a domain.ErrNotFound error", func() {
+					err := repo.UnlinkChatMessage(ctx, 1, 1)
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Unexpected database error", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("DELETE FROM InfractionChatMessages").WillReturnError(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					err := repo.UnlinkChatMessage(ctx, 1, 1)
 
 					Expect(err).ToNot(BeNil())
 					Expect(mock.ExpectationsWereMet()).To(BeNil())

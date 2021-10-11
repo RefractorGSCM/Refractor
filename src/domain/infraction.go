@@ -57,6 +57,9 @@ type InfractionRepo interface {
 	Delete(ctx context.Context, id int64) error
 	GetByPlayer(ctx context.Context, playerID, platform string) ([]*Infraction, error)
 	Search(ctx context.Context, args FindArgs, limit, offset int) (int, []*Infraction, error)
+	GetLinkedChatMessages(ctx context.Context, id int64) ([]*ChatMessage, error)
+	LinkChatMessage(ctx context.Context, id int64, messageID int64) error
+	UnlinkChatMessage(ctx context.Context, id int64, messageID int64) error
 }
 
 type InfractionService interface {
@@ -64,5 +67,8 @@ type InfractionService interface {
 	GetByID(c context.Context, id int64) (*Infraction, error)
 	Update(c context.Context, id int64, args UpdateArgs) (*Infraction, error)
 	Delete(c context.Context, id int64) error
-	GetByPlayer(ctx context.Context, playerID, platform string) ([]*Infraction, error)
+	GetByPlayer(c context.Context, playerID, platform string) ([]*Infraction, error)
+	GetLinkedChatMessages(c context.Context, id int64) ([]*ChatMessage, error)
+	LinkChatMessage(c context.Context, id int64, messageID int64) error
+	UnlinkChatMessage(c context.Context, id int64, messageID int64) error
 }
