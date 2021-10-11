@@ -81,8 +81,9 @@ func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, as
 	infractionGroup.DELETE("/attachment/:id", handler.RemoveAttachment) // perms checked in service
 }
 
-type infractionWithAttachments struct {
-	Attachments []*domain.Attachment `json:"attachments"`
+type infractionRes struct {
+	Attachments        []*domain.Attachment  `json:"attachments"`
+	LinkedChatMessages []*domain.ChatMessage `json:"linked_chat_messages"`
 	*domain.Infraction
 }
 
@@ -112,9 +113,16 @@ func (h *infractionHandler) GetByID(c echo.Context) error {
 		return err
 	}
 
-	res := &infractionWithAttachments{
-		Attachments: attachments,
-		Infraction:  infraction,
+	// Get chat messages linked to this infraction
+	chatMessages, err := h.service.GetLinkedChatMessages(ctx, infraction.InfractionID)
+	if err != nil && errors.Cause(err) != domain.ErrNotFound {
+		return err
+	}
+
+	res := &infractionRes{
+		LinkedChatMessages: chatMessages,
+		Attachments:        attachments,
+		Infraction:         infraction,
 	}
 
 	return c.JSON(http.StatusOK, &domain.Response{

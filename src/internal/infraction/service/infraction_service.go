@@ -33,6 +33,7 @@ import (
 type infractionService struct {
 	repo            domain.InfractionRepo
 	playerRepo      domain.PlayerRepo
+	playerNameRepo  domain.PlayerNameRepo
 	serverRepo      domain.ServerRepo
 	attachmentRepo  domain.AttachmentRepo
 	userMetaRepo    domain.UserMetaRepo
@@ -42,11 +43,12 @@ type infractionService struct {
 	infractionTypes map[string]domain.InfractionType
 }
 
-func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, sr domain.ServerRepo, ar domain.AttachmentRepo,
-	umr domain.UserMetaRepo, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.InfractionService {
+func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, pnr domain.PlayerNameRepo, sr domain.ServerRepo,
+	ar domain.AttachmentRepo, umr domain.UserMetaRepo, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.InfractionService {
 	return &infractionService{
 		repo:            repo,
 		playerRepo:      pr,
+		playerNameRepo:  pnr,
 		serverRepo:      sr,
 		attachmentRepo:  ar,
 		userMetaRepo:    umr,
@@ -474,11 +476,39 @@ func (s *infractionService) hasDeletePermissions(ctx context.Context, infraction
 	return false, nil
 }
 
+// GetLinkedChatMessages gets chat messages linked to an infraction.
+//
+// This method currently has no built-in authorization checking because it is always run as a trusted call by other
+// service methods and not by users themselves.
+//
+// If this ever changes, authorization checks should be added.
 func (s *infractionService) GetLinkedChatMessages(c context.Context, id int64) ([]*domain.ChatMessage, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.GetLinkedChatMessages(ctx, id)
+	messages, err := s.repo.GetLinkedChatMessages(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get player name for each message
+	for _, msg := range messages {
+		// Get player name for message
+		currentName, _, err := s.playerNameRepo.GetNames(ctx, msg.PlayerID, msg.Platform)
+		if err != nil {
+			s.logger.Error("Could not get current name for linked chat message",
+				zap.String("Platform", msg.Platform),
+				zap.String("Player ID", msg.PlayerID),
+				zap.Int64("Message ID", msg.MessageID),
+				zap.Int64("Linked Infraction ID", id),
+				zap.Error(err))
+			continue
+		}
+
+		msg.Name = currentName
+	}
+
+	return messages, nil
 }
 
 // LinkChatMessages links a chat message to an infraction. If a user is set inside the passed in context with the key
