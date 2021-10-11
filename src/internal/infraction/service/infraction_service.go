@@ -467,3 +467,24 @@ func (s *infractionService) hasDeletePermissions(ctx context.Context, infraction
 	// Otherwise, deny access
 	return false, nil
 }
+
+func (s *infractionService) GetLinkedChatMessages(c context.Context, id int64) ([]*domain.ChatMessage, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.GetLinkedChatMessages(ctx, id)
+}
+
+func (s *infractionService) LinkChatMessage(c context.Context, id int64, messageID int64) error {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.LinkChatMessage(ctx, id, messageID)
+}
+
+func (s *infractionService) UnlinkChatMessage(c context.Context, id int64, messageID int64) error {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.UnlinkChatMessage(ctx, id, messageID)
+}

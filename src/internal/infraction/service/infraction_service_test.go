@@ -809,5 +809,137 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("GetLinkedChatMessages()", func() {
+			var expected []*domain.ChatMessage
+
+			g.Describe("Results found", func() {
+				g.BeforeEach(func() {
+					expected = []*domain.ChatMessage{
+						{
+							MessageID: 1,
+							PlayerID:  "playerid1",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "msg1",
+							Flagged:   true,
+						},
+						{
+							MessageID: 2,
+							PlayerID:  "playerid2",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "msg2",
+							Flagged:   true,
+						},
+						{
+							MessageID: 3,
+							PlayerID:  "playerid3",
+							Platform:  "platform",
+							ServerID:  1,
+							Message:   "msg33",
+							Flagged:   true,
+						},
+					}
+
+					mockRepo.On("GetLinkedChatMessages", mock.Anything, mock.AnythingOfType("int64")).
+						Return(expected, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.GetLinkedChatMessages(ctx, 1)
+
+					Expect(err).To(BeNil())
+					mockRepo.AssertExpectations(t)
+				})
+
+				g.It("Should return the expected results", func() {
+					got, err := service.GetLinkedChatMessages(ctx, 1)
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal(expected))
+					mockRepo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("No results not found", func() {
+				g.BeforeEach(func() {
+					expected = []*domain.ChatMessage{}
+
+					mockRepo.On("GetLinkedChatMessages", mock.Anything, mock.AnythingOfType("int64")).
+						Return(expected, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.GetLinkedChatMessages(ctx, 1)
+
+					Expect(err).To(BeNil())
+					mockRepo.AssertExpectations(t)
+				})
+
+				g.It("Should return an empty slice", func() {
+					got, err := service.GetLinkedChatMessages(ctx, 1)
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal(expected))
+					mockRepo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("Repo error", func() {
+				g.BeforeEach(func() {
+					mockRepo.On("GetLinkedChatMessages", mock.Anything, mock.AnythingOfType("int64")).
+						Return(nil, fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					_, err := service.GetLinkedChatMessages(ctx, 1)
+
+					Expect(err).ToNot(BeNil())
+					mockRepo.AssertExpectations(t)
+				})
+			})
+		})
+
+		g.Describe("LinkChatMessage()", func() {
+			g.Describe("Successful link", func() {
+				g.BeforeEach(func() {
+					mockRepo.On("LinkChatMessage", mock.Anything, int64(1), int64(2)).Return(nil)
+				})
+
+				g.It("Should not return an error", func() {
+					err := service.LinkChatMessage(ctx, 1, 2)
+
+					Expect(err).To(BeNil())
+					mockRepo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("Invalid chat message or infraction id provided", func() {
+				g.BeforeEach(func() {
+					mockRepo.On("LinkChatMessage", mock.Anything, int64(1), int64(10)).Return(domain.ErrNotFound)
+				})
+
+				g.It("Should return a domain.ErrNotFound error", func() {
+					err := service.LinkChatMessage(ctx, 1, 10)
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					mockRepo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("Repository error", func() {
+				g.BeforeEach(func() {
+					mockRepo.On("LinkChatMessage", mock.Anything, int64(1), int64(10)).Return(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					err := service.LinkChatMessage(ctx, 1, 10)
+
+					Expect(err).ToNot(BeNil())
+					mockRepo.AssertExpectations(t)
+				})
+			})
+		})
 	})
 }
