@@ -20,7 +20,6 @@ package service
 import (
 	"Refractor/domain"
 	"context"
-	"fmt"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"strings"
@@ -98,7 +97,6 @@ func (s *flaggedWordService) MessageContainsFlaggedWord(c context.Context, messa
 		// Check if flagged words contains this word
 		for _, fword := range flaggedWords {
 			if strings.ToLower(word) == strings.ToLower(fword.Word) {
-				fmt.Printf("Message contains '%s' which is a flagged word '%s'", word, fword.Word)
 				flagged = true
 				break
 			}
