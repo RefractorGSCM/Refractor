@@ -28,6 +28,20 @@ func (_m *RCONClient) Connect() error {
 	return r0
 }
 
+// Disconnect provides a mock function with given fields:
+func (_m *RCONClient) Disconnect() error {
+	ret := _m.Called()
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ExecCommand provides a mock function with given fields: _a0
 func (_m *RCONClient) ExecCommand(_a0 string) (string, error) {
 	ret := _m.Called(_a0)
