@@ -62,6 +62,12 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 		return fmt.Errorf("could not create RCON client for servers with a non-existent game: %s", server.Game)
 	}
 
+	// Check if a client already exists. If one does, close the associated connections and delete it.
+	if s.clients[server.ID] != nil {
+		_ = s.clients[server.ID].Disconnect()
+		delete(s.clients, server.ID)
+	}
+
 	// Get the server's game
 	game, err := s.gameService.GetGame(server.Game)
 	if err != nil {

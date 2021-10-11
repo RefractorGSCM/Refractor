@@ -33,6 +33,7 @@ type RCONClient interface {
 	SetBroadcastHandler(handlerFunc rcon.BroadcastHandlerFunc)
 	SetDisconnectHandler(handlerFunc rcon.DisconnectHandlerFunc)
 	GetGame() Game
+	Disconnect() error
 }
 
 type BroadcastSubscriber func(fields broadcast.Fields, serverID int64, game Game)
