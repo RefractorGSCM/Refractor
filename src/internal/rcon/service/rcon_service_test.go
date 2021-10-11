@@ -105,6 +105,7 @@ func Test(t *testing.T) {
 					rconClient.On("Connect").Return(nil)
 					rconClient.On("ListenForBroadcasts", mock.Anything, mock.Anything)
 					rconClient.On("ExecCommand", mock.Anything).Return("", nil)
+					rconClient.On("Disconnect").Return(nil)
 				})
 
 				g.It("Should not return an error", func() {
@@ -118,6 +119,7 @@ func Test(t *testing.T) {
 				g.BeforeEach(func() {
 					gameService.On("GameExists", mock.AnythingOfType("string")).Return(true)
 					clientCreator.On("GetClientFromConfig", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err"))
+					rconClient.On("Disconnect").Return(nil)
 				})
 
 				g.It("Should return an error", func() {
@@ -134,6 +136,7 @@ func Test(t *testing.T) {
 					rconClient.On("SetBroadcastHandler", mock.Anything)
 					rconClient.On("SetDisconnectHandler", mock.Anything)
 					rconClient.On("Connect").Return(fmt.Errorf("err"))
+					rconClient.On("Disconnect").Return(nil)
 				})
 
 				g.It("Should return an error", func() {

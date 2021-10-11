@@ -172,7 +172,7 @@ func (h *infractionHandler) CreateWarning(c echo.Context) error {
 	// Attach user to request context for use in the service
 	ctx := c.Request().Context()
 	ctx = context.WithValue(ctx, "user", user)
-	newWarning, err = h.service.Store(ctx, newWarning, attachments)
+	newWarning, err = h.service.Store(ctx, newWarning, attachments, body.LinkedMessages)
 	if err != nil {
 		return err
 	}
@@ -242,7 +242,7 @@ func (h *infractionHandler) CreateMute(c echo.Context) error {
 	// Attach user to request context for use in the service
 	ctx := c.Request().Context()
 	ctx = context.WithValue(ctx, "user", user)
-	newMute, err = h.service.Store(ctx, newMute, attachments)
+	newMute, err = h.service.Store(ctx, newMute, attachments, body.LinkedMessages)
 	if err != nil {
 		return err
 	}
@@ -313,7 +313,7 @@ func (h *infractionHandler) CreateKick(c echo.Context) error {
 	// Attach user to request context for use in the service
 	ctx := c.Request().Context()
 	ctx = context.WithValue(ctx, "user", user)
-	newKick, err = h.service.Store(ctx, newKick, attachments)
+	newKick, err = h.service.Store(ctx, newKick, attachments, body.LinkedMessages)
 	if err != nil {
 		return err
 	}
@@ -383,7 +383,7 @@ func (h *infractionHandler) CreateBan(c echo.Context) error {
 	// Attach user to request context for use in the service
 	ctx := c.Request().Context()
 	ctx = context.WithValue(ctx, "user", user)
-	newBan, err = h.service.Store(ctx, newBan, attachments)
+	newBan, err = h.service.Store(ctx, newBan, attachments, body.LinkedMessages)
 	if err != nil {
 		return err
 	}

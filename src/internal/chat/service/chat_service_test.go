@@ -414,6 +414,7 @@ func Test(t *testing.T) {
 					g.BeforeEach(func() {
 						serverService.On("GetAll", mock.Anything).Return(servers, nil)
 						repo.On("GetFlaggedMessages", mock.Anything, mock.Anything, mock.Anything).Return(messages, nil)
+						playerNameRepo.On("GetNames", mock.Anything, mock.Anything, mock.Anything).Return("currentName", []string{}, nil)
 					})
 
 					g.It("Should not return an error", func() {
@@ -503,6 +504,7 @@ func Test(t *testing.T) {
 							Return(false, nil).Once() // server ID 2
 						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 							Return(true, nil).Once() // server ID 3
+						playerNameRepo.On("GetNames", mock.Anything, mock.Anything, mock.Anything).Return("currentName", []string{}, nil)
 					})
 
 					g.It("Should not return an error", func() {

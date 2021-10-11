@@ -25,10 +25,11 @@ import (
 )
 
 type CreateWarningParams struct {
-	PlayerID    string                   `json:"player_id" form:"player_id"`
-	Platform    string                   `json:"platform" form:"platform"`
-	Reason      string                   `json:"reason" form:"reason"`
-	Attachments []CreateAttachmentParams `json:"attachments"`
+	PlayerID       string                   `json:"player_id" form:"player_id"`
+	Platform       string                   `json:"platform" form:"platform"`
+	Reason         string                   `json:"reason" form:"reason"`
+	Attachments    []CreateAttachmentParams `json:"attachments"`
+	LinkedMessages []int64                  `json:"linked_chat_messages"`
 }
 
 var attachmentArrValidator = validation.Each(validation.By(func(value interface{}) error {
@@ -56,11 +57,12 @@ func (body CreateWarningParams) Validate() error {
 }
 
 type CreateMuteParams struct {
-	PlayerID    string                   `json:"player_id" form:"player_id"`
-	Platform    string                   `json:"platform" form:"platform"`
-	Reason      string                   `json:"reason" form:"reason"`
-	Duration    int                      `json:"duration" form:"duration"`
-	Attachments []CreateAttachmentParams `json:"attachments"`
+	PlayerID       string                   `json:"player_id" form:"player_id"`
+	Platform       string                   `json:"platform" form:"platform"`
+	Reason         string                   `json:"reason" form:"reason"`
+	Duration       int                      `json:"duration" form:"duration"`
+	Attachments    []CreateAttachmentParams `json:"attachments"`
+	LinkedMessages []int64                  `json:"linked_chat_messages"`
 }
 
 func (body CreateMuteParams) Validate() error {
@@ -78,10 +80,11 @@ func (body CreateMuteParams) Validate() error {
 }
 
 type CreateKickParams struct {
-	PlayerID    string                   `json:"player_id" form:"player_id"`
-	Platform    string                   `json:"platform" form:"platform"`
-	Reason      string                   `json:"reason" form:"reason"`
-	Attachments []CreateAttachmentParams `json:"attachments"`
+	PlayerID       string                   `json:"player_id" form:"player_id"`
+	Platform       string                   `json:"platform" form:"platform"`
+	Reason         string                   `json:"reason" form:"reason"`
+	Attachments    []CreateAttachmentParams `json:"attachments"`
+	LinkedMessages []int64                  `json:"linked_chat_messages"`
 }
 
 func (body CreateKickParams) Validate() error {
@@ -98,11 +101,12 @@ func (body CreateKickParams) Validate() error {
 }
 
 type CreateBanParams struct {
-	PlayerID    string                   `json:"player_id" form:"player_id"`
-	Platform    string                   `json:"platform" form:"platform"`
-	Reason      string                   `json:"reason" form:"reason"`
-	Duration    int                      `json:"duration" form:"duration"`
-	Attachments []CreateAttachmentParams `json:"attachments"`
+	PlayerID       string                   `json:"player_id" form:"player_id"`
+	Platform       string                   `json:"platform" form:"platform"`
+	Reason         string                   `json:"reason" form:"reason"`
+	Duration       int                      `json:"duration" form:"duration"`
+	Attachments    []CreateAttachmentParams `json:"attachments"`
+	LinkedMessages []int64                  `json:"linked_chat_messages"`
 }
 
 func (body CreateBanParams) Validate() error {
