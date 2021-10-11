@@ -632,14 +632,14 @@ func Test(t *testing.T) {
 			})
 		})
 
-		g.Describe("LinkChatMessage()", func() {
+		g.Describe("LinkChatMessages()", func() {
 			g.Describe("Successful link", func() {
 				g.BeforeEach(func() {
 					mock.ExpectExec("INSERT INTO InfractionChatMessages").WillReturnResult(sqlmock.NewResult(0, 1))
 				})
 
 				g.It("Should not return an error", func() {
-					err := repo.LinkChatMessage(ctx, 1, 1)
+					err := repo.LinkChatMessages(ctx, 1, 1)
 
 					Expect(err).To(BeNil())
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
@@ -652,7 +652,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return a domain.ErrNotFound error", func() {
-					err := repo.LinkChatMessage(ctx, 1, 1)
+					err := repo.LinkChatMessages(ctx, 1, 1)
 
 					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
@@ -665,7 +665,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return an error", func() {
-					err := repo.LinkChatMessage(ctx, 1, 1)
+					err := repo.LinkChatMessages(ctx, 1, 1)
 
 					Expect(err).ToNot(BeNil())
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
@@ -673,14 +673,14 @@ func Test(t *testing.T) {
 			})
 		})
 
-		g.Describe("LinkChatMessage()", func() {
+		g.Describe("LinkChatMessages()", func() {
 			g.Describe("Successful unlink", func() {
 				g.BeforeEach(func() {
 					mock.ExpectExec("DELETE FROM InfractionChatMessages").WillReturnResult(sqlmock.NewResult(0, 1))
 				})
 
 				g.It("Should not return an error", func() {
-					err := repo.UnlinkChatMessage(ctx, 1, 1)
+					err := repo.UnlinkChatMessages(ctx, 1, 1)
 
 					Expect(err).To(BeNil())
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
@@ -693,7 +693,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return a domain.ErrNotFound error", func() {
-					err := repo.UnlinkChatMessage(ctx, 1, 1)
+					err := repo.UnlinkChatMessages(ctx, 1, 1)
 
 					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
@@ -706,7 +706,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return an error", func() {
-					err := repo.UnlinkChatMessage(ctx, 1, 1)
+					err := repo.UnlinkChatMessages(ctx, 1, 1)
 
 					Expect(err).ToNot(BeNil())
 					Expect(mock.ExpectationsWereMet()).To(BeNil())

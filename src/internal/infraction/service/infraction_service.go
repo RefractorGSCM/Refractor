@@ -66,7 +66,8 @@ func getInfractionTypes() map[string]domain.InfractionType {
 	}
 }
 
-func (s *infractionService) Store(c context.Context, infraction *domain.Infraction, attachments []*domain.Attachment) (*domain.Infraction, error) {
+func (s *infractionService) Store(c context.Context, infraction *domain.Infraction, attachments []*domain.Attachment,
+	linkedMessages []int64) (*domain.Infraction, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
@@ -129,6 +130,11 @@ func (s *infractionService) Store(c context.Context, infraction *domain.Infracti
 			// Do not fully return out of the function since attachment creation is not considered mission critical
 			continue
 		}
+	}
+
+	// Create chat message links
+	if len(linkedMessages) > 0 {
+
 	}
 
 	return infraction, nil
@@ -475,13 +481,13 @@ func (s *infractionService) GetLinkedChatMessages(c context.Context, id int64) (
 	return s.repo.GetLinkedChatMessages(ctx, id)
 }
 
-// LinkChatMessage links a chat message to an infraction. If a user is set inside the passed in context with the key
+// LinkChatMessages links a chat message to an infraction. If a user is set inside the passed in context with the key
 // "user" then that user's permission to delete the target infraction is checked. Otherwise, calls to this function
 // are seen as trusted and authorization is not checked.
 //
 // When allowing this function to be executed by user requests, make sure they are authorized by setting the user in
 // context under the key "user".
-func (s *infractionService) LinkChatMessage(c context.Context, id int64, messageID int64) error {
+func (s *infractionService) LinkChatMessages(c context.Context, id int64, messageIDs ...int64) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
@@ -516,16 +522,16 @@ func (s *infractionService) LinkChatMessage(c context.Context, id int64, message
 		}
 	}
 
-	return s.repo.LinkChatMessage(ctx, id, messageID)
+	return s.repo.LinkChatMessages(ctx, id, messageIDs...)
 }
 
-// UnlinkChatMessage unlinks a chat message from an infraction. If a user is set inside the passed in context with the key
+// UnlinkChatMessages unlinks a chat message from an infraction. If a user is set inside the passed in context with the key
 // "user" then that user's permission to delete the target infraction is checked. Otherwise, calls to this function
 // are seen as trusted and authorization is not checked.
 //
 // When allowing this function to be executed by user requests, make sure they are authorized by setting the user in
 // context under the key "user".
-func (s *infractionService) UnlinkChatMessage(c context.Context, id int64, messageID int64) error {
+func (s *infractionService) UnlinkChatMessages(c context.Context, id int64, messageIDs ...int64) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
@@ -560,5 +566,5 @@ func (s *infractionService) UnlinkChatMessage(c context.Context, id int64, messa
 		}
 	}
 
-	return s.repo.UnlinkChatMessage(ctx, id, messageID)
+	return s.repo.UnlinkChatMessages(ctx, id, messageIDs...)
 }
