@@ -22,6 +22,7 @@ import (
 	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -322,12 +323,22 @@ func (r *infractionRepo) GetLinkedChatMessages(ctx context.Context, id int64) ([
 
 const pgForeignKeyErrCode = pq.ErrorCode("23503")
 
-func (r *infractionRepo) LinkChatMessage(ctx context.Context, id int64, messageID int64) error {
-	const op = opTag + "LinkChatMessage"
+func (r *infractionRepo) LinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error {
+	const op = opTag + "LinkChatMessages"
 
-	query := "INSERT INTO InfractionChatMessages (InfractionID, MessageID) VALUES ($1, $2);"
+	// Build query
+	query := "INSERT INTO InfractionChatMessages (InfractionID, MessageID) VALUES"
+	argNum := 2
+	values := []interface{}{id} // prefill infraction ID since it'll be arg $1
+	for _, mID := range messageIDs {
+		query += fmt.Sprintf(" ($1, %s),", fmt.Sprintf("$%d", argNum))
+		values = append(values, mID)
+		argNum++
+	}
+	query = query[:len(query)-1] + ";"
+	fmt.Println("Query", query)
 
-	_, err := r.db.ExecContext(ctx, query, id, messageID)
+	_, err := r.db.ExecContext(ctx, query, values...)
 	if err != nil {
 		if pgErr, ok := err.(pq.Error); ok {
 			if pgErr.Code == pgForeignKeyErrCode {
@@ -335,9 +346,9 @@ func (r *infractionRepo) LinkChatMessage(ctx context.Context, id int64, messageI
 			}
 		}
 
-		r.logger.Error("Could not link chat message to infraction",
+		r.logger.Error("Could not link chat messages to infraction",
 			zap.Int64("Infraction ID", id),
-			zap.Int64("Message ID", messageID),
+			zap.Any("Message IDs", messageIDs),
 			zap.Error(err),
 		)
 		return err
@@ -346,16 +357,16 @@ func (r *infractionRepo) LinkChatMessage(ctx context.Context, id int64, messageI
 	return nil
 }
 
-func (r *infractionRepo) UnlinkChatMessage(ctx context.Context, id int64, messageID int64) error {
-	const op = opTag + "UnlinkChatMessage"
+func (r *infractionRepo) UnlinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error {
+	const op = opTag + "UnlinkChatMessages"
 
-	query := "DELETE FROM InfractionChatMessages WHERE InfractionID = $1 AND MessageID = $2;"
+	query := "DELETE FROM InfractionChatMessages WHERE InfractionID = $1 AND MessageID = ANY($2::INT[]);"
 
-	res, err := r.db.ExecContext(ctx, query, id, messageID)
+	res, err := r.db.ExecContext(ctx, query, id, pq.Array(&messageIDs))
 	if err != nil {
 		r.logger.Error("Could not unlink chat message to infraction",
 			zap.Int64("Infraction ID", id),
-			zap.Int64("Message ID", messageID),
+			zap.Any("Message IDs", messageIDs),
 			zap.Error(err),
 		)
 		return err

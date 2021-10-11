@@ -97,13 +97,20 @@ func (_m *InfractionService) GetLinkedChatMessages(c context.Context, id int64) 
 	return r0, r1
 }
 
-// LinkChatMessage provides a mock function with given fields: c, id, messageID
-func (_m *InfractionService) LinkChatMessage(c context.Context, id int64, messageID int64) error {
-	ret := _m.Called(c, id, messageID)
+// LinkChatMessages provides a mock function with given fields: c, id, messageIDs
+func (_m *InfractionService) LinkChatMessages(c context.Context, id int64, messageIDs ...int64) error {
+	_va := make([]interface{}, len(messageIDs))
+	for _i := range messageIDs {
+		_va[_i] = messageIDs[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, c, id)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) error); ok {
-		r0 = rf(c, id, messageID)
+	if rf, ok := ret.Get(0).(func(context.Context, int64, ...int64) error); ok {
+		r0 = rf(c, id, messageIDs...)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -111,13 +118,13 @@ func (_m *InfractionService) LinkChatMessage(c context.Context, id int64, messag
 	return r0
 }
 
-// Store provides a mock function with given fields: c, infraction, attachments
-func (_m *InfractionService) Store(c context.Context, infraction *domain.Infraction, attachments []*domain.Attachment) (*domain.Infraction, error) {
-	ret := _m.Called(c, infraction, attachments)
+// Store provides a mock function with given fields: c, infraction, attachments, linkedMessages
+func (_m *InfractionService) Store(c context.Context, infraction *domain.Infraction, attachments []*domain.Attachment, linkedMessages []int64) (*domain.Infraction, error) {
+	ret := _m.Called(c, infraction, attachments, linkedMessages)
 
 	var r0 *domain.Infraction
-	if rf, ok := ret.Get(0).(func(context.Context, *domain.Infraction, []*domain.Attachment) *domain.Infraction); ok {
-		r0 = rf(c, infraction, attachments)
+	if rf, ok := ret.Get(0).(func(context.Context, *domain.Infraction, []*domain.Attachment, []int64) *domain.Infraction); ok {
+		r0 = rf(c, infraction, attachments, linkedMessages)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*domain.Infraction)
@@ -125,8 +132,8 @@ func (_m *InfractionService) Store(c context.Context, infraction *domain.Infract
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *domain.Infraction, []*domain.Attachment) error); ok {
-		r1 = rf(c, infraction, attachments)
+	if rf, ok := ret.Get(1).(func(context.Context, *domain.Infraction, []*domain.Attachment, []int64) error); ok {
+		r1 = rf(c, infraction, attachments, linkedMessages)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -134,13 +141,20 @@ func (_m *InfractionService) Store(c context.Context, infraction *domain.Infract
 	return r0, r1
 }
 
-// UnlinkChatMessage provides a mock function with given fields: c, id, messageID
-func (_m *InfractionService) UnlinkChatMessage(c context.Context, id int64, messageID int64) error {
-	ret := _m.Called(c, id, messageID)
+// UnlinkChatMessages provides a mock function with given fields: c, id, messageIDs
+func (_m *InfractionService) UnlinkChatMessages(c context.Context, id int64, messageIDs ...int64) error {
+	_va := make([]interface{}, len(messageIDs))
+	for _i := range messageIDs {
+		_va[_i] = messageIDs[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, c, id)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) error); ok {
-		r0 = rf(c, id, messageID)
+	if rf, ok := ret.Get(0).(func(context.Context, int64, ...int64) error); ok {
+		r0 = rf(c, id, messageIDs...)
 	} else {
 		r0 = ret.Error(0)
 	}

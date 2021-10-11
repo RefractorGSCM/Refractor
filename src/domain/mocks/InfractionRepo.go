@@ -97,13 +97,20 @@ func (_m *InfractionRepo) GetLinkedChatMessages(ctx context.Context, id int64) (
 	return r0, r1
 }
 
-// LinkChatMessage provides a mock function with given fields: ctx, id, messageID
-func (_m *InfractionRepo) LinkChatMessage(ctx context.Context, id int64, messageID int64) error {
-	ret := _m.Called(ctx, id, messageID)
+// LinkChatMessages provides a mock function with given fields: ctx, id, messageIDs
+func (_m *InfractionRepo) LinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error {
+	_va := make([]interface{}, len(messageIDs))
+	for _i := range messageIDs {
+		_va[_i] = messageIDs[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, id)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) error); ok {
-		r0 = rf(ctx, id, messageID)
+	if rf, ok := ret.Get(0).(func(context.Context, int64, ...int64) error); ok {
+		r0 = rf(ctx, id, messageIDs...)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -164,13 +171,20 @@ func (_m *InfractionRepo) Store(ctx context.Context, infraction *domain.Infracti
 	return r0, r1
 }
 
-// UnlinkChatMessage provides a mock function with given fields: ctx, id, messageID
-func (_m *InfractionRepo) UnlinkChatMessage(ctx context.Context, id int64, messageID int64) error {
-	ret := _m.Called(ctx, id, messageID)
+// UnlinkChatMessages provides a mock function with given fields: ctx, id, messageIDs
+func (_m *InfractionRepo) UnlinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error {
+	_va := make([]interface{}, len(messageIDs))
+	for _i := range messageIDs {
+		_va[_i] = messageIDs[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, id)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) error); ok {
-		r0 = rf(ctx, id, messageID)
+	if rf, ok := ret.Get(0).(func(context.Context, int64, ...int64) error); ok {
+		r0 = rf(ctx, id, messageIDs...)
 	} else {
 		r0 = ret.Error(0)
 	}
