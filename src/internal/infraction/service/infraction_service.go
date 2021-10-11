@@ -475,16 +475,90 @@ func (s *infractionService) GetLinkedChatMessages(c context.Context, id int64) (
 	return s.repo.GetLinkedChatMessages(ctx, id)
 }
 
+// LinkChatMessage links a chat message to an infraction. If a user is set inside the passed in context with the key
+// "user" then that user's permission to delete the target infraction is checked. Otherwise, calls to this function
+// are seen as trusted and authorization is not checked.
+//
+// When allowing this function to be executed by user requests, make sure they are authorized by setting the user in
+// context under the key "user".
 func (s *infractionService) LinkChatMessage(c context.Context, id int64, messageID int64) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
+	// Get the target infraction
+	infraction, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Cause(err) == domain.ErrNotFound {
+			return &domain.HTTPError{
+				Success: false,
+				Message: "Input errors exist",
+				ValidationErrors: map[string]string{
+					"infraction_id": "infraction not found",
+				},
+				Status: http.StatusBadRequest,
+			}
+		}
+
+		return err
+	}
+
+	// if a user is present in context then we check their authorization to link a chat message
+	user, ok := ctx.Value("user").(*domain.AuthUser)
+	if ok {
+		hasPermission, err := s.hasUpdatePermissions(ctx, infraction, user)
+		if err != nil {
+			return err
+		}
+
+		if !hasPermission {
+			return domain.NewHTTPError(nil, http.StatusUnauthorized,
+				"You do not have permission to update this infraction.")
+		}
+	}
+
 	return s.repo.LinkChatMessage(ctx, id, messageID)
 }
 
+// UnlinkChatMessage unlinks a chat message from an infraction. If a user is set inside the passed in context with the key
+// "user" then that user's permission to delete the target infraction is checked. Otherwise, calls to this function
+// are seen as trusted and authorization is not checked.
+//
+// When allowing this function to be executed by user requests, make sure they are authorized by setting the user in
+// context under the key "user".
 func (s *infractionService) UnlinkChatMessage(c context.Context, id int64, messageID int64) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
+
+	// Get the target infraction
+	infraction, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Cause(err) == domain.ErrNotFound {
+			return &domain.HTTPError{
+				Success: false,
+				Message: "Input errors exist",
+				ValidationErrors: map[string]string{
+					"infraction_id": "infraction not found",
+				},
+				Status: http.StatusBadRequest,
+			}
+		}
+
+		return err
+	}
+
+	// if a user is present in context then we check their authorization to unlink a chat message
+	user, ok := ctx.Value("user").(*domain.AuthUser)
+	if ok {
+		hasPermission, err := s.hasUpdatePermissions(ctx, infraction, user)
+		if err != nil {
+			return err
+		}
+
+		if !hasPermission {
+			return domain.NewHTTPError(nil, http.StatusUnauthorized,
+				"You do not have permission to update this infraction.")
+		}
+	}
 
 	return s.repo.UnlinkChatMessage(ctx, id, messageID)
 }

@@ -904,6 +904,7 @@ func Test(t *testing.T) {
 		g.Describe("LinkChatMessage()", func() {
 			g.Describe("Successful link", func() {
 				g.BeforeEach(func() {
+					mockRepo.On("GetByID", mock.Anything, int64(1)).Return(&domain.Infraction{}, nil)
 					mockRepo.On("LinkChatMessage", mock.Anything, int64(1), int64(2)).Return(nil)
 				})
 
@@ -915,26 +916,74 @@ func Test(t *testing.T) {
 				})
 			})
 
-			g.Describe("Invalid chat message or infraction id provided", func() {
+			g.Describe("Infraction not found", func() {
 				g.BeforeEach(func() {
-					mockRepo.On("LinkChatMessage", mock.Anything, int64(1), int64(10)).Return(domain.ErrNotFound)
+					mockRepo.On("GetByID", mock.Anything, int64(1)).Return(nil, domain.ErrNotFound)
 				})
 
-				g.It("Should return a domain.ErrNotFound error", func() {
+				g.It("Should return an HTTPError domain.ErrNotFound error", func() {
 					err := service.LinkChatMessage(ctx, 1, 10)
 
-					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					_, ok := err.(*domain.HTTPError)
+
+					Expect(ok).To(BeTrue())
 					mockRepo.AssertExpectations(t)
 				})
 			})
 
 			g.Describe("Repository error", func() {
 				g.BeforeEach(func() {
+					mockRepo.On("GetByID", mock.Anything, int64(1)).Return(&domain.Infraction{}, nil)
 					mockRepo.On("LinkChatMessage", mock.Anything, int64(1), int64(10)).Return(fmt.Errorf("err"))
 				})
 
 				g.It("Should return an error", func() {
 					err := service.LinkChatMessage(ctx, 1, 10)
+
+					Expect(err).ToNot(BeNil())
+					mockRepo.AssertExpectations(t)
+				})
+			})
+		})
+
+		g.Describe("UnlinkChatMessage()", func() {
+			g.Describe("Successful unlink", func() {
+				g.BeforeEach(func() {
+					mockRepo.On("GetByID", mock.Anything, int64(1)).Return(&domain.Infraction{}, nil)
+					mockRepo.On("UnlinkChatMessage", mock.Anything, int64(1), int64(2)).Return(nil)
+				})
+
+				g.It("Should not return an error", func() {
+					err := service.UnlinkChatMessage(ctx, 1, 2)
+
+					Expect(err).To(BeNil())
+					mockRepo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("Infraction not found", func() {
+				g.BeforeEach(func() {
+					mockRepo.On("GetByID", mock.Anything, int64(1)).Return(nil, domain.ErrNotFound)
+				})
+
+				g.It("Should return an HTTPError domain.ErrNotFound error", func() {
+					err := service.UnlinkChatMessage(ctx, 1, 10)
+
+					_, ok := err.(*domain.HTTPError)
+
+					Expect(ok).To(BeTrue())
+					mockRepo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("Repository error", func() {
+				g.BeforeEach(func() {
+					mockRepo.On("GetByID", mock.Anything, int64(1)).Return(&domain.Infraction{}, nil)
+					mockRepo.On("UnlinkChatMessage", mock.Anything, int64(1), int64(10)).Return(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					err := service.UnlinkChatMessage(ctx, 1, 10)
 
 					Expect(err).ToNot(BeNil())
 					mockRepo.AssertExpectations(t)
