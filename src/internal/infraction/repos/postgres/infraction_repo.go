@@ -296,7 +296,7 @@ func (r *infractionRepo) GetLinkedChatMessages(ctx context.Context, id int64) ([
 		    cm.ModifiedAt
 		FROM InfractionChatMessages icm
 		INNER JOIN ChatMessages cm on cm.MessageID = icm.MessageID
-		WHERE icm.InfractionID = 1;
+		WHERE icm.InfractionID = $1;
 	`
 
 	rows, err := r.db.QueryContext(ctx, query, id)
