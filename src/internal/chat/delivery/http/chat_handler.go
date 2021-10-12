@@ -202,13 +202,28 @@ func (h *chatHandler) DeleteFlaggedWord(c echo.Context) error {
 }
 
 func (h *chatHandler) GetRecentFlaggedMessages(c echo.Context) error {
+	var count int64 = 10
+	countString := c.QueryParam("count")
+	if countString != "" {
+		var err error
+		count, err = strconv.ParseInt(countString, 10, 32)
+		if err != nil {
+			return &domain.HTTPError{
+				Success:          false,
+				Message:          "count input error",
+				ValidationErrors: map[string]string{"count": "invalid int"},
+				Status:           http.StatusBadRequest,
+			}
+		}
+	}
+
 	user, ok := c.Get("user").(*domain.AuthUser)
 	if !ok {
 		return fmt.Errorf("could not cast user to *domain.AuthUser")
 	}
 
 	ctx := context.WithValue(c.Request().Context(), "user", user)
-	messages, err := h.service.GetFlaggedMessages(ctx, 10)
+	messages, err := h.service.GetFlaggedMessages(ctx, int(count))
 	if err != nil {
 		return err
 	}
