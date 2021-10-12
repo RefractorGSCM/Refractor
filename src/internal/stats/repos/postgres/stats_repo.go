@@ -138,3 +138,17 @@ func (r *statsRepo) GetTotalChatMessages(ctx context.Context) (int, error) {
 
 	return count, nil
 }
+
+func (r *statsRepo) GetTotalChatMessagesInRange(ctx context.Context, start, end time.Time) (int, error) {
+	const op = opTag + "GetTotalChatMessagesInRange"
+
+	query := "SELECT COUNT(1) FROM ChatMessages WHERE CreatedAt BETWEEN $1 AND $2;"
+
+	count, err := r.fetchCount(ctx, query, pq.FormatTimestamp(start), pq.FormatTimestamp(end))
+	if err != nil {
+		r.logger.Error("Could not get new infractions in range count", zap.Error(err))
+		return 0, errors.Wrap(err, op)
+	}
+
+	return count, nil
+}

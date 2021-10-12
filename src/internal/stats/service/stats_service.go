@@ -82,5 +82,10 @@ func (s *statsService) GetStats(c context.Context) (*domain.Stats, error) {
 		return nil, err
 	}
 
+	stats.NewChatMessagesLastDay, err = s.repo.GetTotalChatMessagesInRange(ctx, oneDayAgo, now)
+	if err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
