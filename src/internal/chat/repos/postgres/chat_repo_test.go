@@ -426,5 +426,29 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("GetFlaggedMessageCount()", func() {
+			g.Describe("Count fetched", func() {
+				g.BeforeEach(func() {
+					mockRepo.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM ChatMessages WHERE")).
+						WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1823))
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.GetFlaggedMessageCount(ctx)
+
+					Expect(err).To(BeNil())
+					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return the correct amount", func() {
+					count, err := repo.GetFlaggedMessageCount(ctx)
+
+					Expect(err).To(BeNil())
+					Expect(count).To(Equal(1823))
+					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
 	})
 }
