@@ -200,7 +200,7 @@ func main() {
 	_searchHandler.ApplySearchHandler(apiGroup, searchService, authorizer, middlewareBundle, logger)
 
 	statsRepo := _statsRepo.NewStatsRepo(db, logger)
-	statsService := _statsService.NewStatsService(statsRepo, time.Second*2)
+	statsService := _statsService.NewStatsService(statsRepo, chatRepo, time.Second*2)
 	_statsHandler.ApplyStatsHandler(apiGroup, statsService, authorizer, middlewareBundle, logger)
 
 	// Subscribe to events

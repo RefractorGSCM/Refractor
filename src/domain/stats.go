@@ -23,12 +23,13 @@ import (
 )
 
 type Stats struct {
-	TotalPlayers          int `json:"total_players"`
-	NewPlayersLastDay     int `json:"new_players_last_day"`
-	UniquePlayersLastDay  int `json:"unique_players_last_day"`
-	TotalInfractions      int `json:"total_infractions"`
-	NewInfractionsLastDay int `json:"new_infractions_last_day"`
-	TotalChatMessages     int `json:"total_chat_messages"`
+	TotalPlayers             int `json:"total_players"`
+	NewPlayersLastDay        int `json:"new_players_last_day"`
+	UniquePlayersLastDay     int `json:"unique_players_last_day"`
+	TotalInfractions         int `json:"total_infractions"`
+	NewInfractionsLastDay    int `json:"new_infractions_last_day"`
+	TotalChatMessages        int `json:"total_chat_messages"`
+	TotalFlaggedChatMessages int `json:"total_flagged_chat_messages"`
 }
 
 type StatsRepo interface {

@@ -24,14 +24,16 @@ import (
 )
 
 type statsService struct {
-	repo    domain.StatsRepo
-	timeout time.Duration
+	repo     domain.StatsRepo
+	chatRepo domain.ChatRepo
+	timeout  time.Duration
 }
 
-func NewStatsService(repo domain.StatsRepo, to time.Duration) domain.StatsService {
+func NewStatsService(repo domain.StatsRepo, cr domain.ChatRepo, to time.Duration) domain.StatsService {
 	return &statsService{
-		repo:    repo,
-		timeout: to,
+		repo:     repo,
+		chatRepo: cr,
+		timeout:  to,
 	}
 }
 
@@ -71,6 +73,11 @@ func (s *statsService) GetStats(c context.Context) (*domain.Stats, error) {
 	}
 
 	stats.TotalChatMessages, err = s.repo.GetTotalChatMessages(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	stats.TotalFlaggedChatMessages, err = s.chatRepo.GetFlaggedMessageCount(ctx)
 	if err != nil {
 		return nil, err
 	}
