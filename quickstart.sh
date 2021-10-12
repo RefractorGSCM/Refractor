@@ -85,9 +85,9 @@ if ! [ -f "./deploy/kratos/kratos.yml" ]; then
   initial_setup=true
 fi
 
-if ! [ -f "./Refractor-Svelte/rollup.config.js" ]; then
-  echo "File: ./Refractor-Svelte/rollup.config.js does not exist. Copying default..."
-  cp ./default/svelte/rollup.config.js ./Refractor-Svelte/rollup.config.js
+if ! [ -f "./Refractor-Svelte/.env.production" ]; then
+  echo "File: ./Refractor-Svelte/.env.production does not exist. Copying default..."
+  cp ./default/svelte/.env.production ./Refractor-Svelte/.env.production
   initial_setup=true
 fi
 
@@ -106,7 +106,7 @@ if ! cmp ./default/docker/docker-compose.yml ./docker-compose.yml || \
    ! cmp ./default/nginx/app.conf ./deploy/nginx/app.conf || \
    ! cmp ./default/postgres/init.sql ./deploy/postgres/init.sql || \
    ! cmp ./default/kratos/kratos.yml ./deploy/kratos/kratos.yml || \
-   ! cmp ./default/svelte/rollup.config.js ./Refractor-Svelte/rollup.config.js || \
+   ! cmp ./default/svelte/.env.production ./Refractor-Svelte/.env.production || \
    "$initial_setup"; then
   echo ""
 
@@ -155,10 +155,10 @@ if ! cmp ./default/docker/docker-compose.yml ./docker-compose.yml || \
     mv ./deploy/kratos/kratos.yml ./deploy/backup/kratos/kratos.yml
     cp ./default/kratos/kratos.yml ./deploy/kratos/kratos.yml
 
-    # svelte config file
-    rm ./deploy/backup/svelte/rollup.config.js 2> /dev/null
-    mv ./Refractor-Svelte/rollup.config.js ./deploy/backup/svelte/rollup.config.js
-    cp ./default/svelte/rollup.config.js ./Refractor-Svelte/rollup.config.js
+    # svelte env file
+    rm ./deploy/backup/svelte/.env.production 2> /dev/null
+    mv ./Refractor-Svelte/.env.production ./deploy/backup/svelte/.env.production
+    cp ./default/svelte/.env.production ./Refractor-Svelte/.env.production
     echo ""
 
     echo ""
@@ -213,7 +213,7 @@ if ! cmp ./default/docker/docker-compose.yml ./docker-compose.yml || \
     read -p "> " community_name
     echo ""
 
-    # Set up variables for frontend svlete app rollup config
+    # Set up env variables for frontend svelte
     kratos_root="https:\/\/${domain}\/kp"
     auth_root="https:\/\/${domain}\/k"
     api_root="https:\/\/${domain}\/api\/v1"
@@ -231,11 +231,11 @@ if ! cmp ./default/docker/docker-compose.yml ./docker-compose.yml || \
     sed -ri "s/\{\{SMTP_FROM\}\}/${smtp_from}/g"                       ./docker-compose.yml
     sed -ri "s/\{\{ENCRYPTION_KEY\}\}/${encryption_key}/g"             ./docker-compose.yml
     sed -ri "s/\{\{COOKIE_SECRET\}\}/${cookie_secret}/g"               ./deploy/kratos/kratos.yml
-    sed -ri "s/\{\{COMMUNITY_NAME\}\}/${community_name}/g"             ./Refractor-Svelte/rollup.config.js
-    sed -ri "s/\{\{KRATOS_ROOT\}\}/${kratos_root}/g"                   ./Refractor-Svelte/rollup.config.js
-    sed -ri "s/\{\{AUTH_ROOT\}\}/${auth_root}/g"                       ./Refractor-Svelte/rollup.config.js
-    sed -ri "s/\{\{API_ROOT\}\}/${api_root}/g"                         ./Refractor-Svelte/rollup.config.js
-    sed -ri "s/\{\{WEBSOCKET_ROOT\}\}/${websocket_root}/g"             ./Refractor-Svelte/rollup.config.js
+    sed -ri "s/\{\{COMMUNITY_NAME\}\}/${community_name}/g"             ./Refractor-Svelte/.env.production
+    sed -ri "s/\{\{KRATOS_ROOT\}\}/${kratos_root}/g"                   ./Refractor-Svelte/.env.production
+    sed -ri "s/\{\{AUTH_ROOT\}\}/${auth_root}/g"                       ./Refractor-Svelte/.env.production
+    sed -ri "s/\{\{API_ROOT\}\}/${api_root}/g"                         ./Refractor-Svelte/.env.production
+    sed -ri "s/\{\{WEBSOCKET_ROOT\}\}/${websocket_root}/g"             ./Refractor-Svelte/.env.production
 
     # remove state flag file
     rm -f ./.neversetup
