@@ -528,5 +528,28 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("GetFlaggedMessageCount()", func() {
+			g.Describe("Count fetched", func() {
+				g.BeforeEach(func() {
+					repo.On("GetFlaggedMessageCount", mock.Anything).Return(3272, nil)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := service.GetFlaggedMessageCount(ctx)
+
+					Expect(err).To(BeNil())
+					repo.AssertExpectations(t)
+				})
+
+				g.It("Should return the correct amount", func() {
+					count, err := service.GetFlaggedMessageCount(ctx)
+
+					Expect(err).To(BeNil())
+					Expect(count).To(Equal(3272))
+					repo.AssertExpectations(t)
+				})
+			})
+		})
 	})
 }

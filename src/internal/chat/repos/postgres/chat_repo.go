@@ -278,6 +278,22 @@ func (r *chatRepo) GetFlaggedMessages(ctx context.Context, count int, serverIDs 
 	return results, nil
 }
 
+func (r *chatRepo) GetFlaggedMessageCount(ctx context.Context) (int, error) {
+	const op = opTag + "GetFlaggedMessages"
+
+	query := "SELECT COUNT(1) FROM ChatMessages WHERE Flagged = TRUE;"
+
+	row := r.db.QueryRowContext(ctx, query)
+
+	var count int
+	if err := row.Scan(&count); err != nil {
+		r.logger.Error("Could not scan flagged message count", zap.Error(err))
+		return 0, errors.Wrap(err, op)
+	}
+
+	return count, nil
+}
+
 // Scan helpers
 func (r *chatRepo) scanRow(row *sql.Row, msg *domain.ChatMessage) error {
 	return row.Scan(&msg.MessageID, &msg.PlayerID, &msg.Platform, &msg.ServerID, &msg.Message, &msg.Flagged, &msg.CreatedAt, &msg.ModifiedAt)

@@ -256,3 +256,10 @@ func (s *chatService) GetFlaggedMessages(c context.Context, count int) ([]*domai
 
 	return results, nil
 }
+
+func (s *chatService) GetFlaggedMessageCount(c context.Context) (int, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.GetFlaggedMessageCount(ctx)
+}
