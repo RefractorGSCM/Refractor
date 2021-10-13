@@ -78,3 +78,9 @@ func (g *mordhau) GetCommandOutputPatterns() *domain.CommandOutputPatterns {
 func (g *mordhau) GetBroadcastCommand() string {
 	return "Say %s"
 }
+
+func (g *mordhau) GetDefaultSettings() *domain.GameSettings {
+	return &domain.GameSettings{
+		BanCommandPattern: "Ban {{PLAYER_ID}} {{DURATION}}",
+	}
+}

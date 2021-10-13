@@ -68,3 +68,9 @@ func (g *minecraft) GetCommandOutputPatterns() *domain.CommandOutputPatterns {
 func (g *minecraft) GetBroadcastCommand() string {
 	return "say %s"
 }
+
+func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
+	return &domain.GameSettings{
+		BanCommandPattern: "ban {{NAME}}",
+	}
+}

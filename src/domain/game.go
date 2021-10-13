@@ -18,6 +18,7 @@
 package domain
 
 import (
+	"context"
 	"regexp"
 	"time"
 )
@@ -32,6 +33,7 @@ type Game interface {
 	GetPlayerListCommand() string
 	GetCommandOutputPatterns() *CommandOutputPatterns
 	GetBroadcastCommand() string
+	GetDefaultSettings() *GameSettings
 }
 
 type CommandOutputPatterns struct {
@@ -93,4 +95,13 @@ type GameService interface {
 	GetAllGames() []Game
 	GameExists(name string) bool
 	GetGame(name string) (Game, error)
+}
+
+type GameSettings struct {
+	BanCommandPattern string `json:"ban_command_pattern"`
+}
+
+type GameRepo interface {
+	GetSettings(ctx context.Context, game Game) (*GameSettings, error)
+	SetSettings(ctx context.Context, game Game, settings *GameSettings) error
 }
