@@ -17,13 +17,18 @@
 
 package params
 
-import validation "github.com/go-ozzo/ozzo-validation"
+import (
+	validation "github.com/go-ozzo/ozzo-validation"
+	"strings"
+)
 
 type SetGameSettingsParams struct {
 	BanCommandPattern string `json:"ban_command_pattern"`
 }
 
 func (body SetGameSettingsParams) Validate() error {
+	body.BanCommandPattern = strings.TrimSpace(body.BanCommandPattern)
+
 	return ValidateStruct(&body,
 		validation.Field(&body.BanCommandPattern, validation.Required, validation.Length(1, 128)))
 }
