@@ -19,7 +19,6 @@ package file
 
 import (
 	"Refractor/domain"
-	"context"
 	"encoding/gob"
 	"fmt"
 	gocache "github.com/patrickmn/go-cache"
