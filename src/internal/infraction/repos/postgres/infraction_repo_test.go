@@ -713,5 +713,80 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("PlayerIsBanned()", func() {
+			g.Describe("Player is banned", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("select exists(")).WillReturnRows(sqlmock.NewRows([]string{"IsBanned", "TimeRemaining"}).
+						AddRow(true, 172531))
+				})
+
+				g.It("Should not return an error", func() {
+					_, _, err := repo.PlayerIsBanned(ctx, "", "")
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return true", func() {
+					isBanned, _, err := repo.PlayerIsBanned(ctx, "", "")
+
+					Expect(err).To(BeNil())
+					Expect(isBanned).To(BeTrue())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return the correct time remaining", func() {
+					_, timeRemaining, err := repo.PlayerIsBanned(ctx, "", "")
+
+					Expect(err).To(BeNil())
+					Expect(timeRemaining).To(Equal(int64(172531)))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Player is not banned", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("select exists(")).WillReturnRows(sqlmock.NewRows([]string{"IsBanned", "TimeRemaining"}).
+						AddRow(false, nil))
+				})
+
+				g.It("Should not return an error", func() {
+					_, _, err := repo.PlayerIsBanned(ctx, "", "")
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return false", func() {
+					isBanned, _, err := repo.PlayerIsBanned(ctx, "", "")
+
+					Expect(err).To(BeNil())
+					Expect(isBanned).To(BeFalse())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return 0 for the time remaining", func() {
+					_, timeRemaining, err := repo.PlayerIsBanned(ctx, "", "")
+
+					Expect(err).To(BeNil())
+					Expect(timeRemaining).To(Equal(int64(0)))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Database error", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("select exists(")).WillReturnError(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					_, _, err := repo.PlayerIsBanned(ctx, "", "")
+
+					Expect(err).ToNot(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
 	})
 }

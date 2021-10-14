@@ -459,14 +459,14 @@ func (h *infractionHandler) UpdateInfraction(c echo.Context) error {
 		return err
 	}
 
-	h.logger.Info("Warning updated",
+	h.logger.Info("Infraction updated",
 		zap.Any("Update Args", updateArgs),
 		zap.String("User ID", user.Identity.Id),
 	)
 
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
-		Message: "Warning updated",
+		Message: "Infraction updated",
 		Payload: updated,
 	})
 }
