@@ -118,6 +118,34 @@ func (_m *InfractionRepo) LinkChatMessages(ctx context.Context, id int64, messag
 	return r0
 }
 
+// PlayerIsBanned provides a mock function with given fields: ctx, platform, playerID
+func (_m *InfractionRepo) PlayerIsBanned(ctx context.Context, platform string, playerID string) (bool, int, error) {
+	ret := _m.Called(ctx, platform, playerID)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
+		r0 = rf(ctx, platform, playerID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 int
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) int); ok {
+		r1 = rf(ctx, platform, playerID)
+	} else {
+		r1 = ret.Get(1).(int)
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
+		r2 = rf(ctx, platform, playerID)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // Search provides a mock function with given fields: ctx, args, limit, offset
 func (_m *InfractionRepo) Search(ctx context.Context, args domain.FindArgs, limit int, offset int) (int, []*domain.Infraction, error) {
 	ret := _m.Called(ctx, args, limit, offset)

@@ -60,6 +60,7 @@ type InfractionRepo interface {
 	GetLinkedChatMessages(ctx context.Context, id int64) ([]*ChatMessage, error)
 	LinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error
 	UnlinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error
+	PlayerIsBanned(ctx context.Context, platform, playerID string) (bool, int64, error)
 }
 
 type InfractionService interface {
