@@ -17,15 +17,22 @@
 
 package service
 
-import "Refractor/domain"
+import (
+	"Refractor/domain"
+	"time"
+)
 
 type gameService struct {
-	games map[string]domain.Game
+	repo    domain.GameRepo
+	timeout time.Duration
+	games   map[string]domain.Game
 }
 
-func NewGameService() domain.GameService {
+func NewGameService(gr domain.GameRepo, to time.Duration) domain.GameService {
 	return &gameService{
-		games: map[string]domain.Game{},
+		repo:    gr,
+		timeout: to,
+		games:   map[string]domain.Game{},
 	}
 }
 
@@ -55,4 +62,31 @@ func (s *gameService) GetGame(name string) (domain.Game, error) {
 	}
 
 	return s.games[name], nil
+}
+
+func (s *gameService) GetGameSettings(gameName string) (*domain.GameSettings, error) {
+	game, err := s.GetGame(gameName)
+	if err != nil {
+		return nil, err
+	}
+
+	settings, err := s.repo.GetSettings(game)
+	if err != nil {
+		return nil, err
+	}
+
+	return settings, nil
+}
+
+func (s *gameService) SetGameSettings(gameName string, settings *domain.GameSettings) error {
+	game, err := s.GetGame(gameName)
+	if err != nil {
+		return err
+	}
+
+	if err := s.repo.SetSettings(game, settings); err != nil {
+		return err
+	}
+
+	return nil
 }
