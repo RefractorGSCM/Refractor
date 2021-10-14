@@ -598,3 +598,10 @@ func (s *infractionService) UnlinkChatMessages(c context.Context, id int64, mess
 
 	return s.repo.UnlinkChatMessages(ctx, id, messageIDs...)
 }
+
+func (s *infractionService) PlayerIsBanned(c context.Context, platform, playerID string) (bool, int64, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.PlayerIsBanned(ctx, platform, playerID)
+}

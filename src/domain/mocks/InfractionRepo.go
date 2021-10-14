@@ -119,7 +119,7 @@ func (_m *InfractionRepo) LinkChatMessages(ctx context.Context, id int64, messag
 }
 
 // PlayerIsBanned provides a mock function with given fields: ctx, platform, playerID
-func (_m *InfractionRepo) PlayerIsBanned(ctx context.Context, platform string, playerID string) (bool, int, error) {
+func (_m *InfractionRepo) PlayerIsBanned(ctx context.Context, platform string, playerID string) (bool, int64, error) {
 	ret := _m.Called(ctx, platform, playerID)
 
 	var r0 bool
@@ -129,11 +129,11 @@ func (_m *InfractionRepo) PlayerIsBanned(ctx context.Context, platform string, p
 		r0 = ret.Get(0).(bool)
 	}
 
-	var r1 int
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) int); ok {
+	var r1 int64
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) int64); ok {
 		r1 = rf(ctx, platform, playerID)
 	} else {
-		r1 = ret.Get(1).(int)
+		r1 = ret.Get(1).(int64)
 	}
 
 	var r2 error
