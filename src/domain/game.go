@@ -18,7 +18,6 @@
 package domain
 
 import (
-	"context"
 	"regexp"
 	"time"
 )
@@ -102,6 +101,6 @@ type GameSettings struct {
 }
 
 type GameRepo interface {
-	GetSettings(ctx context.Context, game Game) (*GameSettings, error)
-	SetSettings(ctx context.Context, game Game, settings *GameSettings) error
+	GetSettings(game Game) (*GameSettings, error)
+	SetSettings(game Game, settings *GameSettings) error
 }

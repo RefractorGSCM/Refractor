@@ -40,7 +40,7 @@ func NewGameRepo() domain.GameRepo {
 	}
 }
 
-func (r *gameRepo) GetSettings(ctx context.Context, game domain.Game) (*domain.GameSettings, error) {
+func (r *gameRepo) GetSettings(game domain.Game) (*domain.GameSettings, error) {
 	const op = opTag + "GetSettings"
 
 	// Check if this game's settings exists in the cache. If they do, return them and skip the IO.
@@ -53,7 +53,7 @@ func (r *gameRepo) GetSettings(ctx context.Context, game domain.Game) (*domain.G
 	// Check if data file exists
 	if _, err := os.Stat(fmt.Sprintf("./data/%s_settings.gob", game.GetName())); os.IsNotExist(err) {
 		// If it doesn't, use SetSettings to create it
-		if err := r.SetSettings(ctx, game, game.GetDefaultSettings()); err != nil {
+		if err := r.SetSettings(game, game.GetDefaultSettings()); err != nil {
 			return nil, errors.Wrap(err, op)
 		}
 	}
@@ -81,7 +81,7 @@ func (r *gameRepo) GetSettings(ctx context.Context, game domain.Game) (*domain.G
 	return decodedSettings, nil
 }
 
-func (r *gameRepo) SetSettings(ctx context.Context, game domain.Game, settings *domain.GameSettings) error {
+func (r *gameRepo) SetSettings(game domain.Game, settings *domain.GameSettings) error {
 	const op = opTag + "SetSettings"
 
 	// Check if data directory exists
