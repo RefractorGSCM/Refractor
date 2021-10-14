@@ -94,6 +94,8 @@ type GameService interface {
 	GetAllGames() []Game
 	GameExists(name string) bool
 	GetGame(name string) (Game, error)
+	GetGameSettings(gameName string) (*GameSettings, error)
+	SetGameSettings(gameName string, settings *GameSettings) error
 }
 
 type GameSettings struct {

@@ -33,6 +33,7 @@ import (
 	_flaggedWordRepo "Refractor/internal/flaggedword/repos/postgres"
 	_flaggedWordService "Refractor/internal/flaggedword/service"
 	_gameHandler "Refractor/internal/game/delivery/http"
+	_gameRepo "Refractor/internal/game/repos/file"
 	_gameService "Refractor/internal/game/service"
 	_groupHandler "Refractor/internal/group/delivery/http"
 	_groupRepo "Refractor/internal/group/repos/postgres"
@@ -155,10 +156,11 @@ func main() {
 	groupService := _groupService.NewGroupService(groupRepo, authorizer, time.Second*2, logger)
 	_groupHandler.ApplyGroupHandler(apiGroup, groupService, authorizer, middlewareBundle, logger)
 
-	gameService := _gameService.NewGameService()
+	gameRepo := _gameRepo.NewGameRepo()
+	gameService := _gameService.NewGameService(gameRepo, time.Second*2)
 	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
 	gameService.AddGame(minecraft.NewMinecraftGame(mojang.NewMojangPlatform()))
-	_gameHandler.ApplyGameHandler(apiGroup, gameService, middlewareBundle)
+	_gameHandler.ApplyGameHandler(apiGroup, gameService, middlewareBundle, authorizer, logger)
 
 	playerNameRepo := _playerNameRepo.NewPlayerNameRepo(db, logger)
 	playerRepo := _playerRepo.NewPlayerRepo(db, playerNameRepo, logger)
