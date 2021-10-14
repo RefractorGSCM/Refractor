@@ -59,6 +59,22 @@ func (_m *Game) GetConfig() *domain.GameConfig {
 	return r0
 }
 
+// GetDefaultSettings provides a mock function with given fields:
+func (_m *Game) GetDefaultSettings() *domain.GameSettings {
+	ret := _m.Called()
+
+	var r0 *domain.GameSettings
+	if rf, ok := ret.Get(0).(func() *domain.GameSettings); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.GameSettings)
+		}
+	}
+
+	return r0
+}
+
 // GetName provides a mock function with given fields:
 func (_m *Game) GetName() string {
 	ret := _m.Called()
