@@ -72,4 +72,5 @@ type InfractionService interface {
 	GetLinkedChatMessages(c context.Context, id int64) ([]*ChatMessage, error)
 	LinkChatMessages(c context.Context, id int64, messageIDs ...int64) error
 	UnlinkChatMessages(c context.Context, id int64, messageIDs ...int64) error
+	PlayerIsBanned(c context.Context, platform, playerID string) (bool, int64, error)
 }
