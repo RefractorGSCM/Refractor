@@ -15,10 +15,4 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-CREATE TABLE IF NOT EXISTS InfractionChatMessages (
-    InfractionID SERIAL NOT NULL,
-    MessageID SERIAL NOT NULL,
-
-    FOREIGN KEY (InfractionID) REFERENCES Infractions (InfractionID) ON DELETE CASCADE,
-    FOREIGN KEY (MessageID) REFERENCES ChatMessages (MessageID) ON DELETE CASCADE
-);
+DROP TABLE IF EXISTS UserPlayers;

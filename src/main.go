@@ -226,7 +226,7 @@ func main() {
 		log.Fatalf("Could not set up RCON server clients. Error: %v", err)
 	}
 
-	// Start watchdog
+	// Start server connection watchdog
 	go func() {
 		err := watchdog.StartRCONServerWatchdog(rconService, serverService, logger)
 		if err != nil {
