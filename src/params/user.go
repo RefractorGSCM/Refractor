@@ -18,6 +18,7 @@
 package params
 
 import (
+	"Refractor/params/rules"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
 	"strings"
@@ -36,4 +37,18 @@ func (body CreateUserParams) Validate() error {
 		validation.Field(&body.Username, validation.Required, validation.Length(1, 20)),
 		validation.Field(&body.Email, validation.Required, is.Email),
 	)
+}
+
+type LinkPlayerParams struct {
+	Platform string `json:"platform" form:"platform"`
+	PlayerID string `json:"player_id" form:"player_id"`
+}
+
+func (body LinkPlayerParams) Validate() error {
+	body.Platform = strings.TrimSpace(body.Platform)
+	body.PlayerID = strings.TrimSpace(body.PlayerID)
+
+	return ValidateStruct(&body,
+		validation.Field(&body.Platform, rules.PlatformRules.Prepend(validation.Required)...),
+		validation.Field(&body.PlayerID, rules.PlayerIDRules.Prepend(validation.Required)...))
 }
