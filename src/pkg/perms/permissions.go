@@ -205,12 +205,15 @@ func init() {
 	defaultPermissions = bitperms.NewPermissionBuilder().
 		AddFlag(GetFlag(FlagViewServers)).
 		AddFlag(GetFlag(FlagViewPlayerRecords)).
+		AddFlag(GetFlag(FlagViewInfractionRecords)).
+		AddFlag(GetFlag(FlagViewChatRecords)).
 		AddFlag(GetFlag(FlagCreateWarning)).
 		AddFlag(GetFlag(FlagCreateMute)).
 		AddFlag(GetFlag(FlagCreateKick)).
 		AddFlag(GetFlag(FlagCreateBan)).
 		AddFlag(GetFlag(FlagEditOwnInfractions)).
 		AddFlag(GetFlag(FlagReadLiveChat)).
+		AddFlag(GetFlag(FlagSendLiveChat)).
 		GetPermission()
 }
 
