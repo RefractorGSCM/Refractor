@@ -71,6 +71,6 @@ func (g *minecraft) GetBroadcastCommand() string {
 
 func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 	return &domain.GameSettings{
-		BanCommandPattern: "ban {{NAME}}",
+		BanCommandPattern: "ban {{PLAYER_NAME}} {{REASON}}",
 	}
 }

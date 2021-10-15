@@ -51,7 +51,6 @@ func ApplyGameHandler(apiGroup *echo.Group, s domain.GameService, mware domain.M
 	gameGroup.GET("/settings/:game", handler.GetGameSettings, enforcer.CheckAuth(authcheckers.DenyAll))                // super admin only
 	gameGroup.PATCH("/settings/:game", handler.SetGameSettings, enforcer.CheckAuth(authcheckers.DenyAll))              // super admin only
 	gameGroup.GET("/settings/:game/default", handler.GetDefaultGameSettings, enforcer.CheckAuth(authcheckers.DenyAll)) // super admin only
-
 }
 
 type resGame struct {
@@ -80,13 +79,19 @@ func (h *gameHandler) GetGames(c echo.Context) error {
 }
 
 func (h *gameHandler) GetGameSettings(c echo.Context) error {
-	game := c.Param("game")
+	gameName := c.Param("game")
 
-	if len(strings.TrimSpace(game)) == 0 || !h.service.GameExists(game) {
+	if len(strings.TrimSpace(gameName)) == 0 || !h.service.GameExists(gameName) {
 		return c.JSON(http.StatusBadRequest, &domain.Response{
 			Success: false,
 			Message: "Invalid game",
 		})
+	}
+
+	// Get the game
+	game, err := h.service.GetGame(gameName)
+	if err != nil {
+		return err
 	}
 
 	settings, err := h.service.GetGameSettings(game)
@@ -101,9 +106,9 @@ func (h *gameHandler) GetGameSettings(c echo.Context) error {
 }
 
 func (h *gameHandler) SetGameSettings(c echo.Context) error {
-	game := c.Param("game")
+	gameName := c.Param("game")
 
-	if len(strings.TrimSpace(game)) == 0 || !h.service.GameExists(game) {
+	if len(strings.TrimSpace(gameName)) == 0 || !h.service.GameExists(gameName) {
 		return c.JSON(http.StatusBadRequest, &domain.Response{
 			Success: false,
 			Message: "Invalid game",
@@ -123,6 +128,12 @@ func (h *gameHandler) SetGameSettings(c echo.Context) error {
 	// Set game settings
 	gs := &domain.GameSettings{
 		BanCommandPattern: body.BanCommandPattern,
+	}
+
+	// Get the game
+	game, err := h.service.GetGame(gameName)
+	if err != nil {
+		return err
 	}
 
 	if err := h.service.SetGameSettings(game, gs); err != nil {

@@ -22,17 +22,21 @@ import (
 	"Refractor/internal/rcon/clientcreator"
 	"Refractor/pkg/broadcast"
 	"Refractor/pkg/regexutils"
+	"context"
 	"fmt"
 	"go.uber.org/zap"
 	"net"
+	"strconv"
+	"strings"
 	"time"
 )
 
 type rconService struct {
-	logger        *zap.Logger
-	clients       map[int64]domain.RCONClient
-	gameService   domain.GameService
-	clientCreator domain.ClientCreator
+	logger            *zap.Logger
+	clients           map[int64]domain.RCONClient
+	gameService       domain.GameService
+	infractionService domain.InfractionService
+	clientCreator     domain.ClientCreator
 
 	joinSubs       []domain.BroadcastSubscriber
 	quitSubs       []domain.BroadcastSubscriber
@@ -42,18 +46,19 @@ type rconService struct {
 	prevPlayers    map[int64]map[string]*onlinePlayer
 }
 
-func NewRCONService(log *zap.Logger, gs domain.GameService) domain.RCONService {
+func NewRCONService(log *zap.Logger, gs domain.GameService, is domain.InfractionService) domain.RCONService {
 	return &rconService{
-		logger:         log,
-		clients:        map[int64]domain.RCONClient{},
-		gameService:    gs,
-		clientCreator:  clientcreator.NewClientCreator(),
-		joinSubs:       []domain.BroadcastSubscriber{},
-		quitSubs:       []domain.BroadcastSubscriber{},
-		playerListSubs: []domain.PlayerListUpdateSubscriber{},
-		statusSubs:     []domain.ServerStatusSubscriber{},
-		chatSubs:       []domain.ChatReceiveSubscriber{},
-		prevPlayers:    map[int64]map[string]*onlinePlayer{},
+		logger:            log,
+		clients:           map[int64]domain.RCONClient{},
+		gameService:       gs,
+		infractionService: is,
+		clientCreator:     clientcreator.NewClientCreator(),
+		joinSubs:          []domain.BroadcastSubscriber{},
+		quitSubs:          []domain.BroadcastSubscriber{},
+		playerListSubs:    []domain.PlayerListUpdateSubscriber{},
+		statusSubs:        []domain.ServerStatusSubscriber{},
+		chatSubs:          []domain.ChatReceiveSubscriber{},
+		prevPlayers:       map[int64]map[string]*onlinePlayer{},
 	}
 }
 
@@ -119,13 +124,11 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 	// Dispatch player join events for all currently online players
 	for _, op := range onlinePlayers {
 		fmt.Println(op.PlayerID, op.Name)
-		for _, sub := range s.joinSubs {
-			sub(broadcast.Fields{
-				"PlayerID": op.PlayerID,
-				"Platform": game.GetPlatform().GetName(),
-				"Name":     op.Name}, server.ID, game,
-			)
-		}
+		s.HandlePlayerJoin(broadcast.Fields{
+			"PlayerID": op.PlayerID,
+			"Platform": game.GetPlatform().GetName(),
+			"Name":     op.Name,
+		}, server.ID, game)
 	}
 
 	// Notify that this server is online
@@ -169,14 +172,12 @@ func (s *rconService) startPlayerListPolling(serverID int64, game domain.Game) {
 			if prevPlayers[playerGameID] == nil {
 				prevPlayers[playerGameID] = player
 
-				// Player was not online previously so broadcast join
-				for _, sub := range s.joinSubs {
-					sub(broadcast.Fields{
-						"PlayerID": player.PlayerID,
-						"Platform": game.GetPlatform().GetName(),
-						"Name":     player.Name}, serverID, game,
-					)
-				}
+				// Player was not online previously so handle join
+				s.HandlePlayerJoin(broadcast.Fields{
+					"PlayerID": player.PlayerID,
+					"Platform": game.GetPlatform().GetName(),
+					"Name":     player.Name,
+				}, serverID, game)
 			}
 		}
 
@@ -224,9 +225,7 @@ func (s *rconService) getBroadcastHandler(serverID int64, game domain.Game) func
 
 		switch bcast.Type {
 		case broadcast.TypeJoin:
-			for _, sub := range s.joinSubs {
-				sub(bcast.Fields, serverID, game)
-			}
+			s.HandlePlayerJoin(bcast.Fields, serverID, game)
 			break
 		case broadcast.TypeQuit:
 			for _, sub := range s.quitSubs {
@@ -401,4 +400,73 @@ func (s *rconService) SubscribeServerStatus(sub domain.ServerStatusSubscriber) {
 
 func (s *rconService) SubscribeChat(sub domain.ChatReceiveSubscriber) {
 	s.chatSubs = append(s.chatSubs, sub)
+}
+
+func (s *rconService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
+	// Broadcast join
+	for _, sub := range s.joinSubs {
+		sub(fields, serverID, game)
+	}
+
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*2)
+	defer cancel()
+
+	playerID := fields["PlayerID"]
+	platform := game.GetPlatform().GetName()
+	name := fields["Name"]
+
+	s.checkForBannedPlayer(ctx, platform, playerID, name, serverID, game)
+}
+
+func (s *rconService) checkForBannedPlayer(ctx context.Context, platform, playerID, name string, serverID int64, game domain.Game) {
+	// Check if this player should be banned
+	isBanned, timeRemaining, err := s.infractionService.PlayerIsBanned(ctx, platform, playerID)
+	if err != nil {
+		s.logger.Error("Could not check if player is banned",
+			zap.String("Player ID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return
+	}
+
+	// If this player is not supposed to be banned then return since this function is only here to check bans.
+	if !isBanned {
+		return
+	}
+
+	// Get ban command from game settings
+	gameSettings, err := s.gameService.GetGameSettings(game)
+	if err != nil {
+		s.logger.Error("Could not get game settings from game repo",
+			zap.String("Game name", game.GetName()),
+			zap.Error(err))
+		return
+	}
+
+	banCmd := gameSettings.BanCommandPattern
+
+	// Replace placeholders inside banCmd with player data
+	banCmd = strings.ReplaceAll(banCmd, "{{PLAYER_ID}}", playerID)
+	banCmd = strings.ReplaceAll(banCmd, "{{PLAYER_NAME}}", name)
+	banCmd = strings.ReplaceAll(banCmd, "{{DURATION}}", strconv.FormatInt(timeRemaining, 10))
+	banCmd = strings.ReplaceAll(banCmd, "{{REASON}}", "Refractor Ban Synchronization")
+
+	// Ban the player for the correct remainder
+	client := s.GetServerClient(serverID)
+	res, err := client.ExecCommand(banCmd)
+	if err != nil {
+		s.logger.Error("Could not execute ban command",
+			zap.String("Player ID", playerID),
+			zap.String("Platform", platform),
+			zap.Int64("Server ID", serverID),
+			zap.Error(err))
+		return
+	}
+
+	s.logger.Info("Banned player from server",
+		zap.Int64("Server ID", serverID),
+		zap.String("Player ID", playerID),
+		zap.String("Platform", platform),
+		zap.String("Reason For Ban", "Non-expired ban infraction on player record"),
+		zap.String("Response From Server", res))
 }

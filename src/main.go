@@ -172,7 +172,15 @@ func main() {
 	userService := _userService.NewUserService(userMetaRepo, authRepo, groupRepo, authorizer, time.Second*2, logger)
 	_userHandler.ApplyUserHandler(apiGroup, userService, authService, authorizer, middlewareBundle, logger)
 
-	rconService := _rconService.NewRCONService(logger, gameService)
+	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)
+	attachmentRepo := _attachmentRepo.NewAttachmentRepo(db, logger)
+
+	attachmentService := _attachmentService.NewAttachmentService(attachmentRepo, infractionRepo, authorizer, time.Second*2, logger)
+	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, playerNameRepo, serverRepo,
+		attachmentRepo, userMetaRepo, authorizer, time.Second*2, logger)
+	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
+
+	rconService := _rconService.NewRCONService(logger, gameService, infractionService)
 
 	websocketService := _websocketService.NewWebsocketService(playerRepo, userMetaRepo, authorizer, time.Second*2, logger)
 	go websocketService.StartPool()
@@ -180,15 +188,6 @@ func main() {
 
 	playerService := _playerService.NewPlayerService(playerRepo, playerNameRepo, time.Second*2, logger)
 	_playerHandler.ApplyPlayerHandler(apiGroup, playerService, authorizer, middlewareBundle, logger)
-
-	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)
-
-	attachmentRepo := _attachmentRepo.NewAttachmentRepo(db, logger)
-	attachmentService := _attachmentService.NewAttachmentService(attachmentRepo, infractionRepo, authorizer, time.Second*2, logger)
-
-	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, playerNameRepo, serverRepo,
-		attachmentRepo, userMetaRepo, authorizer, time.Second*2, logger)
-	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
 
 	flaggedWordRepo := _flaggedWordRepo.NewFlaggedWordRepo(db, logger)
 	flaggedWordService := _flaggedWordService.NewFlaggedWordService(flaggedWordRepo, time.Second*2, logger)
