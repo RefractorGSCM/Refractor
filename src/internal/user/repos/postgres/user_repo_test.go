@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/franela/goblin"
+	"github.com/lib/pq"
 	. "github.com/onsi/gomega"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -378,6 +379,19 @@ func Test(t *testing.T) {
 					err := repo.LinkPlayer(ctx, "userid", "platform", "playerid")
 
 					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Player is already linked", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("INSERT INTO UserPlayers").WillReturnError(&pq.Error{Code: "23505"}) // pg unique violation error code
+				})
+
+				g.It("Should return a domain.ErrConflict error", func() {
+					err := repo.LinkPlayer(ctx, "userid", "platform", "playerid")
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrConflict))
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
 				})
 			})
