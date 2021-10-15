@@ -81,6 +81,6 @@ func (g *mordhau) GetBroadcastCommand() string {
 
 func (g *mordhau) GetDefaultSettings() *domain.GameSettings {
 	return &domain.GameSettings{
-		BanCommandPattern: "Ban {{PLAYER_ID}} {{DURATION}}",
+		BanCommandPattern: "Ban {{PLAYER_ID}} {{DURATION}} {{REASON}}",
 	}
 }
