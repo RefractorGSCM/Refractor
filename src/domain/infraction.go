@@ -18,6 +18,7 @@
 package domain
 
 import (
+	"Refractor/pkg/broadcast"
 	"context"
 	"github.com/guregu/null"
 )
@@ -73,4 +74,5 @@ type InfractionService interface {
 	LinkChatMessages(c context.Context, id int64, messageIDs ...int64) error
 	UnlinkChatMessages(c context.Context, id int64, messageIDs ...int64) error
 	PlayerIsBanned(c context.Context, platform, playerID string) (bool, int64, error)
+	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 }
