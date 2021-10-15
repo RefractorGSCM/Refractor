@@ -29,22 +29,27 @@ import (
 )
 
 type userService struct {
-	metaRepo   domain.UserMetaRepo
-	authRepo   domain.AuthRepo
-	groupRepo  domain.GroupRepo
-	authorizer domain.Authorizer
-	timeout    time.Duration
-	logger     *zap.Logger
+	metaRepo       domain.UserMetaRepo
+	authRepo       domain.AuthRepo
+	groupRepo      domain.GroupRepo
+	playerRepo     domain.PlayerRepo
+	playerNameRepo domain.PlayerNameRepo
+	authorizer     domain.Authorizer
+	timeout        time.Duration
+	logger         *zap.Logger
 }
 
-func NewUserService(mr domain.UserMetaRepo, ar domain.AuthRepo, gr domain.GroupRepo, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.UserService {
+func NewUserService(mr domain.UserMetaRepo, ar domain.AuthRepo, gr domain.GroupRepo, pr domain.PlayerRepo,
+	pnr domain.PlayerNameRepo, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.UserService {
 	return &userService{
-		metaRepo:   mr,
-		authRepo:   ar,
-		groupRepo:  gr,
-		authorizer: a,
-		timeout:    to,
-		logger:     log,
+		metaRepo:       mr,
+		authRepo:       ar,
+		groupRepo:      gr,
+		playerRepo:     pr,
+		playerNameRepo: pnr,
+		authorizer:     a,
+		timeout:        to,
+		logger:         log,
 	}
 }
 
@@ -254,13 +259,68 @@ func (s *userService) logActivationChangeDenyMsg(setterID, targetID, reason stri
 }
 
 func (s *userService) LinkPlayer(c context.Context, userID, platform, playerID string) error {
-	panic("implement me")
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	// Ensure the target player and user exists
+	if exists, err := s.playerRepo.Exists(ctx, domain.FindArgs{
+		"Platform": platform,
+		"PlayerID": playerID,
+	}); err != nil {
+		return err
+	} else if !exists {
+		return domain.NewHTTPError(nil, http.StatusBadRequest, "Player does not exist")
+	}
+
+	usr, err := s.authRepo.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	} else if usr == nil {
+		return domain.NewHTTPError(nil, http.StatusBadRequest, "User does not exist")
+	}
+
+	if err := s.metaRepo.LinkPlayer(ctx, userID, platform, playerID); err != nil {
+		if errors.Cause(err) == domain.ErrConflict {
+			// ErrConflict means that this player is already linked to a user
+			return domain.NewHTTPError(nil, http.StatusBadRequest, "Player already linked to a user")
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 func (s *userService) UnlinkPlayer(c context.Context, userID, platform, playerID string) error {
-	panic("implement me")
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.metaRepo.UnlinkPlayer(ctx, userID, platform, playerID)
 }
 
-func (s *userService) GetLinkedPlayers(ctx context.Context, userID string) ([]*domain.Player, error) {
-	panic("implement me")
+func (s *userService) GetLinkedPlayers(c context.Context, userID string) ([]*domain.Player, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	players, err := s.metaRepo.GetLinkedPlayers(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get player names
+	for _, player := range players {
+		currentName, previousNames, err := s.playerNameRepo.GetNames(ctx, player.PlayerID, player.Platform)
+		if err != nil {
+			s.logger.Error("Could not get linked player name",
+				zap.String("Platform", player.Platform),
+				zap.String("Player ID", player.PlayerID),
+				zap.Error(err))
+			continue
+		}
+
+		player.CurrentName = currentName
+		player.PreviousNames = previousNames
+	}
+
+	return players, nil
 }
