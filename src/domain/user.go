@@ -36,6 +36,11 @@ type UserMeta struct {
 	Deactivated     bool   `json:"deactivated"`
 }
 
+type LinkedPlayer struct {
+	Platform string `json:"player"`
+	PlayerID string `json:"player_id"`
+}
+
 // UserMetaRepo is the interface to handle the storing of UserMeta data. This is NOT an auth repository and only contains
 // relevant metadata for Refractor. No user identities are stored in a UserMetaRepo!
 type UserMetaRepo interface {
@@ -44,6 +49,9 @@ type UserMetaRepo interface {
 	Update(ctx context.Context, userID string, args UpdateArgs) (*UserMeta, error)
 	IsDeactivated(ctx context.Context, userID string) (bool, error)
 	GetUsername(ctx context.Context, userID string) (string, error)
+	LinkPlayer(ctx context.Context, userID, platform, playerID string) error
+	UnlinkPlayer(ctx context.Context, userID, platform, playerID string) error
+	GetLinkedPlayers(ctx context.Context, userID string) ([]*LinkedPlayer, error)
 }
 
 type UserService interface {
@@ -51,4 +59,7 @@ type UserService interface {
 	GetByID(c context.Context, userID string) (*User, error)
 	DeactivateUser(c context.Context, userID string) error
 	ReactivateUser(c context.Context, userID string) error
+	LinkPlayer(c context.Context, userID, platform, playerID string) error
+	UnlinkPlayer(c context.Context, userID, platform, playerID string) error
+	GetLinkedPlayers(ctx context.Context, userID string) ([]*LinkedPlayer, error)
 }
