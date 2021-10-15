@@ -30,6 +30,7 @@ import (
 	_chatHandler "Refractor/internal/chat/delivery/http"
 	_chatRepo "Refractor/internal/chat/repos/postgres"
 	_chatService "Refractor/internal/chat/service"
+	"Refractor/internal/command_executor"
 	_flaggedWordRepo "Refractor/internal/flaggedword/repos/postgres"
 	_flaggedWordService "Refractor/internal/flaggedword/service"
 	_gameHandler "Refractor/internal/game/delivery/http"
@@ -173,14 +174,16 @@ func main() {
 	_userHandler.ApplyUserHandler(apiGroup, userService, authService, authorizer, middlewareBundle, logger)
 
 	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)
+
 	attachmentRepo := _attachmentRepo.NewAttachmentRepo(db, logger)
-
 	attachmentService := _attachmentService.NewAttachmentService(attachmentRepo, infractionRepo, authorizer, time.Second*2, logger)
-	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, playerNameRepo, serverRepo,
-		attachmentRepo, userMetaRepo, authorizer, time.Second*2, logger)
-	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
 
-	rconService := _rconService.NewRCONService(logger, gameService, infractionService)
+	rconService := _rconService.NewRCONService(logger, gameService)
+	commandExecutor := command_executor.NewCommandExecutor(rconService, gameService, logger)
+
+	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, playerNameRepo, serverRepo,
+		attachmentRepo, userMetaRepo, authorizer, commandExecutor, time.Second*2, logger)
+	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
 
 	websocketService := _websocketService.NewWebsocketService(playerRepo, userMetaRepo, authorizer, time.Second*2, logger)
 	go websocketService.StartPool()
@@ -214,6 +217,7 @@ func main() {
 	rconService.SubscribeServerStatus(serverService.HandleServerStatusChange)
 	rconService.SubscribeServerStatus(websocketService.HandleServerStatusChange)
 	rconService.SubscribeChat(chatService.HandleChatReceive)
+	rconService.SubscribeJoin(infractionService.HandlePlayerJoin)
 	websocketService.SubscribeChatSend(rconService.SendChatMessage)
 	websocketService.SubscribeChatSend(chatService.HandleUserSendChat)
 

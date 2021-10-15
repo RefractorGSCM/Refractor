@@ -21,6 +21,7 @@ import (
 	"Refractor/authcheckers"
 	"Refractor/domain"
 	"Refractor/internal/infraction/types"
+	"Refractor/pkg/broadcast"
 	"Refractor/pkg/perms"
 	"Refractor/pkg/whitelist"
 	"context"
@@ -38,13 +39,14 @@ type infractionService struct {
 	attachmentRepo  domain.AttachmentRepo
 	userMetaRepo    domain.UserMetaRepo
 	authorizer      domain.Authorizer
+	commandExecutor domain.CommandExecutor
 	timeout         time.Duration
 	logger          *zap.Logger
 	infractionTypes map[string]domain.InfractionType
 }
 
 func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, pnr domain.PlayerNameRepo, sr domain.ServerRepo,
-	ar domain.AttachmentRepo, umr domain.UserMetaRepo, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.InfractionService {
+	ar domain.AttachmentRepo, umr domain.UserMetaRepo, a domain.Authorizer, ce domain.CommandExecutor, to time.Duration, log *zap.Logger) domain.InfractionService {
 	return &infractionService{
 		repo:            repo,
 		playerRepo:      pr,
@@ -53,6 +55,7 @@ func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, pnr 
 		attachmentRepo:  ar,
 		userMetaRepo:    umr,
 		authorizer:      a,
+		commandExecutor: ce,
 		timeout:         to,
 		logger:          log,
 		infractionTypes: getInfractionTypes(),
@@ -604,4 +607,43 @@ func (s *infractionService) PlayerIsBanned(c context.Context, platform, playerID
 	defer cancel()
 
 	return s.repo.PlayerIsBanned(ctx, platform, playerID)
+}
+
+func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*2)
+	defer cancel()
+
+	playerID := fields["PlayerID"]
+	platform := game.GetPlatform().GetName()
+	name := fields["Name"]
+
+	// Check if this player should be banned
+	isBanned, timeRemaining, err := s.PlayerIsBanned(ctx, platform, playerID)
+	if err != nil {
+		s.logger.Error("Could not check if player is banned",
+			zap.String("Player ID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return
+	}
+
+	if !isBanned {
+		return
+	}
+
+	payload := &domain.PlayerCommandPayload{
+		PlayerID: playerID,
+		Platform: platform,
+		Name:     name,
+		Duration: timeRemaining,
+		Reason:   "Refractor Ban Synchronization",
+	}
+
+	if err := s.commandExecutor.RunBanCommand(ctx, payload, serverID, game); err != nil {
+		s.logger.Error("Could not run ban command",
+			zap.String("Player ID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return
+	}
 }
