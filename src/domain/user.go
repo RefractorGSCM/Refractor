@@ -56,5 +56,5 @@ type UserService interface {
 	ReactivateUser(c context.Context, userID string) error
 	LinkPlayer(c context.Context, userID, platform, playerID string) error
 	UnlinkPlayer(c context.Context, userID, platform, playerID string) error
-	GetLinkedPlayers(ctx context.Context, userID string) ([]*Player, error)
+	GetLinkedPlayers(c context.Context, userID string) ([]*Player, error)
 }

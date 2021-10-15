@@ -170,7 +170,8 @@ func main() {
 	serverService := _serverService.NewServerService(serverRepo, playerRepo, authorizer, time.Second*2, logger)
 	_serverHandler.ApplyServerHandler(apiGroup, serverService, authorizer, middlewareBundle, logger)
 
-	userService := _userService.NewUserService(userMetaRepo, authRepo, groupRepo, authorizer, time.Second*2, logger)
+	userService := _userService.NewUserService(userMetaRepo, authRepo, groupRepo, playerRepo, playerNameRepo,
+		authorizer, time.Second*2, logger)
 	_userHandler.ApplyUserHandler(apiGroup, userService, authService, authorizer, middlewareBundle, logger)
 
 	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)

@@ -40,15 +40,18 @@ func (body CreateUserParams) Validate() error {
 }
 
 type LinkPlayerParams struct {
+	UserID   string `json:"user_id" form:"user_id"`
 	Platform string `json:"platform" form:"platform"`
 	PlayerID string `json:"player_id" form:"player_id"`
 }
 
 func (body LinkPlayerParams) Validate() error {
+	body.UserID = strings.TrimSpace(body.UserID)
 	body.Platform = strings.TrimSpace(body.Platform)
 	body.PlayerID = strings.TrimSpace(body.PlayerID)
 
 	return ValidateStruct(&body,
+		validation.Field(&body.UserID, rules.UserIDRules.Prepend(validation.Required)...),
 		validation.Field(&body.Platform, rules.PlatformRules.Prepend(validation.Required)...),
 		validation.Field(&body.PlayerID, rules.PlayerIDRules.Prepend(validation.Required)...))
 }
