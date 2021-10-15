@@ -37,6 +37,29 @@ func (_m *UserMetaRepo) GetByID(ctx context.Context, userID string) (*domain.Use
 	return r0, r1
 }
 
+// GetLinkedPlayers provides a mock function with given fields: ctx, userID
+func (_m *UserMetaRepo) GetLinkedPlayers(ctx context.Context, userID string) ([]*domain.Player, error) {
+	ret := _m.Called(ctx, userID)
+
+	var r0 []*domain.Player
+	if rf, ok := ret.Get(0).(func(context.Context, string) []*domain.Player); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*domain.Player)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetUsername provides a mock function with given fields: ctx, userID
 func (_m *UserMetaRepo) GetUsername(ctx context.Context, userID string) (string, error) {
 	ret := _m.Called(ctx, userID)
@@ -79,6 +102,20 @@ func (_m *UserMetaRepo) IsDeactivated(ctx context.Context, userID string) (bool,
 	return r0, r1
 }
 
+// LinkPlayer provides a mock function with given fields: ctx, userID, platform, playerID
+func (_m *UserMetaRepo) LinkPlayer(ctx context.Context, userID string, platform string, playerID string) error {
+	ret := _m.Called(ctx, userID, platform, playerID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) error); ok {
+		r0 = rf(ctx, userID, platform, playerID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Store provides a mock function with given fields: ctx, userInfo
 func (_m *UserMetaRepo) Store(ctx context.Context, userInfo *domain.UserMeta) error {
 	ret := _m.Called(ctx, userInfo)
@@ -86,6 +123,20 @@ func (_m *UserMetaRepo) Store(ctx context.Context, userInfo *domain.UserMeta) er
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, *domain.UserMeta) error); ok {
 		r0 = rf(ctx, userInfo)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UnlinkPlayer provides a mock function with given fields: ctx, userID, platform, playerID
+func (_m *UserMetaRepo) UnlinkPlayer(ctx context.Context, userID string, platform string, playerID string) error {
+	ret := _m.Called(ctx, userID, platform, playerID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) error); ok {
+		r0 = rf(ctx, userID, platform, playerID)
 	} else {
 		r0 = ret.Error(0)
 	}

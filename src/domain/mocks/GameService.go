@@ -70,3 +70,40 @@ func (_m *GameService) GetGame(name string) (domain.Game, error) {
 
 	return r0, r1
 }
+
+// GetGameSettings provides a mock function with given fields: game
+func (_m *GameService) GetGameSettings(game domain.Game) (*domain.GameSettings, error) {
+	ret := _m.Called(game)
+
+	var r0 *domain.GameSettings
+	if rf, ok := ret.Get(0).(func(domain.Game) *domain.GameSettings); ok {
+		r0 = rf(game)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.GameSettings)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(domain.Game) error); ok {
+		r1 = rf(game)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SetGameSettings provides a mock function with given fields: game, settings
+func (_m *GameService) SetGameSettings(game domain.Game, settings *domain.GameSettings) error {
+	ret := _m.Called(game, settings)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(domain.Game, *domain.GameSettings) error); ok {
+		r0 = rf(game, settings)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
