@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-alter table ChatMessages add MessageVectors tsvector;
-create index idx_search_message_vectors on ChatMessages using gin(MessageVectors);
+alter table ChatMessages add column if not exists MessageVectors tsvector;
+create index if not exists idx_search_message_vectors on ChatMessages using gin(MessageVectors);
 update ChatMessages set MessageVectors = to_tsvector(Message);
 
 create or replace function update_chatmessage_vectors()

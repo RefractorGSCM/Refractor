@@ -21,4 +21,4 @@ CREATE TABLE IF NOT EXISTS InfractionChatMessages (
 
     FOREIGN KEY (InfractionID) REFERENCES Infractions (InfractionID) ON DELETE CASCADE,
     FOREIGN KEY (MessageID) REFERENCES ChatMessages (MessageID) ON DELETE CASCADE
-);
+)

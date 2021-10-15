@@ -15,10 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-CREATE TABLE IF NOT EXISTS UserPlayers (
+CREATE TABLE IF NOT EXISTS UserPlayers(
     UserID VARCHAR(36) NOT NULL,
     Platform VARCHAR(128) NOT NULL,
     PlayerID VARCHAR(80) NOT NULL,
 
     PRIMARY KEY (UserID, Platform, PlayerID)
-);
+)
