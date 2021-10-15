@@ -252,3 +252,15 @@ func (s *userService) logActivationChangeDenyMsg(setterID, targetID, reason stri
 		zap.String("Reason", reason),
 	)
 }
+
+func (s *userService) LinkPlayer(c context.Context, userID, platform, playerID string) error {
+	panic("implement me")
+}
+
+func (s *userService) UnlinkPlayer(c context.Context, userID, platform, playerID string) error {
+	panic("implement me")
+}
+
+func (s *userService) GetLinkedPlayers(ctx context.Context, userID string) ([]*domain.Player, error) {
+	panic("implement me")
+}

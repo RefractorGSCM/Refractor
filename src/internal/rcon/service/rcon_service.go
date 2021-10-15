@@ -118,7 +118,6 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 
 	// Dispatch player join events for all currently online players
 	for _, op := range onlinePlayers {
-		fmt.Println(op.PlayerID, op.Name)
 		s.HandlePlayerJoin(broadcast.Fields{
 			"PlayerID": op.PlayerID,
 			"Platform": game.GetPlatform().GetName(),
