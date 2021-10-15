@@ -20,5 +20,5 @@ CREATE TABLE IF NOT EXISTS UserPlayers(
     Platform VARCHAR(128) NOT NULL,
     PlayerID VARCHAR(80) NOT NULL,
 
-    PRIMARY KEY (UserID, Platform, PlayerID)
+    PRIMARY KEY (Platform, PlayerID)
 )

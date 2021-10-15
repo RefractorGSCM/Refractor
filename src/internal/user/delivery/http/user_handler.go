@@ -61,6 +61,9 @@ func ApplyUserHandler(apiGroup *echo.Group, s domain.UserService, as domain.Auth
 	userGroup.POST("/", handler.CreateUser, mware.ActivationMiddleware, enforcer.CheckAuth(authcheckers.RequireAdmin))
 	userGroup.PATCH("/deactivate/:id", handler.ChangeUserActivation(false), mware.ActivationMiddleware)
 	userGroup.PATCH("/reactivate/:id", handler.ChangeUserActivation(true), mware.ActivationMiddleware)
+	userGroup.POST("/link/player", handler.LinkPlayer, mware.ActivationMiddleware, enforcer.CheckAuth(authcheckers.RequireAdmin))
+	userGroup.POST("/unlink/player", handler.UnlinkPlayer, mware.ActivationMiddleware, enforcer.CheckAuth(authcheckers.RequireAdmin))
+	userGroup.GET("/link/player/:id", handler.GetLinkedPlayers, mware.ActivationMiddleware, enforcer.CheckAuth(authcheckers.RequireAdmin))
 }
 
 func (h *userHandler) GetAllUsers(c echo.Context) error {
@@ -180,4 +183,60 @@ func (h *userHandler) ChangeUserActivation(shouldBeActivated bool) echo.HandlerF
 			Message: message,
 		})
 	}
+}
+
+func (h *userHandler) LinkPlayer(c echo.Context) error {
+	// Validate request body
+	var body params.LinkPlayerParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	if err := h.service.LinkPlayer(c.Request().Context(), body.UserID, body.Platform, body.PlayerID); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Player linked to user",
+	})
+}
+
+func (h *userHandler) UnlinkPlayer(c echo.Context) error {
+	// Validate request body
+	var body params.LinkPlayerParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	if err := h.service.UnlinkPlayer(c.Request().Context(), body.UserID, body.Platform, body.PlayerID); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Player unlinked",
+	})
+}
+
+func (h *userHandler) GetLinkedPlayers(c echo.Context) error {
+	userID := c.Param("id")
+
+	players, err := h.service.GetLinkedPlayers(c.Request().Context(), userID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Payload: players,
+	})
 }
