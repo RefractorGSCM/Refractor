@@ -22,6 +22,7 @@ import (
 	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
+	"github.com/lib/pq"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -199,6 +200,8 @@ func (r *userRepo) GetUsername(ctx context.Context, userID string) (string, erro
 	return username, nil
 }
 
+const pgUniqueViolationCode = "23505"
+
 func (r *userRepo) LinkPlayer(ctx context.Context, userID, platform, playerID string) error {
 	const op = opTag + "LinkPlayer"
 
@@ -206,6 +209,11 @@ func (r *userRepo) LinkPlayer(ctx context.Context, userID, platform, playerID st
 
 	_, err := r.db.ExecContext(ctx, query, userID, platform, playerID)
 	if err != nil {
+		if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == pgUniqueViolationCode {
+			// if this player is already linked to an account, we expect a unique violation error
+			return errors.Wrap(domain.ErrConflict, op)
+		}
+
 		r.logger.Error("Could not insert into UserPlayers table",
 			zap.String("User ID", userID),
 			zap.String("Platform", platform),
