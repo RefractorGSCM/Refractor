@@ -199,6 +199,85 @@ func (r *userRepo) GetUsername(ctx context.Context, userID string) (string, erro
 	return username, nil
 }
 
+func (r *userRepo) LinkPlayer(ctx context.Context, userID, platform, playerID string) error {
+	const op = opTag + "LinkPlayer"
+
+	query := "INSERT INTO UserPlayers (UserID, Platform, PlayerID) VALUES ($1, $2, $3);"
+
+	_, err := r.db.ExecContext(ctx, query, userID, platform, playerID)
+	if err != nil {
+		r.logger.Error("Could not insert into UserPlayers table",
+			zap.String("User ID", userID),
+			zap.String("Platform", platform),
+			zap.String("Player ID", playerID),
+			zap.Error(err))
+		return errors.Wrap(err, op)
+	}
+
+	return nil
+}
+
+func (r *userRepo) UnlinkPlayer(ctx context.Context, userID, platform, playerID string) error {
+	const op = opTag + "UnlinkPlayer"
+
+	query := "DELETE FROM UserPlayers WHERE UserID = $1 AND Platform = $2 AND PlayerID = $3;"
+
+	res, err := r.db.ExecContext(ctx, query, userID, platform, playerID)
+	if err != nil {
+		r.logger.Error("Could not delete from UserPlayers table",
+			zap.String("User ID", userID),
+			zap.String("Platform", platform),
+			zap.String("Player ID", playerID),
+			zap.Error(err))
+		return errors.Wrap(err, op)
+	}
+
+	if rowsAffected, err := res.RowsAffected(); err != nil {
+		r.logger.Error("Could not get rows affected from UserPlayers table delete",
+			zap.Error(err))
+		return errors.Wrap(err, op)
+	} else if rowsAffected < 1 {
+		return errors.Wrap(domain.ErrNotFound, op)
+	}
+
+	return nil
+}
+
+func (r *userRepo) GetLinkedPlayers(ctx context.Context, userID string) ([]*domain.Player, error) {
+	const op = opTag + "GetLinkedPlayers"
+
+	query := `
+		SELECT
+			p.*
+		FROM UserPlayers up
+		INNER JOIN Players p ON p.Platform = up.Platform AND p.PlayerID = up.PlayerID
+		WHERE up.UserID = $1;
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		r.logger.Error("Could not query UserPlayers table",
+			zap.String("User ID", userID),
+			zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	results := make([]*domain.Player, 0)
+	for rows.Next() {
+		res := &domain.Player{}
+
+		if err := rows.Scan(&res.PlayerID, &res.Platform, &res.Watched, &res.LastSeen,
+			&res.CreatedAt, &res.ModifiedAt); err != nil {
+			r.logger.Error("Could not scan player result", zap.Error(err))
+			return nil, errors.Wrap(err, op)
+		}
+
+		results = append(results, res)
+	}
+
+	return results, nil
+}
+
 // Scan helpers
 func (r *userRepo) scanRow(row *sql.Row, meta *domain.UserMeta) error {
 	return row.Scan(&meta.ID, &meta.InitialUsername, &meta.Username, &meta.Deactivated)

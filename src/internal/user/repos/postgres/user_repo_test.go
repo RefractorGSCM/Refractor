@@ -367,5 +367,161 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("LinkPlayer()", func() {
+			g.Describe("Successful link", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("INSERT INTO UserPlayers").WillReturnResult(sqlmock.NewResult(0, 1))
+				})
+
+				g.It("Should not return an error", func() {
+					err := repo.LinkPlayer(ctx, "userid", "platform", "playerid")
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Database error", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("INSERT INTO UserPlayers").WillReturnError(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					err := repo.LinkPlayer(ctx, "userid", "platform", "playerid")
+
+					Expect(err).ToNot(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
+
+		g.Describe("UnlinkPlayer()", func() {
+			g.Describe("Successful unlink", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("DELETE FROM UserPlayers WHERE").WillReturnResult(sqlmock.NewResult(0, 1))
+				})
+
+				g.It("Should not return an error", func() {
+					err := repo.UnlinkPlayer(ctx, "userid", "platform", "playerid")
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Link not found", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("DELETE FROM UserPlayers WHERE").WillReturnResult(sqlmock.NewResult(0, 0))
+				})
+
+				g.It("Should return a domain.ErrNotFound error", func() {
+					err := repo.UnlinkPlayer(ctx, "userid", "platform", "playerid")
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Database error", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec("DELETE FROM UserPlayers WHERE").WillReturnError(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					err := repo.UnlinkPlayer(ctx, "userid", "platform", "playerid")
+
+					Expect(err).ToNot(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
+
+		g.Describe("GetLinkedPlayers()", func() {
+			var expected []*domain.Player
+			var playerCols []string
+
+			g.BeforeEach(func() {
+				expected = make([]*domain.Player, 0)
+				playerCols = []string{"PlayerID", "Platform", "Watched", "LastSeen", "CreatedAt", "ModifiedAt"}
+			})
+
+			g.Describe("Linked players found", func() {
+				g.BeforeEach(func() {
+					expected = append(expected, &domain.Player{
+						PlayerID:   "playerid",
+						Platform:   "platform",
+						Watched:    false,
+						LastSeen:   time.Time{},
+						CreatedAt:  time.Time{},
+						ModifiedAt: time.Time{},
+					}, &domain.Player{
+						PlayerID:   "playerid2",
+						Platform:   "platform2",
+						Watched:    true,
+						LastSeen:   time.Time{},
+						CreatedAt:  time.Time{},
+						ModifiedAt: time.Time{},
+					})
+
+					rows := sqlmock.NewRows(playerCols)
+
+					for _, p := range expected {
+						rows.AddRow(p.PlayerID, p.Platform, p.Watched, p.LastSeen, p.CreatedAt, p.ModifiedAt)
+					}
+
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT p.* FROM UserPlayers up")).WillReturnRows(rows)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.GetLinkedPlayers(ctx, "userid")
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return the correct players", func() {
+					got, err := repo.GetLinkedPlayers(ctx, "userid")
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal(expected))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("No linked players found", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT p.* FROM UserPlayers up")).WillReturnRows(sqlmock.NewRows(playerCols))
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.GetLinkedPlayers(ctx, "userid")
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return an empty player slice", func() {
+					got, err := repo.GetLinkedPlayers(ctx, "userid")
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal(expected))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Database error", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT p.* FROM UserPlayers up")).WillReturnError(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					_, err := repo.GetLinkedPlayers(ctx, "userid")
+
+					Expect(err).ToNot(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
 	})
 }
