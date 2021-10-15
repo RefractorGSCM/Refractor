@@ -64,12 +64,7 @@ func (s *gameService) GetGame(name string) (domain.Game, error) {
 	return s.games[name], nil
 }
 
-func (s *gameService) GetGameSettings(gameName string) (*domain.GameSettings, error) {
-	game, err := s.GetGame(gameName)
-	if err != nil {
-		return nil, err
-	}
-
+func (s *gameService) GetGameSettings(game domain.Game) (*domain.GameSettings, error) {
 	settings, err := s.repo.GetSettings(game)
 	if err != nil {
 		return nil, err
@@ -78,12 +73,7 @@ func (s *gameService) GetGameSettings(gameName string) (*domain.GameSettings, er
 	return settings, nil
 }
 
-func (s *gameService) SetGameSettings(gameName string, settings *domain.GameSettings) error {
-	game, err := s.GetGame(gameName)
-	if err != nil {
-		return err
-	}
-
+func (s *gameService) SetGameSettings(game domain.Game, settings *domain.GameSettings) error {
 	if err := s.repo.SetSettings(game, settings); err != nil {
 		return err
 	}

@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"github.com/franela/goblin"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	"testing"
 	"time"
@@ -166,32 +165,18 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should not return an error", func() {
-					_, err := service.GetGameSettings(game.GetName())
+					_, err := service.GetGameSettings(game)
 
 					Expect(err).To(BeNil())
 					gameRepo.AssertExpectations(t)
 				})
 
 				g.It("Should return the expected settings", func() {
-					got, err := service.GetGameSettings(game.GetName())
+					got, err := service.GetGameSettings(game)
 
 					Expect(err).To(BeNil())
 					Expect(got).To(Equal(expected))
 					gameRepo.AssertExpectations(t)
-				})
-			})
-
-			g.Describe("Invalid game provided", func() {
-				g.It("Should return a domain.ErrNotFound error", func() {
-					_, err := service.GetGameSettings(game.GetName())
-
-					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
-				})
-
-				g.It("Should not call GetSettings repo method", func() {
-					_, _ = service.GetGameSettings(game.GetName())
-
-					gameRepo.AssertNotCalled(t, "GetSettings", mock.Anything)
 				})
 			})
 
@@ -202,7 +187,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return an error", func() {
-					_, err := service.GetGameSettings(game.GetName())
+					_, err := service.GetGameSettings(game)
 
 					Expect(err).ToNot(BeNil())
 					gameRepo.AssertExpectations(t)
@@ -225,25 +210,11 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should not return an error", func() {
-					err := service.SetGameSettings(game.GetName(), &domain.GameSettings{})
+					err := service.SetGameSettings(game, &domain.GameSettings{})
 
 					Expect(err).To(BeNil())
 					gameRepo.AssertExpectations(t)
 					game.AssertExpectations(t)
-				})
-			})
-
-			g.Describe("Game not found", func() {
-				g.It("Should return a domain.ErrNotFound error", func() {
-					err := service.SetGameSettings("nonexistent", &domain.GameSettings{})
-
-					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
-				})
-
-				g.It("Should not call SetSettings on game repo", func() {
-					_ = service.SetGameSettings("nonexistent", &domain.GameSettings{})
-
-					gameRepo.AssertNotCalled(t, "SetSettings", mock.Anything, mock.Anything)
 				})
 			})
 
@@ -254,7 +225,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return an error", func() {
-					err := service.SetGameSettings(game.GetName(), &domain.GameSettings{})
+					err := service.SetGameSettings(game, &domain.GameSettings{})
 
 					Expect(err).ToNot(BeNil())
 					gameRepo.AssertExpectations(t)
