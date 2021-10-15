@@ -1000,7 +1000,7 @@ func Test(t *testing.T) {
 			g.Describe("Player is banned", func() {
 				g.BeforeEach(func() {
 					mockRepo.On("PlayerIsBanned", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
-						Return(true, 18272, nil)
+						Return(true, int64(18272), nil)
 				})
 
 				g.It("Should not return an error", func() {
@@ -1030,7 +1030,7 @@ func Test(t *testing.T) {
 			g.Describe("Player is not banned", func() {
 				g.BeforeEach(func() {
 					mockRepo.On("PlayerIsBanned", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
-						Return(false, 0, nil)
+						Return(false, int64(0), nil)
 				})
 
 				g.It("Should not return an error", func() {
@@ -1060,7 +1060,7 @@ func Test(t *testing.T) {
 			g.Describe("Repo error", func() {
 				g.BeforeEach(func() {
 					mockRepo.On("PlayerIsBanned", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
-						Return(false, 0, fmt.Errorf("err"))
+						Return(false, int64(0), fmt.Errorf("err"))
 				})
 
 				g.It("Should return an error", func() {
