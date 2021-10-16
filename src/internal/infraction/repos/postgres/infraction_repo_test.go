@@ -788,5 +788,64 @@ func Test(t *testing.T) {
 				})
 			})
 		})
+
+		g.Describe("GetPlayerTotalInfractions()", func() {
+			g.Describe("Infraction count returned successfully", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM Infractions")).WillReturnRows(sqlmock.
+						NewRows([]string{"Count"}).AddRow(13287))
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.GetPlayerTotalInfractions(ctx, "platform", "playerid")
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return the correct count", func() {
+					count, err := repo.GetPlayerTotalInfractions(ctx, "platform", "playerid")
+
+					Expect(err).To(BeNil())
+					Expect(count).To(Equal(13287))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("No infractions found", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM Infractions")).WillReturnRows(sqlmock.
+						NewRows([]string{"Count"}).AddRow(0))
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.GetPlayerTotalInfractions(ctx, "platform", "playerid")
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return zero as the count", func() {
+					count, err := repo.GetPlayerTotalInfractions(ctx, "platform", "playerid")
+
+					Expect(err).To(BeNil())
+					Expect(count).To(Equal(0))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Database error", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM")).WillReturnError(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					_, err := repo.GetPlayerTotalInfractions(ctx, "platform", "playerid")
+
+					Expect(err).ToNot(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
 	})
 }

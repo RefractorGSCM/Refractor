@@ -419,6 +419,25 @@ func (r *infractionRepo) PlayerIsBanned(ctx context.Context, platform, playerID 
 	return isBanned, minutesRemaining.ValueOrZero(), nil
 }
 
+func (r *infractionRepo) GetPlayerTotalInfractions(ctx context.Context, platform, playerID string) (int, error) {
+	const op = opTag + "GetPlayerTotalInfractions"
+
+	query := "SELECT COUNT(1) FROM Infractions WHERE Platform = $1 AND PlayerID = $2;"
+
+	row := r.db.QueryRowContext(ctx, query, platform, playerID)
+
+	var count int
+	if err := row.Scan(&count); err != nil {
+		r.logger.Error("Could not scan player infraction count",
+			zap.String("Platform", platform),
+			zap.String("Player ID", platform),
+			zap.Error(err))
+		return 0, errors.Wrap(err, op)
+	}
+
+	return count, nil
+}
+
 // Scan helpers
 func (r *infractionRepo) scanRow(row *sql.Row, i *domain.Infraction) error {
 	return row.Scan(&i.InfractionID, &i.PlayerID, &i.Platform, &i.UserID, &i.ServerID, &i.Type, &i.Reason, &i.Duration, &i.SystemAction, &i.CreatedAt, &i.ModifiedAt)

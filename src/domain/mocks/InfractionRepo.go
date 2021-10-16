@@ -97,6 +97,27 @@ func (_m *InfractionRepo) GetLinkedChatMessages(ctx context.Context, id int64) (
 	return r0, r1
 }
 
+// GetPlayerTotalInfractions provides a mock function with given fields: ctx, platform, playerID
+func (_m *InfractionRepo) GetPlayerTotalInfractions(ctx context.Context, platform string, playerID string) (int, error) {
+	ret := _m.Called(ctx, platform, playerID)
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) int); ok {
+		r0 = rf(ctx, platform, playerID)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, platform, playerID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // LinkChatMessages provides a mock function with given fields: ctx, id, messageIDs
 func (_m *InfractionRepo) LinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error {
 	_va := make([]interface{}, len(messageIDs))
