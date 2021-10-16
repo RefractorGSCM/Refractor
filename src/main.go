@@ -167,15 +167,16 @@ func main() {
 	playerNameRepo := _playerNameRepo.NewPlayerNameRepo(db, logger)
 	playerRepo := _playerRepo.NewPlayerRepo(db, playerNameRepo, logger)
 
+	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)
+	playerStatsService := _playerStatsService.NewPlayerStatsService(infractionRepo, time.Second*2, logger)
+
 	serverRepo := _postgresServerRepo.NewServerRepo(db, logger, config)
-	serverService := _serverService.NewServerService(serverRepo, playerRepo, authorizer, time.Second*2, logger)
+	serverService := _serverService.NewServerService(serverRepo, playerRepo, playerStatsService, authorizer, time.Second*2, logger)
 	_serverHandler.ApplyServerHandler(apiGroup, serverService, authorizer, middlewareBundle, logger)
 
 	userService := _userService.NewUserService(userMetaRepo, authRepo, groupRepo, playerRepo, playerNameRepo,
 		authorizer, time.Second*2, logger)
 	_userHandler.ApplyUserHandler(apiGroup, userService, authService, authorizer, middlewareBundle, logger)
-
-	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)
 
 	attachmentRepo := _attachmentRepo.NewAttachmentRepo(db, logger)
 	attachmentService := _attachmentService.NewAttachmentService(attachmentRepo, infractionRepo, authorizer, time.Second*2, logger)
@@ -186,8 +187,6 @@ func main() {
 	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, playerNameRepo, serverRepo,
 		attachmentRepo, userMetaRepo, authorizer, commandExecutor, time.Second*2, logger)
 	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
-
-	playerStatsService := _playerStatsService.NewPlayerStatsService(infractionRepo, time.Second*2, logger)
 
 	websocketService := _websocketService.NewWebsocketService(playerRepo, userMetaRepo, playerStatsService,
 		authorizer, time.Second*2, logger)
