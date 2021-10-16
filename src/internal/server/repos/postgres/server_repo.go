@@ -186,7 +186,7 @@ func (r *serverRepo) Update(ctx context.Context, id int64, args domain.UpdateArg
 		args["RCONPassword"] = encrypted
 	}
 
-	query, values := r.qb.BuildUpdateQuery("Servers", id, "ServerID", args)
+	query, values := r.qb.BuildUpdateQuery("Servers", id, "ServerID", args, nil)
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {

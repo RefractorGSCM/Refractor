@@ -19,7 +19,6 @@ package postgres
 
 import (
 	"Refractor/domain"
-	"Refractor/pkg/aeshelper"
 	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
@@ -298,7 +297,11 @@ func (r *chatRepo) GetFlaggedMessageCount(ctx context.Context) (int, error) {
 func (r *chatRepo) Update(ctx context.Context, id int64, args domain.UpdateArgs) (*domain.ChatMessage, error) {
 	const op = opTag + "Update"
 
-	query, values := r.qb.BuildUpdateQuery("ChatMessages", id, "MessageID", args)
+	query, values := r.qb.BuildUpdateQuery("ChatMessages", id, "MessageID", args, []string{
+		"MessageID", "PlayerID", "Platform", "ServerID", "Message", "Flagged", "CreatedAt", "ModifiedAt",
+	})
+
+	fmt.Println(query)
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
