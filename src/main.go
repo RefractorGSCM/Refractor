@@ -47,6 +47,7 @@ import (
 	_playerRepo "Refractor/internal/player/repos/postgres/player"
 	_playerNameRepo "Refractor/internal/player/repos/postgres/playername"
 	_playerService "Refractor/internal/player/service"
+	_playerStatsService "Refractor/internal/player_stats/service"
 	_rconService "Refractor/internal/rcon/service"
 	_searchHandler "Refractor/internal/search/delivery/http"
 	_searchService "Refractor/internal/search/service"
@@ -186,7 +187,10 @@ func main() {
 		attachmentRepo, userMetaRepo, authorizer, commandExecutor, time.Second*2, logger)
 	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
 
-	websocketService := _websocketService.NewWebsocketService(playerRepo, userMetaRepo, authorizer, time.Second*2, logger)
+	playerStatsService := _playerStatsService.NewPlayerStatsService(infractionRepo, time.Second*2, logger)
+
+	websocketService := _websocketService.NewWebsocketService(playerRepo, userMetaRepo, playerStatsService,
+		authorizer, time.Second*2, logger)
 	go websocketService.StartPool()
 	_websocketHandler.ApplyWebsocketHandler(apiServer, websocketService, middlewareBundle, logger)
 
