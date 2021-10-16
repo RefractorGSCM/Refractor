@@ -25,14 +25,15 @@ import (
 )
 
 type Player struct {
-	PlayerID      string    `json:"id"`
-	Platform      string    `json:"platform"`
-	CurrentName   string    `json:"name"`
-	PreviousNames []string  `json:"previous_names"`
-	Watched       bool      `json:"watched"`
-	LastSeen      time.Time `json:"last_seen"`
-	CreatedAt     time.Time `json:"created_at"`
-	ModifiedAt    time.Time `json:"modified_at"`
+	PlayerID        string    `json:"id"`
+	Platform        string    `json:"platform"`
+	CurrentName     string    `json:"name"`
+	PreviousNames   []string  `json:"previous_names"`
+	Watched         bool      `json:"watched"`
+	LastSeen        time.Time `json:"last_seen"`
+	CreatedAt       time.Time `json:"created_at"`
+	ModifiedAt      time.Time `json:"modified_at"`
+	InfractionCount int       `json:"infraction_count,omitempty"` // not a db field. must be populated manually
 }
 
 type DBPlayer struct {

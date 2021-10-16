@@ -31,22 +31,25 @@ import (
 )
 
 type serverService struct {
-	repo       domain.ServerRepo
-	playerRepo domain.PlayerRepo
-	authorizer domain.Authorizer
-	timeout    time.Duration
-	logger     *zap.Logger
-	serverData map[int64]*domain.ServerData
+	repo               domain.ServerRepo
+	playerRepo         domain.PlayerRepo
+	playerStatsService domain.PlayerStatsService
+	authorizer         domain.Authorizer
+	timeout            time.Duration
+	logger             *zap.Logger
+	serverData         map[int64]*domain.ServerData
 }
 
-func NewServerService(repo domain.ServerRepo, pr domain.PlayerRepo, a domain.Authorizer, timeout time.Duration, log *zap.Logger) domain.ServerService {
+func NewServerService(repo domain.ServerRepo, pr domain.PlayerRepo, pss domain.PlayerStatsService,
+	a domain.Authorizer, timeout time.Duration, log *zap.Logger) domain.ServerService {
 	return &serverService{
-		repo:       repo,
-		playerRepo: pr,
-		authorizer: a,
-		timeout:    timeout,
-		logger:     log,
-		serverData: map[int64]*domain.ServerData{},
+		repo:               repo,
+		playerRepo:         pr,
+		playerStatsService: pss,
+		authorizer:         a,
+		timeout:            timeout,
+		logger:             log,
+		serverData:         map[int64]*domain.ServerData{},
 	}
 }
 
@@ -212,6 +215,20 @@ func (s *serverService) GetAllServerData() ([]*domain.ServerData, error) {
 	var allData []*domain.ServerData
 
 	for _, data := range s.serverData {
+		// Get infraction counts for each player
+		for _, p := range data.OnlinePlayers {
+			count, err := s.playerStatsService.GetInfractionCount(context.TODO(), p.Platform, p.PlayerID)
+			if err != nil {
+				s.logger.Error("Could not get player infraction count for online player",
+					zap.String("Platform", p.Platform),
+					zap.String("Player ID", p.PlayerID),
+					zap.Error(err))
+				continue
+			}
+
+			p.InfractionCount = count
+		}
+
 		allData = append(allData, data)
 	}
 
@@ -223,6 +240,20 @@ func (s *serverService) GetServerData(id int64) (*domain.ServerData, error) {
 
 	if data == nil {
 		return nil, fmt.Errorf("server data not found")
+	}
+
+	// Get infraction counts for each player
+	for _, p := range data.OnlinePlayers {
+		count, err := s.playerStatsService.GetInfractionCount(context.TODO(), p.Platform, p.PlayerID)
+		if err != nil {
+			s.logger.Error("Could not get player infraction count for online player",
+				zap.String("Platform", p.Platform),
+				zap.String("Player ID", p.PlayerID),
+				zap.Error(err))
+			continue
+		}
+
+		p.InfractionCount = count
 	}
 
 	return data, nil
