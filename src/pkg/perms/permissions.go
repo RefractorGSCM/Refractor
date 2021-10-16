@@ -28,22 +28,23 @@ import (
 // the bitperms.GetFlag() helper function which automatically does the shifting for us.
 
 const (
-	FlagSuperAdmin            = FlagName("FLAG_SUPER_ADMIN")
-	FlagAdministrator         = FlagName("FLAG_ADMINISTRATOR")
-	FlagViewServers           = FlagName("FLAG_VIEW_SERVERS")
-	FlagViewPlayerRecords     = FlagName("FLAG_VIEW_PLAYER_RECORDS")
-	FlagViewInfractionRecords = FlagName("FLAG_VIEW_INFRACTION_RECORDS")
-	FlagViewChatRecords       = FlagName("FLAG_VIEW_CHAT_RECORDS")
-	FlagCreateWarning         = FlagName("FLAG_CREATE_WARNING")
-	FlagCreateMute            = FlagName("FLAG_CREATE_MUTE")
-	FlagCreateKick            = FlagName("FLAG_CREATE_KICK")
-	FlagCreateBan             = FlagName("FLAG_CREATE_BAN")
-	FlagEditOwnInfractions    = FlagName("FLAG_EDIT_OWN_INFRACTIONS")
-	FlagEditAnyInfractions    = FlagName("FLAG_EDIT_ANY_INFRACTIONS")
-	FlagDeleteOwnInfractions  = FlagName("FLAG_DELETE_OWN_INFRACTIONS")
-	FlagDeleteAnyInfractions  = FlagName("FLAG_DELETE_ANY_INFRACTIONS")
-	FlagReadLiveChat          = FlagName("FLAG_READ_LIVE_CHAT")
-	FlagSendLiveChat          = FlagName("FLAG_SEND_LIVE_CHAT")
+	FlagSuperAdmin              = FlagName("FLAG_SUPER_ADMIN")
+	FlagAdministrator           = FlagName("FLAG_ADMINISTRATOR")
+	FlagViewServers             = FlagName("FLAG_VIEW_SERVERS")
+	FlagViewPlayerRecords       = FlagName("FLAG_VIEW_PLAYER_RECORDS")
+	FlagViewInfractionRecords   = FlagName("FLAG_VIEW_INFRACTION_RECORDS")
+	FlagViewChatRecords         = FlagName("FLAG_VIEW_CHAT_RECORDS")
+	FlagCreateWarning           = FlagName("FLAG_CREATE_WARNING")
+	FlagCreateMute              = FlagName("FLAG_CREATE_MUTE")
+	FlagCreateKick              = FlagName("FLAG_CREATE_KICK")
+	FlagCreateBan               = FlagName("FLAG_CREATE_BAN")
+	FlagEditOwnInfractions      = FlagName("FLAG_EDIT_OWN_INFRACTIONS")
+	FlagEditAnyInfractions      = FlagName("FLAG_EDIT_ANY_INFRACTIONS")
+	FlagDeleteOwnInfractions    = FlagName("FLAG_DELETE_OWN_INFRACTIONS")
+	FlagDeleteAnyInfractions    = FlagName("FLAG_DELETE_ANY_INFRACTIONS")
+	FlagReadLiveChat            = FlagName("FLAG_READ_LIVE_CHAT")
+	FlagSendLiveChat            = FlagName("FLAG_SEND_LIVE_CHAT")
+	FlagModerateFlaggedMessages = FlagName("FLAG_MODERATE_FLAGGED_MESSAGES")
 )
 
 type FlagName string
@@ -196,6 +197,12 @@ func init() {
 			Name:        FlagSendLiveChat,
 			DisplayName: "Send live chat",
 			Description: `Allows users to send live chat messages to a server. This permission can be overridden on servers.`,
+			Scope:       ScopeAny,
+		},
+		{
+			Name:        FlagModerateFlaggedMessages,
+			DisplayName: "Moderate Flagged Messages",
+			Description: "Allows users to moderate flagged messages",
 			Scope:       ScopeAny,
 		},
 		// ADD NEW FLAGS HERE. Do not touch any of the above permissions!

@@ -66,7 +66,8 @@ func ApplyChatHandler(apiGroup *echo.Group, service domain.ChatService,
 	chatGroup.POST("/flagged", handler.CreateFlaggedWord, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
 	chatGroup.PATCH("/flagged/:id", handler.UpdateFlaggedWord, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
 	chatGroup.DELETE("/flagged/:id", handler.DeleteFlaggedWord, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
-	chatGroup.GET("/recent/flagged", handler.GetRecentFlaggedMessages)
+	chatGroup.GET("/recent/flagged", handler.GetRecentFlaggedMessages,
+		rEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagModerateFlaggedMessages, true)))
 }
 
 const defaultRecentMessagesCount = 20
