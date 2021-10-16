@@ -141,7 +141,7 @@ func (r *infractionRepo) GetByPlayer(ctx context.Context, playerID, platform str
 func (r *infractionRepo) Update(ctx context.Context, id int64, args domain.UpdateArgs) (*domain.Infraction, error) {
 	const op = opTag + "Update"
 
-	query, values := r.qb.BuildUpdateQuery("Infractions", id, "InfractionID", args)
+	query, values := r.qb.BuildUpdateQuery("Infractions", id, "InfractionID", args, nil)
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {

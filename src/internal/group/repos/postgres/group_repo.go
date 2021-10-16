@@ -279,7 +279,7 @@ func (r *groupRepo) Delete(ctx context.Context, id int64) error {
 func (r *groupRepo) Update(ctx context.Context, id int64, args domain.UpdateArgs) (*domain.Group, error) {
 	const op = opTag + "Update"
 
-	query, values := r.qb.BuildUpdateQuery("Groups", id, "GroupID", args)
+	query, values := r.qb.BuildUpdateQuery("Groups", id, "GroupID", args, nil)
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {

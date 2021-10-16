@@ -135,7 +135,7 @@ func (r *userRepo) GetByID(ctx context.Context, userID string) (*domain.UserMeta
 func (r *userRepo) Update(ctx context.Context, userID string, args domain.UpdateArgs) (*domain.UserMeta, error) {
 	const op = opTag + "Update"
 
-	query, values := r.qb.BuildUpdateQuery("UserMeta", userID, "UserID", args)
+	query, values := r.qb.BuildUpdateQuery("UserMeta", userID, "UserID", args, nil)
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {

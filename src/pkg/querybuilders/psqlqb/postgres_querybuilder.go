@@ -20,6 +20,7 @@ package psqlqb
 import (
 	"Refractor/domain"
 	"fmt"
+	"strings"
 )
 
 type qb struct{}
@@ -64,7 +65,7 @@ func (qb *qb) BuildFindQuery(table string, args map[string]interface{}) (string,
 	return query, values
 }
 
-func (qb *qb) BuildUpdateQuery(table string, id interface{}, idName string, args map[string]interface{}) (string, []interface{}) {
+func (qb *qb) BuildUpdateQuery(table string, id interface{}, idName string, args map[string]interface{}, returnFields []string) (string, []interface{}) {
 	var query = fmt.Sprintf("UPDATE %s SET ", table)
 	var values []interface{}
 
@@ -78,8 +79,13 @@ func (qb *qb) BuildUpdateQuery(table string, id interface{}, idName string, args
 
 	values = append(values, id)
 
+	returning := "*"
+	if len(returnFields) > 0 {
+		returning = strings.Join(returnFields, ", ")
+	}
+
 	// Cut off trailing comma and space and add where and returning clauses
-	query = query[:len(query)-2] + fmt.Sprintf(" WHERE %s = $%d RETURNING *;", idName, i)
+	query = query[:len(query)-2] + fmt.Sprintf(" WHERE %s = $%d RETURNING %s;", idName, i, returning)
 
 	return query, values
 }
