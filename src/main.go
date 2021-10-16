@@ -184,14 +184,14 @@ func main() {
 	rconService := _rconService.NewRCONService(logger, gameService)
 	commandExecutor := command_executor.NewCommandExecutor(rconService, gameService, logger)
 
-	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, playerNameRepo, serverRepo,
-		attachmentRepo, userMetaRepo, authorizer, commandExecutor, time.Second*2, logger)
-	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
-
 	websocketService := _websocketService.NewWebsocketService(playerRepo, userMetaRepo, playerStatsService,
 		authorizer, time.Second*2, logger)
 	go websocketService.StartPool()
 	_websocketHandler.ApplyWebsocketHandler(apiServer, websocketService, middlewareBundle, logger)
+
+	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, playerNameRepo, serverRepo,
+		attachmentRepo, userMetaRepo, websocketService, authorizer, commandExecutor, time.Second*2, logger)
+	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
 
 	playerService := _playerService.NewPlayerService(playerRepo, playerNameRepo, time.Second*2, logger)
 	_playerHandler.ApplyPlayerHandler(apiGroup, playerService, authorizer, middlewareBundle, logger)
