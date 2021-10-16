@@ -32,21 +32,23 @@ import (
 )
 
 type infractionService struct {
-	repo            domain.InfractionRepo
-	playerRepo      domain.PlayerRepo
-	playerNameRepo  domain.PlayerNameRepo
-	serverRepo      domain.ServerRepo
-	attachmentRepo  domain.AttachmentRepo
-	userMetaRepo    domain.UserMetaRepo
-	authorizer      domain.Authorizer
-	commandExecutor domain.CommandExecutor
-	timeout         time.Duration
-	logger          *zap.Logger
-	infractionTypes map[string]domain.InfractionType
+	repo             domain.InfractionRepo
+	playerRepo       domain.PlayerRepo
+	playerNameRepo   domain.PlayerNameRepo
+	serverRepo       domain.ServerRepo
+	attachmentRepo   domain.AttachmentRepo
+	userMetaRepo     domain.UserMetaRepo
+	websocketService domain.WebsocketService
+	authorizer       domain.Authorizer
+	commandExecutor  domain.CommandExecutor
+	timeout          time.Duration
+	logger           *zap.Logger
+	infractionTypes  map[string]domain.InfractionType
 }
 
 func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, pnr domain.PlayerNameRepo, sr domain.ServerRepo,
-	ar domain.AttachmentRepo, umr domain.UserMetaRepo, a domain.Authorizer, ce domain.CommandExecutor, to time.Duration, log *zap.Logger) domain.InfractionService {
+	ar domain.AttachmentRepo, umr domain.UserMetaRepo, wss domain.WebsocketService, a domain.Authorizer,
+	ce domain.CommandExecutor, to time.Duration, log *zap.Logger) domain.InfractionService {
 	return &infractionService{
 		repo:            repo,
 		playerRepo:      pr,
@@ -139,7 +141,9 @@ func (s *infractionService) Store(c context.Context, infraction *domain.Infracti
 
 	// Create chat message links
 	if len(linkedMessages) > 0 {
-
+		if err := s.LinkChatMessages(ctx, infraction.InfractionID, linkedMessages...); err != nil {
+			s.logger.Error("Could not link chat messages", zap.Error(err))
+		}
 	}
 
 	return infraction, nil
@@ -606,7 +610,8 @@ func (s *infractionService) PlayerIsBanned(c context.Context, platform, playerID
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.PlayerIsBanned(ctx, platform, playerID)
+	return s.repo.
+		PlayerIsBanned(ctx, platform, playerID)
 }
 
 func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {

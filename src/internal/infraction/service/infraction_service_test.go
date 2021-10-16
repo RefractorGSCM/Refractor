@@ -77,38 +77,63 @@ func Test(t *testing.T) {
 				var mockInfraction *domain.Infraction
 
 				g.BeforeEach(func() {
-					mockInfraction = &domain.Infraction{
-						InfractionID: 1,
-						PlayerID:     "playerid",
-						Platform:     "platform",
-						UserID:       null.NewString("userid", true),
-						ServerID:     4,
-						Type:         domain.InfractionTypeKick,
-						Reason:       null.NewString("Test reason", true),
-						Duration:     null.Int{},
-						SystemAction: false,
-						CreatedAt:    null.Time{},
-						ModifiedAt:   null.Time{},
-					}
 
-					mockRepo.On("Store", mock.Anything, mock.Anything).Return(mockInfraction, nil)
-					playerRepo.On("Exists", mock.Anything, mock.Anything).Return(true, nil)
-					serverRepo.On("Exists", mock.Anything, mock.Anything).Return(true, nil)
-				})
+					g.BeforeEach(func() {
+						mockInfraction = &domain.Infraction{
+							InfractionID: 1,
+							PlayerID:     "playerid",
+							Platform:     "platform",
+							UserID:       null.NewString("userid", true),
+							ServerID:     4,
+							Type:         domain.InfractionTypeKick,
+							Reason:       null.NewString("Test reason", true),
+							Duration:     null.Int{},
+							SystemAction: false,
+							CreatedAt:    null.Time{},
+							ModifiedAt:   null.Time{},
+						}
 
-				g.It("Should not return an error", func() {
-					_, err := service.Store(ctx, mockInfraction, nil, nil)
+						mockRepo.On("Store", mock.Anything, mock.Anything).Return(mockInfraction, nil)
+						playerRepo.On("Exists", mock.Anything, mock.Anything).Return(true, nil)
+						serverRepo.On("Exists", mock.Anything, mock.Anything).Return(true, nil)
+					})
 
-					Expect(err).To(BeNil())
-					mockRepo.AssertExpectations(t)
-				})
+					g.Describe("No linked chat messages were provided", func() {
+						g.It("Should not return an error", func() {
+							_, err := service.Store(ctx, mockInfraction, nil, nil)
 
-				g.It("Should return the correct infraction", func() {
-					infraction, err := service.Store(ctx, mockInfraction, nil, nil)
+							Expect(err).To(BeNil())
+							mockRepo.AssertExpectations(t)
+						})
 
-					Expect(err).To(BeNil())
-					Expect(infraction).To(Equal(mockInfraction))
-					mockRepo.AssertExpectations(t)
+						g.It("Should return the correct infraction", func() {
+							infraction, err := service.Store(ctx, mockInfraction, nil, nil)
+
+							Expect(err).To(BeNil())
+							Expect(infraction).To(Equal(mockInfraction))
+							mockRepo.AssertExpectations(t)
+						})
+					})
+
+					g.Describe("Linked chat messages were provided", func() {
+						mockRepo.On("GetByID", mock.Anything, mock.Anything).Return(mockInfraction, nil)
+						mockRepo.On("LinkChatMessages", mock.Anything, mock.Anything, int64(1), int64(2), int64(3)).Return(nil)
+					})
+
+					g.It("Should not return an error", func() {
+						_, err := service.Store(ctx, mockInfraction, nil, []int64{1, 2, 3})
+
+						Expect(err).To(BeNil())
+						mockRepo.AssertExpectations(t)
+					})
+
+					g.It("Should return the correct infraction", func() {
+						infraction, err := service.Store(ctx, mockInfraction, nil, []int64{1, 2, 3})
+
+						Expect(err).To(BeNil())
+						Expect(infraction).To(Equal(mockInfraction))
+						mockRepo.AssertExpectations(t)
+					})
 				})
 			})
 
