@@ -29,25 +29,27 @@ import (
 )
 
 type websocketService struct {
-	pool         *websocket.Pool
-	playerRepo   domain.PlayerRepo
-	userMetaRepo domain.UserMetaRepo
-	authorizer   domain.Authorizer
-	timeout      time.Duration
-	logger       *zap.Logger
-	chatSendSubs []domain.ChatSendSubscriber
+	pool               *websocket.Pool
+	playerRepo         domain.PlayerRepo
+	userMetaRepo       domain.UserMetaRepo
+	playerStatsService domain.PlayerStatsService
+	authorizer         domain.Authorizer
+	timeout            time.Duration
+	logger             *zap.Logger
+	chatSendSubs       []domain.ChatSendSubscriber
 }
 
-func NewWebsocketService(pr domain.PlayerRepo, umr domain.UserMetaRepo, a domain.Authorizer,
+func NewWebsocketService(pr domain.PlayerRepo, umr domain.UserMetaRepo, pss domain.PlayerStatsService, a domain.Authorizer,
 	to time.Duration, log *zap.Logger) domain.WebsocketService {
 	return &websocketService{
-		pool:         websocket.NewPool(log),
-		playerRepo:   pr,
-		userMetaRepo: umr,
-		authorizer:   a,
-		timeout:      to,
-		logger:       log,
-		chatSendSubs: []domain.ChatSendSubscriber{},
+		pool:               websocket.NewPool(log),
+		playerRepo:         pr,
+		userMetaRepo:       umr,
+		playerStatsService: pss,
+		authorizer:         a,
+		timeout:            to,
+		logger:             log,
+		chatSendSubs:       []domain.ChatSendSubscriber{},
 	}
 }
 
@@ -111,11 +113,12 @@ func (s *websocketService) BroadcastServerMessage(message *domain.WebsocketMessa
 }
 
 type playerJoinQuitData struct {
-	ServerID int64  `json:"serverId"`
-	PlayerID string `json:"id"`
-	Platform string `json:"platform"`
-	Name     string `json:"name"`
-	Watched  bool   `json:"watched"`
+	ServerID        int64  `json:"serverId"`
+	PlayerID        string `json:"id"`
+	Platform        string `json:"platform"`
+	Name            string `json:"name"`
+	Watched         bool   `json:"watched"`
+	InfractionCount int    `json:"infraction_count"`
 }
 
 func (s *websocketService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
@@ -127,21 +130,31 @@ func (s *websocketService) HandlePlayerJoin(fields broadcast.Fields, serverID in
 
 	foundPlayer, err := s.playerRepo.GetByID(ctx, game.GetPlatform().GetName(), fields["PlayerID"])
 	if err != nil {
-		s.logger.Warn("Could not get player by ID",
+		s.logger.Error("Could not get player by ID",
 			zap.String("PlayerID", playerID),
 			zap.String("Platform", platform),
 			zap.Error(err))
 		return
 	}
 
+	// Get player infraction count
+	count, err := s.playerStatsService.GetInfractionCount(ctx, foundPlayer.Platform, foundPlayer.PlayerID)
+	if err != nil {
+		s.logger.Error("Could not get player infraction count",
+			zap.String("Platform", foundPlayer.Platform),
+			zap.String("Player ID", foundPlayer.PlayerID),
+			zap.Error(err))
+	}
+
 	if err := s.BroadcastServerMessage(&domain.WebsocketMessage{
 		Type: "player-join",
 		Body: playerJoinQuitData{
-			ServerID: serverID,
-			PlayerID: playerID,
-			Platform: platform,
-			Name:     foundPlayer.CurrentName,
-			Watched:  foundPlayer.Watched,
+			ServerID:        serverID,
+			PlayerID:        playerID,
+			Platform:        platform,
+			Name:            foundPlayer.CurrentName,
+			Watched:         foundPlayer.Watched,
+			InfractionCount: count,
 		},
 	}, serverID, authcheckers.CanViewServer); err != nil {
 		s.logger.Warn("Could not broadcast player join message",
