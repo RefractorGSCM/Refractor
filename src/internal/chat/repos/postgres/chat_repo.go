@@ -19,6 +19,7 @@ package postgres
 
 import (
 	"Refractor/domain"
+	"Refractor/pkg/aeshelper"
 	"Refractor/pkg/querybuilders/psqlqb"
 	"context"
 	"database/sql"
@@ -292,6 +293,32 @@ func (r *chatRepo) GetFlaggedMessageCount(ctx context.Context) (int, error) {
 	}
 
 	return count, nil
+}
+
+func (r *chatRepo) Update(ctx context.Context, id int64, args domain.UpdateArgs) (*domain.ChatMessage, error) {
+	const op = opTag + "Update"
+
+	query, values := r.qb.BuildUpdateQuery("ChatMessages", id, "MessageID", args)
+
+	stmt, err := r.db.PrepareContext(ctx, query)
+	if err != nil {
+		r.logger.Error("Could not prepare statement", zap.String("query", query), zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	row := stmt.QueryRowContext(ctx, values...)
+
+	updatedMessage := &domain.ChatMessage{}
+	if err := r.scanRow(row, updatedMessage); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Wrap(domain.ErrNotFound, op)
+		}
+
+		r.logger.Error("Could not scan updated chat message", zap.Error(err))
+		return nil, errors.Wrap(err, op)
+	}
+
+	return updatedMessage, nil
 }
 
 // Scan helpers

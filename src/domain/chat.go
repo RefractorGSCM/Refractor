@@ -51,6 +51,7 @@ type ChatRepo interface {
 	Search(ctx context.Context, args FindArgs, limit, offset int) (int, []*ChatMessage, error)
 	GetFlaggedMessages(ctx context.Context, count int, serverIDs []int64) ([]*ChatMessage, error)
 	GetFlaggedMessageCount(ctx context.Context) (int, error)
+	Update(ctx context.Context, id int64, args UpdateArgs) (*ChatMessage, error)
 }
 
 type ChatService interface {
