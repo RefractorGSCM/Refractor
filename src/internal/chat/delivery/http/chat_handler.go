@@ -68,6 +68,8 @@ func ApplyChatHandler(apiGroup *echo.Group, service domain.ChatService,
 	chatGroup.DELETE("/flagged/:id", handler.DeleteFlaggedWord, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
 	chatGroup.GET("/recent/flagged", handler.GetRecentFlaggedMessages,
 		rEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagModerateFlaggedMessages, true)))
+	chatGroup.PATCH("/unflag/:id", handler.UnflagMessage,
+		rEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagModerateFlaggedMessages, true)))
 }
 
 const defaultRecentMessagesCount = 20
@@ -232,5 +234,23 @@ func (h *chatHandler) GetRecentFlaggedMessages(c echo.Context) error {
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
 		Payload: messages,
+	})
+}
+
+func (h *chatHandler) UnflagMessage(c echo.Context) error {
+	messageIDString := c.Param("id")
+
+	messageID, err := strconv.ParseInt(messageIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid message id"), http.StatusBadRequest, "")
+	}
+
+	if err := h.service.UnflagMessage(c.Request().Context(), messageID); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Message unflagged",
 	})
 }
