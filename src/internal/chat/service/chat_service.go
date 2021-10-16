@@ -263,3 +263,11 @@ func (s *chatService) GetFlaggedMessageCount(c context.Context) (int, error) {
 
 	return s.repo.GetFlaggedMessageCount(ctx)
 }
+
+func (s *chatService) UnflagMessage(c context.Context, id int64) error {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	_, err := s.repo.Update(ctx, id, domain.UpdateArgs{"Flagged": false})
+	return err
+}

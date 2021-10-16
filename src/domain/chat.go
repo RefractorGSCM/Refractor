@@ -61,6 +61,7 @@ type ChatService interface {
 	HandleChatReceive(body *ChatReceiveBody, serverID int64, game Game)
 	HandleUserSendChat(body *ChatSendBody)
 	GetFlaggedMessageCount(c context.Context) (int, error)
+	UnflagMessage(c context.Context, id int64) error
 }
 
 type FlaggedWord struct {
