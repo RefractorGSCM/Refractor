@@ -48,6 +48,7 @@ type WebsocketService interface {
 	StartPool()
 	Broadcast(message *WebsocketMessage)
 	BroadcastServerMessage(message *WebsocketMessage, serverID int64, authChecker AuthChecker) error
+	SendDirectMessage(message *WebsocketMessage, userID string)
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 	HandlePlayerQuit(fields broadcast.Fields, serverID int64, game Game)
 	HandleServerStatusChange(serverID int64, status string)
