@@ -37,7 +37,7 @@ declare looprow playerNameSearchResult;
     declare tmp playerNameSearchResult;
 begin
     for looprow in select pn.playerid, pn.platform from playernames pn
-                   where name like concat('%', term, '%')
+                   where lower(name) like concat('%', lower(term), '%')
                    group by pn.playerid, pn.platform
                    limit limt offset offst
         loop
