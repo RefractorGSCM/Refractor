@@ -181,7 +181,7 @@ func (s *chatService) GetRecentByServer(c context.Context, serverID int64, count
 	return results, nil
 }
 
-// GetFlaggedMessages returns n (count) amount of recent flagged messages.
+// GetFlaggedMessages returns n amount of recent flagged messages.
 //
 // If a user is provided in context under the key "user", the user will be authorized against servers by their ability
 // to view chat records.
