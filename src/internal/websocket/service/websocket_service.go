@@ -112,6 +112,17 @@ func (s *websocketService) BroadcastServerMessage(message *domain.WebsocketMessa
 	return nil
 }
 
+func (s *websocketService) SendDirectMessage(message *domain.WebsocketMessage, userID string) {
+	for _, client := range s.pool.Clients {
+		if client.UserID == userID {
+			s.pool.SendDirect <- &domain.WebsocketDirectMessage{
+				ClientID: client.ID,
+				Message:  message,
+			}
+		}
+	}
+}
+
 type playerJoinQuitData struct {
 	ServerID        int64  `json:"serverId"`
 	PlayerID        string `json:"id"`
