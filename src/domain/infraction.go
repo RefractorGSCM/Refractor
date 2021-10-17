@@ -47,6 +47,7 @@ type Infraction struct {
 	SystemAction bool        `json:"system_action"`
 	CreatedAt    null.Time   `json:"created_at"`
 	ModifiedAt   null.Time   `json:"modified_at"`
+	Repealed     bool        `json:"repealed"`
 	IssuerName   string      `json:"issuer_name,omitempty"` // IssuerName is not a DB field. It does not get scanned. It is populated manually.
 	PlayerName   string      `json:"player_name,omitempty"` // PlayerName is not a DB field. It does not get scanned. It is populated manually.
 }

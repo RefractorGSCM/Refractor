@@ -52,6 +52,7 @@ func Test(t *testing.T) {
 		"SystemAction",
 		"CreatedAt",
 		"ModifiedAt",
+		"Repealed",
 	}
 	var ctx = context.TODO()
 
@@ -100,7 +101,7 @@ func Test(t *testing.T) {
 					mock.ExpectQuery("INSERT INTO Infractions").WillReturnRows(
 						sqlmock.NewRows(cols).
 							AddRow(i.InfractionID, i.PlayerID, i.Platform, i.UserID, i.ServerID,
-								i.Type, i.Reason, i.Duration, i.SystemAction, i.CreatedAt, i.ModifiedAt))
+								i.Type, i.Reason, i.Duration, i.SystemAction, i.CreatedAt, i.ModifiedAt, i.Repealed))
 				})
 
 				g.It("Should not return an error", func() {
@@ -159,7 +160,7 @@ func Test(t *testing.T) {
 
 					mockRows = sqlmock.NewRows(cols).
 						AddRow(i.InfractionID, i.PlayerID, i.Platform, i.UserID, i.ServerID, i.Type, i.Reason, i.Duration,
-							i.SystemAction, i.CreatedAt, i.ModifiedAt)
+							i.SystemAction, i.CreatedAt, i.ModifiedAt, i.Repealed)
 
 					mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Infractions")).WillReturnRows(mockRows)
 				})
@@ -257,7 +258,7 @@ func Test(t *testing.T) {
 					rows := sqlmock.NewRows(cols)
 					for _, i := range infractions {
 						rows.AddRow(i.InfractionID, i.PlayerID, i.Platform, i.UserID, i.ServerID, i.Type, i.Reason, i.Duration,
-							i.SystemAction, i.CreatedAt, i.ModifiedAt)
+							i.SystemAction, i.CreatedAt, i.ModifiedAt, i.Repealed)
 					}
 					mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Infractions")).WillReturnRows(rows)
 				})
@@ -338,7 +339,7 @@ func Test(t *testing.T) {
 
 					mock.ExpectQuery("UPDATE Infractions SET").WillReturnRows(sqlmock.NewRows(cols).
 						AddRow(ui.InfractionID, ui.PlayerID, ui.Platform, ui.UserID, ui.ServerID, ui.Type, ui.Reason,
-							ui.Duration, ui.SystemAction, ui.CreatedAt, ui.ModifiedAt))
+							ui.Duration, ui.SystemAction, ui.CreatedAt, ui.ModifiedAt, ui.Repealed))
 				})
 
 				g.It("Should not return an error", func() {
@@ -406,7 +407,7 @@ func Test(t *testing.T) {
 
 		g.Describe("Search()", func() {
 			var cols = []string{"InfractionID", "PlayerID", "Platform", "UserID", "ServerID", "Type", "Reason", "Duration",
-				"SystemAction", "CreatedAt", "ModifiedAt", "StaffName"}
+				"SystemAction", "CreatedAt", "ModifiedAt", "Repealed", "StaffName"}
 
 			g.Describe("Results found", func() {
 				var results []*domain.Infraction
@@ -461,7 +462,7 @@ func Test(t *testing.T) {
 
 					for _, i := range results {
 						rows.AddRow(i.InfractionID, i.PlayerID, i.Platform, i.UserID, i.ServerID, i.Type, i.Reason,
-							i.Duration, i.SystemAction, i.CreatedAt, i.ModifiedAt, i.IssuerName)
+							i.Duration, i.SystemAction, i.CreatedAt, i.ModifiedAt, i.Repealed, i.IssuerName)
 					}
 
 					mock.ExpectQuery(regexp.QuoteMeta("SELECT res.*, um.Username AS StaffName FROM (")).WillReturnRows(rows)

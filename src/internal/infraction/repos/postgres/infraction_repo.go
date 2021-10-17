@@ -237,7 +237,7 @@ func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, limit
 		res := &domain.Infraction{}
 
 		if err := rows.Scan(&res.InfractionID, &res.PlayerID, &res.Platform, &res.UserID, &res.ServerID, &res.Type,
-			&res.Reason, &res.Duration, &res.SystemAction, &res.CreatedAt, &res.ModifiedAt, &res.IssuerName); err != nil {
+			&res.Reason, &res.Duration, &res.SystemAction, &res.CreatedAt, &res.ModifiedAt, &res.Repealed, &res.IssuerName); err != nil {
 			r.logger.Error("Could not scan infraction search result", zap.Error(err))
 			return 0, nil, errors.Wrap(err, op)
 		}
@@ -440,9 +440,11 @@ func (r *infractionRepo) GetPlayerTotalInfractions(ctx context.Context, platform
 
 // Scan helpers
 func (r *infractionRepo) scanRow(row *sql.Row, i *domain.Infraction) error {
-	return row.Scan(&i.InfractionID, &i.PlayerID, &i.Platform, &i.UserID, &i.ServerID, &i.Type, &i.Reason, &i.Duration, &i.SystemAction, &i.CreatedAt, &i.ModifiedAt)
+	return row.Scan(&i.InfractionID, &i.PlayerID, &i.Platform, &i.UserID, &i.ServerID, &i.Type, &i.Reason, &i.Duration,
+		&i.SystemAction, &i.CreatedAt, &i.ModifiedAt, &i.Repealed)
 }
 
 func (r *infractionRepo) scanRows(rows *sql.Rows, i *domain.Infraction) error {
-	return rows.Scan(&i.InfractionID, &i.PlayerID, &i.Platform, &i.UserID, &i.ServerID, &i.Type, &i.Reason, &i.Duration, &i.SystemAction, &i.CreatedAt, &i.ModifiedAt)
+	return rows.Scan(&i.InfractionID, &i.PlayerID, &i.Platform, &i.UserID, &i.ServerID, &i.Type, &i.Reason, &i.Duration,
+		&i.SystemAction, &i.CreatedAt, &i.ModifiedAt, &i.Repealed)
 }

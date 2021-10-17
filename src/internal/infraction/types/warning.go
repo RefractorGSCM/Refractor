@@ -26,5 +26,5 @@ func (w *Warning) Name() string {
 }
 
 func (w *Warning) AllowedUpdateFields() []string {
-	return []string{"Reason"}
+	return []string{"Reason", "Repealed"}
 }

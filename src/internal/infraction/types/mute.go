@@ -26,5 +26,5 @@ func (w *Mute) Name() string {
 }
 
 func (w *Mute) AllowedUpdateFields() []string {
-	return []string{"Reason", "Duration"}
+	return []string{"Reason", "Duration", "Repealed"}
 }

@@ -26,5 +26,5 @@ func (w *Kick) Name() string {
 }
 
 func (w *Kick) AllowedUpdateFields() []string {
-	return []string{"Reason"}
+	return []string{"Reason", "Repealed"}
 }
