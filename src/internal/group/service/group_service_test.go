@@ -42,6 +42,7 @@ func Test(t *testing.T) {
 
 	var mockRepo *mocks.GroupRepo
 	var authorizer *mocks.Authorizer
+	var websocketService *mocks.WebsocketService
 	var service *groupService
 	var ctx = context.TODO()
 
@@ -49,7 +50,8 @@ func Test(t *testing.T) {
 		g.BeforeEach(func() {
 			mockRepo = new(mocks.GroupRepo)
 			authorizer = new(mocks.Authorizer)
-			service = &groupService{mockRepo, authorizer, time.Second * 2, zap.NewNop()}
+			websocketService = new(mocks.WebsocketService)
+			service = &groupService{mockRepo, websocketService, authorizer, time.Second * 2, zap.NewNop()}
 		})
 
 		g.Describe("Store()", func() {
@@ -215,6 +217,7 @@ func Test(t *testing.T) {
 			g.Describe("Target group found", func() {
 				g.BeforeEach(func() {
 					mockRepo.On("Delete", mock.Anything, mock.AnythingOfType("int64")).Return(nil)
+					websocketService.On("Broadcast", mock.Anything).Return(nil)
 				})
 
 				g.It("Should not return an error", func() {
@@ -256,6 +259,7 @@ func Test(t *testing.T) {
 				g.BeforeEach(func() {
 					mockRepo.On("Update", mock.Anything, mock.AnythingOfType("int64"),
 						mock.AnythingOfType("domain.UpdateArgs")).Return(updatedGroup, nil)
+					websocketService.On("Broadcast", mock.Anything).Return(nil)
 				})
 
 				g.It("Should not return an error", func() {
@@ -379,6 +383,7 @@ func Test(t *testing.T) {
 				g.BeforeEach(func() {
 					mockRepo.On("GetBaseGroup", mock.Anything).Return(baseGroup, nil)
 					mockRepo.On("SetBaseGroup", mock.Anything, mock.AnythingOfType("*domain.Group")).Return(nil)
+					websocketService.On("Broadcast", mock.Anything).Return(nil)
 
 					expected = &domain.Group{
 						ID:          -1,
@@ -547,6 +552,7 @@ func Test(t *testing.T) {
 			g.Describe("Success", func() {
 				g.BeforeEach(func() {
 					mockRepo.On("SetServerOverrides", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+					websocketService.On("Broadcast", mock.Anything).Return(nil)
 				})
 
 				g.It("Should not return an error", func() {

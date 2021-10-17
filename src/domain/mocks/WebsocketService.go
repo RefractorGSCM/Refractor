@@ -55,6 +55,11 @@ func (_m *WebsocketService) HandleServerStatusChange(serverID int64, status stri
 	_m.Called(serverID, status)
 }
 
+// SendDirectMessage provides a mock function with given fields: message, userID
+func (_m *WebsocketService) SendDirectMessage(message *domain.WebsocketMessage, userID string) {
+	_m.Called(message, userID)
+}
+
 // StartPool provides a mock function with given fields:
 func (_m *WebsocketService) StartPool() {
 	_m.Called()

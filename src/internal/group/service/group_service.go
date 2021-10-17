@@ -30,18 +30,20 @@ import (
 )
 
 type groupService struct {
-	repo       domain.GroupRepo
-	authorizer domain.Authorizer
-	timeout    time.Duration
-	logger     *zap.Logger
+	repo             domain.GroupRepo
+	websocketService domain.WebsocketService
+	authorizer       domain.Authorizer
+	timeout          time.Duration
+	logger           *zap.Logger
 }
 
-func NewGroupService(r domain.GroupRepo, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.GroupService {
+func NewGroupService(r domain.GroupRepo, wss domain.WebsocketService, a domain.Authorizer, to time.Duration, log *zap.Logger) domain.GroupService {
 	return &groupService{
-		repo:       r,
-		authorizer: a,
-		timeout:    to,
-		logger:     log,
+		repo:             r,
+		websocketService: wss,
+		authorizer:       a,
+		timeout:          to,
+		logger:           log,
 	}
 }
 
@@ -90,7 +92,16 @@ func (s *groupService) Delete(c context.Context, id int64) error {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.Delete(ctx, id)
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+
+	s.websocketService.Broadcast(&domain.WebsocketMessage{
+		Type: "permissions-changed",
+		Body: nil,
+	})
+
+	return nil
 }
 
 func (s *groupService) Update(c context.Context, id int64, args domain.UpdateArgs) (*domain.Group, error) {
@@ -109,7 +120,17 @@ func (s *groupService) Update(c context.Context, id int64, args domain.UpdateArg
 		args["Permissions"] = permString
 	}
 
-	return s.repo.Update(ctx, id, args)
+	updated, err := s.repo.Update(ctx, id, args)
+	if err != nil {
+		return nil, err
+	}
+
+	s.websocketService.Broadcast(&domain.WebsocketMessage{
+		Type: "permissions-changed",
+		Body: nil,
+	})
+
+	return updated, nil
 }
 
 func (s *groupService) Reorder(c context.Context, newPositions []*domain.GroupReorderInfo) error {
@@ -144,6 +165,11 @@ func (s *groupService) UpdateBase(c context.Context, args domain.UpdateArgs) (*d
 		return nil, err
 	}
 
+	s.websocketService.Broadcast(&domain.WebsocketMessage{
+		Type: "permissions-changed",
+		Body: nil,
+	})
+
 	return currentBase, nil
 }
 
@@ -166,6 +192,11 @@ func (s *groupService) AddUserGroup(c context.Context, groupctx domain.GroupSetC
 			return domain.NewHTTPError(err, http.StatusConflict, "User already has this group")
 		}
 	}
+
+	s.websocketService.SendDirectMessage(&domain.WebsocketMessage{
+		Type: "permissions-changed",
+		Body: nil,
+	}, groupctx.TargetUserID)
 
 	return nil
 }
@@ -284,6 +315,11 @@ func (s *groupService) RemoveUserGroup(c context.Context, groupctx domain.GroupS
 			"You do not have permission to remove a group from that user.")
 	}
 
+	s.websocketService.SendDirectMessage(&domain.WebsocketMessage{
+		Type: "permissions-changed",
+		Body: nil,
+	}, groupctx.TargetUserID)
+
 	return s.repo.RemoveUserGroup(ctx, groupctx.TargetUserID, groupctx.GroupID)
 }
 
@@ -326,7 +362,16 @@ func (s *groupService) SetServerOverrides(c context.Context, serverID, groupID i
 	overrides.DenyOverrides = denyPerms.String()
 	overrides.AllowOverrides = allowPerms.String()
 
-	return overrides, s.repo.SetServerOverrides(ctx, serverID, groupID, overrides)
+	if err := s.repo.SetServerOverrides(ctx, serverID, groupID, overrides); err != nil {
+		return nil, err
+	}
+
+	s.websocketService.Broadcast(&domain.WebsocketMessage{
+		Type: "permissions-changed",
+		Body: nil,
+	})
+
+	return overrides, nil
 }
 
 func (s *groupService) GetUserPrimaryGroup(c context.Context, userID string) (*domain.Group, error) {

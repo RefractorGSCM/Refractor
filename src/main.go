@@ -155,9 +155,6 @@ func main() {
 
 	authorizer := _authorizer.NewAuthorizer(groupRepo, logger)
 
-	groupService := _groupService.NewGroupService(groupRepo, authorizer, time.Second*2, logger)
-	_groupHandler.ApplyGroupHandler(apiGroup, groupService, authorizer, middlewareBundle, logger)
-
 	gameRepo := _gameRepo.NewGameRepo()
 	gameService := _gameService.NewGameService(gameRepo, time.Second*2)
 	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
@@ -188,6 +185,9 @@ func main() {
 		authorizer, time.Second*2, logger)
 	go websocketService.StartPool()
 	_websocketHandler.ApplyWebsocketHandler(apiServer, websocketService, middlewareBundle, logger)
+
+	groupService := _groupService.NewGroupService(groupRepo, websocketService, authorizer, time.Second*2, logger)
+	_groupHandler.ApplyGroupHandler(apiGroup, groupService, authorizer, middlewareBundle, logger)
 
 	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, playerNameRepo, serverRepo,
 		attachmentRepo, userMetaRepo, websocketService, authorizer, commandExecutor, time.Second*2, logger)
