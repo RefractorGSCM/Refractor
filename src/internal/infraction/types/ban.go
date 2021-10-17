@@ -26,5 +26,5 @@ func (w *Ban) Name() string {
 }
 
 func (w *Ban) AllowedUpdateFields() []string {
-	return []string{"Reason", "Duration"}
+	return []string{"Reason", "Duration", "Repealed"}
 }

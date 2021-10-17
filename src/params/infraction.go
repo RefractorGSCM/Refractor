@@ -126,6 +126,7 @@ func (body CreateBanParams) Validate() error {
 type UpdateInfractionParams struct {
 	Reason   *string `json:"reason" form:"reason"`
 	Duration *int    `json:"duration" form:"duration"`
+	Repealed *bool   `json:"repealed" form:"repealed"`
 }
 
 func (body UpdateInfractionParams) Validate() error {
