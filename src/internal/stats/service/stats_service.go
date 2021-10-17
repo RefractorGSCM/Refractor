@@ -20,6 +20,7 @@ package service
 import (
 	"Refractor/domain"
 	"context"
+	gocache "github.com/patrickmn/go-cache"
 	"time"
 )
 
@@ -27,6 +28,7 @@ type statsService struct {
 	repo     domain.StatsRepo
 	chatRepo domain.ChatRepo
 	timeout  time.Duration
+	cache    *gocache.Cache
 }
 
 func NewStatsService(repo domain.StatsRepo, cr domain.ChatRepo, to time.Duration) domain.StatsService {
@@ -34,12 +36,18 @@ func NewStatsService(repo domain.StatsRepo, cr domain.ChatRepo, to time.Duration
 		repo:     repo,
 		chatRepo: cr,
 		timeout:  to,
+		cache:    gocache.New(time.Second*120, time.Second*120),
 	}
 }
 
 func (s *statsService) GetStats(c context.Context) (*domain.Stats, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
+
+	// Check if stats are cached
+	if s, present := s.cache.Get("stats"); present {
+		return s.(*domain.Stats), nil
+	}
 
 	stats := &domain.Stats{}
 	var err error
@@ -86,6 +94,9 @@ func (s *statsService) GetStats(c context.Context) (*domain.Stats, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Cache stats
+	s.cache.SetDefault("stats", stats)
 
 	return stats, nil
 }
