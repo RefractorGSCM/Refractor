@@ -21,8 +21,29 @@ import (
 	"Refractor/params/rules"
 	"fmt"
 	validation "github.com/go-ozzo/ozzo-validation"
+	"github.com/pkg/errors"
+	"math"
 	"strings"
 )
+
+// we need special validation instructions for the duration on infraction creation because we use 0 to denote a permanent
+// ban. The problem is that 0 is also the zero value for integers in Go, meaning that ozzo's built in validation rules
+// will not work properly.
+var durationValidator = validation.By(func(val interface{}) error {
+	valPtr, _ := val.(*int)
+	if valPtr == nil {
+		return errors.New("duration is required")
+	}
+
+	valInt := *valPtr
+	if valInt < 0 {
+		return errors.New("duration cannot be less than 0 (permanent)")
+	} else if valInt > math.MaxInt32 {
+		return errors.New("duration cannot be greater than the max value of a 32 but int")
+	}
+
+	return nil
+})
 
 type CreateWarningParams struct {
 	PlayerID       string                   `json:"player_id" form:"player_id"`
@@ -60,7 +81,7 @@ type CreateMuteParams struct {
 	PlayerID       string                   `json:"player_id" form:"player_id"`
 	Platform       string                   `json:"platform" form:"platform"`
 	Reason         string                   `json:"reason" form:"reason"`
-	Duration       int                      `json:"duration" form:"duration"`
+	Duration       *int                     `json:"duration" form:"duration"`
 	Attachments    []CreateAttachmentParams `json:"attachments"`
 	LinkedMessages []int64                  `json:"linked_chat_messages"`
 }
@@ -74,7 +95,7 @@ func (body CreateMuteParams) Validate() error {
 		validation.Field(&body.PlayerID, rules.PlayerIDRules.Prepend(validation.Required)...),
 		validation.Field(&body.Platform, rules.PlatformRules.Prepend(validation.Required)...),
 		validation.Field(&body.Reason, rules.InfractionReasonRules.Prepend(validation.Required)...),
-		validation.Field(&body.Duration, rules.InfractionDurationRules.Prepend(validation.Required)...),
+		validation.Field(&body.Duration, durationValidator),
 		validation.Field(&body.Attachments, attachmentArrValidator),
 	)
 }
@@ -104,7 +125,7 @@ type CreateBanParams struct {
 	PlayerID       string                   `json:"player_id" form:"player_id"`
 	Platform       string                   `json:"platform" form:"platform"`
 	Reason         string                   `json:"reason" form:"reason"`
-	Duration       int                      `json:"duration" form:"duration"`
+	Duration       *int                     `json:"duration" form:"duration"`
 	Attachments    []CreateAttachmentParams `json:"attachments"`
 	LinkedMessages []int64                  `json:"linked_chat_messages"`
 }
@@ -118,7 +139,7 @@ func (body CreateBanParams) Validate() error {
 		validation.Field(&body.PlayerID, rules.PlayerIDRules.Prepend(validation.Required)...),
 		validation.Field(&body.Platform, rules.PlatformRules.Prepend(validation.Required)...),
 		validation.Field(&body.Reason, rules.InfractionReasonRules.Prepend(validation.Required)...),
-		validation.Field(&body.Duration, rules.InfractionDurationRules.Prepend(validation.Required)...),
+		validation.Field(&body.Duration, durationValidator),
 		validation.Field(&body.Attachments, attachmentArrValidator),
 	)
 }
