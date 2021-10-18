@@ -169,7 +169,6 @@ func main() {
 
 	serverRepo := _postgresServerRepo.NewServerRepo(db, logger, config)
 	serverService := _serverService.NewServerService(serverRepo, playerRepo, playerStatsService, authorizer, time.Second*2, logger)
-	_serverHandler.ApplyServerHandler(apiGroup, serverService, authorizer, middlewareBundle, logger)
 
 	userService := _userService.NewUserService(userMetaRepo, authRepo, groupRepo, playerRepo, playerNameRepo,
 		authorizer, time.Second*2, logger)
@@ -180,6 +179,8 @@ func main() {
 
 	rconService := _rconService.NewRCONService(logger, gameService)
 	commandExecutor := command_executor.NewCommandExecutor(rconService, gameService, logger)
+
+	_serverHandler.ApplyServerHandler(apiGroup, serverService, rconService, gameService, authorizer, middlewareBundle, logger)
 
 	websocketService := _websocketService.NewWebsocketService(playerRepo, userMetaRepo, playerStatsService,
 		authorizer, time.Second*2, logger)

@@ -35,16 +35,21 @@ import (
 )
 
 type serverHandler struct {
-	service    domain.ServerService
-	authorizer domain.Authorizer
-	logger     *zap.Logger
+	service     domain.ServerService
+	rconService domain.RCONService
+	gameService domain.GameService
+	authorizer  domain.Authorizer
+	logger      *zap.Logger
 }
 
-func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, a domain.Authorizer, mware domain.Middleware, log *zap.Logger) {
+func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, rs domain.RCONService, gs domain.GameService,
+	a domain.Authorizer, mware domain.Middleware, log *zap.Logger) {
 	handler := &serverHandler{
-		service:    s,
-		authorizer: a,
-		logger:     log,
+		service:     s,
+		rconService: rs,
+		gameService: gs,
+		authorizer:  a,
+		logger:      log,
 	}
 
 	// Create the server routing group
@@ -65,6 +70,35 @@ func ApplyServerHandler(apiGroup *echo.Group, s domain.ServerService, a domain.A
 	serverGroup.PATCH("/deactivate/:id", handler.DeactivateServer, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
 	serverGroup.PATCH("/:id", handler.UpdateServer, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
 	serverGroup.GET("/:id/permissions", handler.GetScopedPermissions)
+	serverGroup.POST("/:id/refreshplayers", handler.RefreshPlayerList, rEnforcer.CheckAuth(authcheckers.RequireAdmin))
+}
+
+func (h *serverHandler) RefreshPlayerList(c echo.Context) error {
+	serverIDString := c.Param("id")
+
+	serverID, err := strconv.ParseInt(serverIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid server id"), http.StatusBadRequest, "")
+	}
+
+	server, err := h.service.GetByID(c.Request().Context(), serverID)
+	if err != nil {
+		return err
+	}
+
+	game, err := h.gameService.GetGame(server.Game)
+	if err != nil {
+		return err
+	}
+
+	if err := h.rconService.RefreshPlayerList(server.ID, game); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Player list refreshed",
+	})
 }
 
 func (h *serverHandler) CreateServer(c echo.Context) error {
