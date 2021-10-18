@@ -38,6 +38,7 @@ func NewMordhauGame(platform domain.Platform) domain.Game {
 			EnableBroadcasts:          true,
 			BroadcastInitCommands:     []string{"listen login", "listen chat"},
 			PlayerListPollingInterval: time.Hour * 1,
+			PlayerListRefreshInterval: time.Minute * 20,
 			EnableChat:                true,
 			BroadcastPatterns: map[string]*regexp.Regexp{
 				broadcast.TypeJoin: regexp.MustCompile("^Login: (?P<Date>[0-9\\.-]+): (?P<Name>.+) \\((?P<PlayerID>[0-9a-fA-F]+)\\) logged in$"),

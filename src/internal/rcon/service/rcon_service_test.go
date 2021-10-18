@@ -58,7 +58,7 @@ func Test(t *testing.T) {
 				},
 				gameService:   gameService,
 				clientCreator: clientCreator,
-				prevPlayers:   map[int64]map[string]*onlinePlayer{},
+				prevPlayers:   map[int64]map[string]*domain.OnlinePlayer{},
 			}
 
 			mockServer = &domain.Server{
@@ -150,7 +150,7 @@ func Test(t *testing.T) {
 		g.Describe("getOnlinePlayers()", func() {
 			g.Describe("Success", func() {
 				var rawOutput string
-				var expected []*onlinePlayer
+				var expected []*domain.OnlinePlayer
 
 				g.BeforeEach(func() {
 					rawOutput = `1, Player1
@@ -159,7 +159,7 @@ func Test(t *testing.T) {
 								4, Player4
 								5, Player5`
 
-					expected = []*onlinePlayer{
+					expected = []*domain.OnlinePlayer{
 						{
 							PlayerID: "1",
 							Name:     "Player1",

@@ -223,6 +223,51 @@ func (s *websocketService) HandleServerStatusChange(serverID int64, status strin
 	}
 }
 
+type playerListRefreshData struct {
+	ServerID      int64                 `json:"server_id"`
+	OnlinePlayers []*playerJoinQuitData `json:"online_players"`
+}
+
+func (s *websocketService) HandlePlayerListUpdate(serverID int64, players []*domain.OnlinePlayer, game domain.Game) {
+	ctx, cancel := context.WithTimeout(context.TODO(), s.timeout)
+	defer cancel()
+
+	platform := game.GetPlatform().GetName()
+	playerData := make([]*playerJoinQuitData, 0)
+
+	for _, op := range players {
+		// Get player infraction count
+		count, err := s.playerStatsService.GetInfractionCount(ctx, platform, op.PlayerID)
+		if err != nil {
+			s.logger.Error("Could not get player infraction count",
+				zap.String("Platform", platform),
+				zap.String("Player ID", op.PlayerID),
+				zap.Error(err))
+			// not a critical error so do not skip player
+		}
+
+		playerData = append(playerData, &playerJoinQuitData{
+			ServerID:        serverID,
+			PlayerID:        op.PlayerID,
+			Platform:        platform,
+			Name:            op.Name,
+			InfractionCount: count,
+		})
+	}
+
+	// Broadcast player data
+	if err := s.BroadcastServerMessage(&domain.WebsocketMessage{
+		Type: "player-list-refresh",
+		Body: &playerListRefreshData{
+			ServerID:      serverID,
+			OnlinePlayers: playerData,
+		},
+	}, serverID, authcheckers.CanViewServer); err != nil {
+		s.logger.Warn("Could not broadcast server player list refresh", zap.Error(err))
+		return
+	}
+}
+
 func (s *websocketService) SubscribeChatSend(sub domain.ChatSendSubscriber) {
 	s.chatSendSubs = append(s.chatSendSubs, sub)
 }
