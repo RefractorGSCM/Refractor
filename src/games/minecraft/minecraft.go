@@ -36,7 +36,7 @@ func NewMinecraftGame(platform domain.Platform) domain.Game {
 			AlivePingInterval:         time.Minute * 2,
 			EnableBroadcasts:          false,
 			PlayerListPollingInterval: time.Second * 5,
-			PlayerListRefreshInterval: time.Second * 15,
+			PlayerListRefreshInterval: time.Minute * 40,
 			EnableChat:                false,
 		},
 		platform: platform,
