@@ -301,8 +301,6 @@ func (r *chatRepo) Update(ctx context.Context, id int64, args domain.UpdateArgs)
 		"MessageID", "PlayerID", "Platform", "ServerID", "Message", "Flagged", "CreatedAt", "ModifiedAt",
 	})
 
-	fmt.Println(query)
-
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
 		r.logger.Error("Could not prepare statement", zap.String("query", query), zap.Error(err))
