@@ -294,3 +294,28 @@ func (s *serverService) HandleServerStatusChange(serverID int64, status string) 
 
 	data.Status = status
 }
+
+func (s *serverService) HandlePlayerListUpdate(serverID int64, onlinePlayers []*domain.OnlinePlayer, game domain.Game) {
+	ctx, cancel := context.WithTimeout(context.TODO(), s.timeout)
+	defer cancel()
+
+	platform := game.GetPlatform().GetName()
+
+	// Clear server players
+	s.serverData[serverID].OnlinePlayers = map[string]*domain.Player{}
+
+	// Get player data
+	for _, op := range onlinePlayers {
+		p, err := s.playerRepo.GetByID(ctx, platform, op.PlayerID)
+		if err != nil {
+			s.logger.Error("HandlePlayerListUpdate: could not get player by ID",
+				zap.String("Platform", platform),
+				zap.String("Player ID", op.PlayerID),
+				zap.Error(err))
+			continue
+		}
+
+		// Update player in server data
+		s.serverData[serverID].OnlinePlayers[p.Platform] = p
+	}
+}

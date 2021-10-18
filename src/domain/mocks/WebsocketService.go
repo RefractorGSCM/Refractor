@@ -45,6 +45,11 @@ func (_m *WebsocketService) HandlePlayerJoin(fields broadcast.Fields, serverID i
 	_m.Called(fields, serverID, game)
 }
 
+// HandlePlayerListUpdate provides a mock function with given fields: serverID, players, game
+func (_m *WebsocketService) HandlePlayerListUpdate(serverID int64, players []*domain.OnlinePlayer, game domain.Game) {
+	_m.Called(serverID, players, game)
+}
+
 // HandlePlayerQuit provides a mock function with given fields: fields, serverID, game
 func (_m *WebsocketService) HandlePlayerQuit(fields broadcast.Fields, serverID int64, game domain.Game) {
 	_m.Called(fields, serverID, game)

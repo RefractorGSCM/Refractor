@@ -71,22 +71,23 @@ type GameConfig struct {
 	// broadcast system is very stable then you may not need this at all. If EnableBroadcasts is set to false, you
 	// must set PlayListPollingInterval or else the player list will never be updated!
 	PlayerListPollingInterval time.Duration
+
+	// PlayerListRefreshInterval is the interval at which the server's player list is fully refreshed and pushed to all
+	// necessary services and clients. This should be enabled for all games to mitigate server desyncs, but is especially
+	// important for games which support broadcasts since desyncs are more likely.
+	PlayerListRefreshInterval time.Duration
 }
 
 func (gc GameConfig) AlivePingEnabled() bool {
-	if gc.AlivePingInterval != 0 {
-		return true
-	}
-
-	return false
+	return gc.AlivePingInterval != 0
 }
 
 func (gc GameConfig) PlayerListPollingEnabled() bool {
-	if gc.PlayerListPollingInterval != 0 {
-		return true
-	}
+	return gc.PlayerListPollingInterval != 0
+}
 
-	return false
+func (gc GameConfig) PlayerListRefreshEnabled() bool {
+	return gc.PlayerListPollingInterval != 0
 }
 
 type GameService interface {

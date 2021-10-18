@@ -52,5 +52,6 @@ type WebsocketService interface {
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 	HandlePlayerQuit(fields broadcast.Fields, serverID int64, game Game)
 	HandleServerStatusChange(serverID int64, status string)
+	HandlePlayerListUpdate(serverID int64, players []*OnlinePlayer, game Game)
 	SubscribeChatSend(sub ChatSendSubscriber)
 }

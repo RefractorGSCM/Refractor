@@ -39,7 +39,7 @@ type rconService struct {
 	playerListSubs []domain.PlayerListUpdateSubscriber
 	statusSubs     []domain.ServerStatusSubscriber
 	chatSubs       []domain.ChatReceiveSubscriber
-	prevPlayers    map[int64]map[string]*onlinePlayer
+	prevPlayers    map[int64]map[string]*domain.OnlinePlayer
 }
 
 func NewRCONService(log *zap.Logger, gs domain.GameService) domain.RCONService {
@@ -53,7 +53,7 @@ func NewRCONService(log *zap.Logger, gs domain.GameService) domain.RCONService {
 		playerListSubs: []domain.PlayerListUpdateSubscriber{},
 		statusSubs:     []domain.ServerStatusSubscriber{},
 		chatSubs:       []domain.ChatReceiveSubscriber{},
-		prevPlayers:    map[int64]map[string]*onlinePlayer{},
+		prevPlayers:    map[int64]map[string]*domain.OnlinePlayer{},
 	}
 }
 
@@ -107,6 +107,10 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 		go s.startPlayerListPolling(server.ID, game)
 	}
 
+	if gameConfig.PlayerListRefreshEnabled() {
+		go s.startPlayerListRefreshPolling(server.ID, game)
+	}
+
 	// Add to list of clients
 	s.clients[server.ID] = client
 
@@ -135,7 +139,7 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 
 func (s *rconService) startPlayerListPolling(serverID int64, game domain.Game) {
 	// Set up prevPlayers map for this server
-	s.prevPlayers[serverID] = map[string]*onlinePlayer{}
+	s.prevPlayers[serverID] = map[string]*domain.OnlinePlayer{}
 
 	for {
 		time.Sleep(game.GetConfig().PlayerListPollingInterval)
@@ -154,7 +158,7 @@ func (s *rconService) startPlayerListPolling(serverID int64, game domain.Game) {
 			continue
 		}
 
-		onlinePlayers := map[string]*onlinePlayer{}
+		onlinePlayers := map[string]*domain.OnlinePlayer{}
 		for _, player := range players {
 			onlinePlayers[player.PlayerID] = player
 		}
@@ -194,6 +198,39 @@ func (s *rconService) startPlayerListPolling(serverID int64, game domain.Game) {
 		// Update prevPlayers for this server
 		s.prevPlayers[serverID] = prevPlayers
 	}
+}
+
+// startPlayerListRefreshPolling is different from startPlayerListPolling. startPlayerListPolling is used as a primary
+// method of keeping a player list up to date for servers which don't dispatch event broadcasts. This method is used to
+// re-fetch the entire player list, ignoring any differences and just setting it.
+//
+// This is useful in case of server desyncs which can happen from time to time. e.g, if a server is killed without
+// cleanly terminating the RCON connection or dispatching player quit notifications the player list will not be updated.
+// This method helps mitigate that occurrence by periodically refreshing the entire player list.
+func (s *rconService) startPlayerListRefreshPolling(serverID int64, game domain.Game) {
+	for {
+		time.Sleep(game.GetConfig().PlayerListRefreshInterval)
+
+		if err := s.RefreshPlayerList(serverID, game); err != nil {
+			s.logger.Error("Could not refresh player list from polling routine", zap.Error(err))
+			continue
+		}
+	}
+}
+
+func (s *rconService) RefreshPlayerList(serverID int64, game domain.Game) error {
+	// Get currently online players
+	onlinePlayers, err := s.getOnlinePlayers(serverID, game)
+	if err != nil {
+		return err
+	}
+
+	// Broadcast full player list refresh to subscribers
+	for _, sub := range s.playerListSubs {
+		sub(serverID, onlinePlayers, game)
+	}
+
+	return nil
 }
 
 func (s *rconService) GetClients() map[int64]domain.RCONClient {
@@ -258,12 +295,7 @@ func (s *rconService) getDisconnectHandler(serverID int64) func(error, bool) {
 	}
 }
 
-type onlinePlayer struct {
-	PlayerID string
-	Name     string
-}
-
-func (s *rconService) getOnlinePlayers(serverID int64, game domain.Game) ([]*onlinePlayer, error) {
+func (s *rconService) getOnlinePlayers(serverID int64, game domain.Game) ([]*domain.OnlinePlayer, error) {
 	playerListCommand := game.GetPlayerListCommand()
 
 	res, err := s.GetServerClient(serverID).ExecCommand(playerListCommand)
@@ -281,12 +313,12 @@ func (s *rconService) getOnlinePlayers(serverID int64, game domain.Game) ([]*onl
 	playerListPattern := game.GetCommandOutputPatterns().PlayerList
 	players := playerListPattern.FindAllString(res, -1)
 
-	var onlinePlayers []*onlinePlayer
+	var onlinePlayers []*domain.OnlinePlayer
 
 	for _, player := range players {
 		fields := regexutils.MapNamedMatches(playerListPattern, player)
 
-		onlinePlayers = append(onlinePlayers, &onlinePlayer{
+		onlinePlayers = append(onlinePlayers, &domain.OnlinePlayer{
 			PlayerID: fields["PlayerID"],
 			Name:     fields["Name"],
 		})

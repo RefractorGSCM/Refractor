@@ -64,9 +64,33 @@ func (_m *RCONService) GetServerClient(serverID int64) domain.RCONClient {
 	return r0
 }
 
+// RefreshPlayerList provides a mock function with given fields: serverID, game
+func (_m *RCONService) RefreshPlayerList(serverID int64, game domain.Game) error {
+	ret := _m.Called(serverID, game)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(int64, domain.Game) error); ok {
+		r0 = rf(serverID, game)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SendChatMessage provides a mock function with given fields: body
+func (_m *RCONService) SendChatMessage(body *domain.ChatSendBody) {
+	_m.Called(body)
+}
+
 // StartReconnectRoutine provides a mock function with given fields: server, data
 func (_m *RCONService) StartReconnectRoutine(server *domain.Server, data *domain.ServerData) {
 	_m.Called(server, data)
+}
+
+// SubscribeChat provides a mock function with given fields: sub
+func (_m *RCONService) SubscribeChat(sub domain.ChatReceiveSubscriber) {
+	_m.Called(sub)
 }
 
 // SubscribeJoin provides a mock function with given fields: sub

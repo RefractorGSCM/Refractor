@@ -36,8 +36,13 @@ type RCONClient interface {
 	Disconnect() error
 }
 
+type OnlinePlayer struct {
+	PlayerID string `json:"player_id"`
+	Name     string `json:"name"`
+}
+
 type BroadcastSubscriber func(fields broadcast.Fields, serverID int64, game Game)
-type PlayerListUpdateSubscriber func(players []*Player)
+type PlayerListUpdateSubscriber func(serverID int64, players []*OnlinePlayer, game Game)
 type ServerStatusSubscriber func(serverID int64, status string)
 type ChatReceiveSubscriber func(body *ChatReceiveBody, serverID int64, game Game)
 
@@ -46,6 +51,7 @@ type RCONService interface {
 	GetClients() map[int64]RCONClient
 	DeleteClient(serverID int64)
 	GetServerClient(serverID int64) RCONClient
+	RefreshPlayerList(serverID int64, game Game) error
 	StartReconnectRoutine(server *Server, data *ServerData)
 	SubscribeJoin(sub BroadcastSubscriber)
 	SubscribeQuit(sub BroadcastSubscriber)
