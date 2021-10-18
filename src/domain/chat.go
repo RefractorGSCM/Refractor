@@ -49,7 +49,7 @@ type ChatRepo interface {
 	GetByID(ctx context.Context, id int64) (*ChatMessage, error)
 	GetRecentByServer(ctx context.Context, serverID int64, count int) ([]*ChatMessage, error)
 	Search(ctx context.Context, args FindArgs, limit, offset int) (int, []*ChatMessage, error)
-	GetFlaggedMessages(ctx context.Context, count int, serverIDs []int64) ([]*ChatMessage, error)
+	GetFlaggedMessages(ctx context.Context, count int, serverIDs []int64, random bool) ([]*ChatMessage, error)
 	GetFlaggedMessageCount(ctx context.Context) (int, error)
 	Update(ctx context.Context, id int64, args UpdateArgs) (*ChatMessage, error)
 }
@@ -57,7 +57,7 @@ type ChatRepo interface {
 type ChatService interface {
 	Store(c context.Context, message *ChatMessage) error
 	GetRecentByServer(c context.Context, serverID int64, count int) ([]*ChatMessage, error)
-	GetFlaggedMessages(c context.Context, count int) ([]*ChatMessage, error)
+	GetFlaggedMessages(c context.Context, count int, random bool) ([]*ChatMessage, error)
 	HandleChatReceive(body *ChatReceiveBody, serverID int64, game Game)
 	HandleUserSendChat(body *ChatSendBody)
 	GetFlaggedMessageCount(c context.Context) (int, error)

@@ -253,22 +253,39 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offs
 	return resultCount, results, err
 }
 
-func (r *chatRepo) GetFlaggedMessages(ctx context.Context, count int, serverIDs []int64) ([]*domain.ChatMessage, error) {
+func (r *chatRepo) GetFlaggedMessages(ctx context.Context, count int, serverIDs []int64, random bool) ([]*domain.ChatMessage, error) {
 	const op = opTag + "GetFlaggedMessages"
 
-	query := `
-		SELECT
-			MessageID,
-		    PlayerID,
-		    Platform,
-		    ServerID,
-		    Message,
-		    Flagged,
-		    CreatedAt,
-		    ModifiedAt
-		FROM ChatMessages WHERE Flagged = TRUE AND ServerID = ANY ($1::int[])
-		ORDER BY CreatedAt DESC LIMIT $2;
+	var query string
+	if random {
+		query = `
+			SELECT
+				MessageID,
+				PlayerID,
+				Platform,
+				ServerID,
+				Message,
+				Flagged,
+				CreatedAt,
+				ModifiedAt
+			FROM ChatMessages WHERE Flagged = TRUE AND ServerID = ANY ($1::int[])
+			ORDER BY random() LIMIT $2;
+		`
+	} else {
+		query = `
+			SELECT
+				MessageID,
+				PlayerID,
+				Platform,
+				ServerID,
+				Message,
+				Flagged,
+				CreatedAt,
+				ModifiedAt
+			FROM ChatMessages WHERE Flagged = TRUE AND ServerID = ANY ($1::int[])
+			ORDER BY CreatedAt DESC LIMIT $2;
 	`
+	}
 
 	results, err := r.fetch(ctx, query, pq.Array(serverIDs), count)
 	if err != nil {

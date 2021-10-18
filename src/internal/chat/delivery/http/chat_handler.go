@@ -226,7 +226,7 @@ func (h *chatHandler) GetRecentFlaggedMessages(c echo.Context) error {
 	}
 
 	ctx := context.WithValue(c.Request().Context(), "user", user)
-	messages, err := h.service.GetFlaggedMessages(ctx, int(count))
+	messages, err := h.service.GetFlaggedMessages(ctx, int(count), true)
 	if err != nil {
 		return err
 	}

@@ -187,7 +187,7 @@ func (s *chatService) GetRecentByServer(c context.Context, serverID int64, count
 // to view chat records.
 //
 // If no user is provided, we assume this is a system call and skip authorization.
-func (s *chatService) GetFlaggedMessages(c context.Context, count int) ([]*domain.ChatMessage, error) {
+func (s *chatService) GetFlaggedMessages(c context.Context, count int, random bool) ([]*domain.ChatMessage, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
@@ -230,7 +230,7 @@ func (s *chatService) GetFlaggedMessages(c context.Context, count int) ([]*domai
 		authorizedServers = append(authorizedServers, server.ID)
 	}
 
-	results, err := s.repo.GetFlaggedMessages(ctx, count, authorizedServers)
+	results, err := s.repo.GetFlaggedMessages(ctx, count, authorizedServers, random)
 	if err != nil {
 		if errors.Cause(err) == domain.ErrNotFound {
 			return []*domain.ChatMessage{}, nil

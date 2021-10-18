@@ -413,12 +413,13 @@ func Test(t *testing.T) {
 				g.Describe("Results found", func() {
 					g.BeforeEach(func() {
 						serverService.On("GetAll", mock.Anything).Return(servers, nil)
-						repo.On("GetFlaggedMessages", mock.Anything, mock.Anything, mock.Anything).Return(messages, nil)
+						repo.On("GetFlaggedMessages", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+							Return(messages, nil)
 						playerNameRepo.On("GetNames", mock.Anything, mock.Anything, mock.Anything).Return("currentName", []string{}, nil)
 					})
 
 					g.It("Should not return an error", func() {
-						_, err := service.GetFlaggedMessages(ctx, 20)
+						_, err := service.GetFlaggedMessages(ctx, 20, false)
 
 						Expect(err).To(BeNil())
 						serverService.AssertExpectations(t)
@@ -426,7 +427,7 @@ func Test(t *testing.T) {
 					})
 
 					g.It("Should return the correct results", func() {
-						got, err := service.GetFlaggedMessages(ctx, 20)
+						got, err := service.GetFlaggedMessages(ctx, 20, false)
 
 						Expect(err).To(BeNil())
 						Expect(got).To(Equal(messages))
@@ -441,14 +442,14 @@ func Test(t *testing.T) {
 					})
 
 					g.It("Should not return an error", func() {
-						_, err := service.GetFlaggedMessages(ctx, 20)
+						_, err := service.GetFlaggedMessages(ctx, 20, false)
 
 						Expect(err).To(BeNil())
 						serverService.AssertExpectations(t)
 					})
 
 					g.It("Should return an empty slice", func() {
-						got, err := service.GetFlaggedMessages(ctx, 20)
+						got, err := service.GetFlaggedMessages(ctx, 20, false)
 
 						Expect(err).To(BeNil())
 						Expect(got).To(Equal([]*domain.ChatMessage{}))
@@ -459,18 +460,19 @@ func Test(t *testing.T) {
 				g.Describe("No results found", func() {
 					g.BeforeEach(func() {
 						serverService.On("GetAll", mock.Anything).Return(servers, nil)
-						repo.On("GetFlaggedMessages", mock.Anything, mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
+						repo.On("GetFlaggedMessages", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+							Return(nil, domain.ErrNotFound)
 					})
 
 					g.It("Should not return an error", func() {
-						_, err := service.GetFlaggedMessages(ctx, 20)
+						_, err := service.GetFlaggedMessages(ctx, 20, false)
 
 						Expect(err).To(BeNil())
 						serverService.AssertExpectations(t)
 					})
 
 					g.It("Should return an empty slice", func() {
-						got, err := service.GetFlaggedMessages(ctx, 20)
+						got, err := service.GetFlaggedMessages(ctx, 20, false)
 
 						Expect(err).To(BeNil())
 						Expect(got).To(Equal([]*domain.ChatMessage{}))
@@ -497,7 +499,7 @@ func Test(t *testing.T) {
 						messages = append([]*domain.ChatMessage{}, messages[0], messages[2])
 
 						serverService.On("GetAll", mock.Anything).Return(servers, nil)
-						repo.On("GetFlaggedMessages", mock.Anything, mock.Anything, mock.Anything).Return(messages, nil)
+						repo.On("GetFlaggedMessages", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(messages, nil)
 						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 							Return(true, nil).Once() // server ID 1
 						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
@@ -508,7 +510,7 @@ func Test(t *testing.T) {
 					})
 
 					g.It("Should not return an error", func() {
-						_, err := service.GetFlaggedMessages(ctx, 20)
+						_, err := service.GetFlaggedMessages(ctx, 20, false)
 
 						Expect(err).To(BeNil())
 						serverService.AssertExpectations(t)
@@ -517,7 +519,7 @@ func Test(t *testing.T) {
 					})
 
 					g.It("Should return the correct values", func() {
-						got, err := service.GetFlaggedMessages(ctx, 20)
+						got, err := service.GetFlaggedMessages(ctx, 20, false)
 
 						Expect(err).To(BeNil())
 						Expect(got).To(Equal(messages))

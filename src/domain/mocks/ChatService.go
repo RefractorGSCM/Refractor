@@ -14,20 +14,20 @@ type ChatService struct {
 	mock.Mock
 }
 
-// GetFlaggedMessageCount provides a mock function with given fields: ctx
-func (_m *ChatService) GetFlaggedMessageCount(ctx context.Context) (int, error) {
-	ret := _m.Called(ctx)
+// GetFlaggedMessageCount provides a mock function with given fields: c
+func (_m *ChatService) GetFlaggedMessageCount(c context.Context) (int, error) {
+	ret := _m.Called(c)
 
 	var r0 int
 	if rf, ok := ret.Get(0).(func(context.Context) int); ok {
-		r0 = rf(ctx)
+		r0 = rf(c)
 	} else {
 		r0 = ret.Get(0).(int)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+		r1 = rf(c)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -35,13 +35,13 @@ func (_m *ChatService) GetFlaggedMessageCount(ctx context.Context) (int, error) 
 	return r0, r1
 }
 
-// GetFlaggedMessages provides a mock function with given fields: c, count
-func (_m *ChatService) GetFlaggedMessages(c context.Context, count int) ([]*domain.ChatMessage, error) {
-	ret := _m.Called(c, count)
+// GetFlaggedMessages provides a mock function with given fields: c, count, random
+func (_m *ChatService) GetFlaggedMessages(c context.Context, count int, random bool) ([]*domain.ChatMessage, error) {
+	ret := _m.Called(c, count, random)
 
 	var r0 []*domain.ChatMessage
-	if rf, ok := ret.Get(0).(func(context.Context, int) []*domain.ChatMessage); ok {
-		r0 = rf(c, count)
+	if rf, ok := ret.Get(0).(func(context.Context, int, bool) []*domain.ChatMessage); ok {
+		r0 = rf(c, count, random)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*domain.ChatMessage)
@@ -49,8 +49,8 @@ func (_m *ChatService) GetFlaggedMessages(c context.Context, count int) ([]*doma
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
-		r1 = rf(c, count)
+	if rf, ok := ret.Get(1).(func(context.Context, int, bool) error); ok {
+		r1 = rf(c, count, random)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -98,6 +98,20 @@ func (_m *ChatService) Store(c context.Context, message *domain.ChatMessage) err
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, *domain.ChatMessage) error); ok {
 		r0 = rf(c, message)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UnflagMessage provides a mock function with given fields: c, id
+func (_m *ChatService) UnflagMessage(c context.Context, id int64) error {
+	ret := _m.Called(c, id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64) error); ok {
+		r0 = rf(c, id)
 	} else {
 		r0 = ret.Error(0)
 	}
