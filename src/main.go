@@ -153,7 +153,9 @@ func main() {
 		ActivationMiddleware: middleware.NewActivationMiddleware(userMetaRepo),
 	}
 
-	authorizer := _authorizer.NewAuthorizer(groupRepo, logger)
+	serverRepo := _postgresServerRepo.NewServerRepo(db, logger, config)
+
+	authorizer := _authorizer.NewAuthorizer(groupRepo, serverRepo, logger)
 
 	gameRepo := _gameRepo.NewGameRepo()
 	gameService := _gameService.NewGameService(gameRepo, time.Second*2)
@@ -167,7 +169,6 @@ func main() {
 	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)
 	playerStatsService := _playerStatsService.NewPlayerStatsService(infractionRepo, time.Second*2, logger)
 
-	serverRepo := _postgresServerRepo.NewServerRepo(db, logger, config)
 	serverService := _serverService.NewServerService(serverRepo, playerRepo, playerStatsService, authorizer, time.Second*2, logger)
 
 	userService := _userService.NewUserService(userMetaRepo, authRepo, groupRepo, playerRepo, playerNameRepo,

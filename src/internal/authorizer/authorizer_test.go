@@ -21,10 +21,12 @@ import (
 	"Refractor/domain"
 	"Refractor/domain/mocks"
 	"Refractor/pkg/bitperms"
+	"Refractor/pkg/perms"
 	"context"
 	"fmt"
 	"github.com/franela/goblin"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	"math"
 	"testing"
@@ -41,13 +43,16 @@ func TestAuthorizer(t *testing.T) {
 		return true, nil
 	}
 
-	g.Describe("Test Wrapper", func() {
+	g.Describe("Authorizer", func() {
+		var groupRepo *mocks.GroupRepo
+		var serverRepo *mocks.ServerRepo
+		var a *authorizer
+
 		var _baseGroup *domain.Group
 		var _userGroups []*domain.Group
 		var _userOverrides *domain.Overrides
 
 		g.BeforeEach(func() {
-
 			// base group (everyone) setup
 			baseGroupPerms := bitperms.NewPermissionBuilder().
 				AddFlag(bitperms.GetFlag(0)).
@@ -106,23 +111,22 @@ func TestAuthorizer(t *testing.T) {
 				AllowOverrides: allowOverPerms.String(),
 				DenyOverrides:  denyOverPerms.String(),
 			}
+
+			groupRepo = new(mocks.GroupRepo)
+			serverRepo = new(mocks.ServerRepo)
+
+			a = &authorizer{
+				groupRepo:  groupRepo,
+				serverRepo: serverRepo,
+			}
 		})
 
 		g.Describe("HasPermission()", func() {
-			var repo *mocks.GroupRepo
-			var a *authorizer
-
 			g.BeforeEach(func() {
-				repo = new(mocks.GroupRepo)
-
-				a = &authorizer{
-					groupRepo: repo,
-				}
-
-				repo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
-				repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
-				repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
-				repo.On("GetServerOverrides", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
+				groupRepo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
+				groupRepo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
+				groupRepo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
+				groupRepo.On("GetServerOverrides", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 			})
 
 			g.Describe("A valid AuthScope was provided", func() {
@@ -162,17 +166,6 @@ func TestAuthorizer(t *testing.T) {
 		})
 
 		g.Describe("computePermissionsRefractor()", func() {
-			var repo *mocks.GroupRepo
-			var a *authorizer
-
-			g.BeforeEach(func() {
-				repo = &mocks.GroupRepo{}
-
-				a = &authorizer{
-					groupRepo: repo,
-				}
-			})
-
 			g.Describe("Permissions computed successfully", func() {
 				var baseGroup *domain.Group
 				var userGroups []*domain.Group
@@ -191,7 +184,7 @@ func TestAuthorizer(t *testing.T) {
 						Permissions: baseGroupPerms.String(),
 					}
 
-					repo.On("GetBaseGroup", mock.Anything).Return(baseGroup, nil)
+					groupRepo.On("GetBaseGroup", mock.Anything).Return(baseGroup, nil)
 
 					// extra groups setup
 					groupPerms := bitperms.NewPermissionBuilder().
@@ -222,7 +215,7 @@ func TestAuthorizer(t *testing.T) {
 						Permissions: groupPerms.String(),
 					})
 
-					repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(userGroups, nil)
+					groupRepo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(userGroups, nil)
 
 					// user overrides setup
 					denyOverPerms := bitperms.NewPermissionBuilder().
@@ -241,7 +234,7 @@ func TestAuthorizer(t *testing.T) {
 						DenyOverrides:  denyOverPerms.String(),
 					}
 
-					repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
+					groupRepo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
 
 					// OVERALL, this is what the above code does:
 					// (s0 means 1 << 0, s1 means 1 << 1, etc. determined using bitperms.GetStep)
@@ -268,7 +261,7 @@ func TestAuthorizer(t *testing.T) {
 					_, err := a.computePermissionsRefractor(context.TODO(), "userid")
 
 					Expect(err).To(BeNil())
-					repo.AssertExpectations(t)
+					groupRepo.AssertExpectations(t)
 				})
 
 				g.It("Should return the properly computed permissions value", func() {
@@ -290,9 +283,9 @@ func TestAuthorizer(t *testing.T) {
 
 			g.Describe("No user groups are set", func() {
 				g.BeforeEach(func() {
-					repo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
-					repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(nil, domain.ErrNotFound)
-					repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
+					groupRepo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
+					groupRepo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(nil, domain.ErrNotFound)
+					groupRepo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
 				})
 
 				g.It("Should skip checking group permissions", func() {
@@ -319,9 +312,9 @@ func TestAuthorizer(t *testing.T) {
 
 			g.Describe("No user overrides are set", func() {
 				g.BeforeEach(func() {
-					repo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
-					repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
-					repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(nil, domain.ErrNotFound)
+					groupRepo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
+					groupRepo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
+					groupRepo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(nil, domain.ErrNotFound)
 				})
 
 				g.It("Should skip checking override permissions", func() {
@@ -351,17 +344,6 @@ func TestAuthorizer(t *testing.T) {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		g.Describe("computePermissionsServer()", func() {
-			var repo *mocks.GroupRepo
-			var a *authorizer
-
-			g.BeforeEach(func() {
-				repo = &mocks.GroupRepo{}
-
-				a = &authorizer{
-					groupRepo: repo,
-				}
-			})
-
 			g.Describe("Permissions computed successfully", func() {
 				var baseGroup *domain.Group
 				var userGroups []*domain.Group
@@ -384,7 +366,7 @@ func TestAuthorizer(t *testing.T) {
 						Permissions: baseGroupPerms.String(),
 					}
 
-					repo.On("GetBaseGroup", mock.Anything).Return(baseGroup, nil)
+					groupRepo.On("GetBaseGroup", mock.Anything).Return(baseGroup, nil)
 				})
 
 				g.Describe("Everything is present", func() {
@@ -419,7 +401,7 @@ func TestAuthorizer(t *testing.T) {
 							Permissions: groupPerms.String(),
 						})
 
-						repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(userGroups, nil)
+						groupRepo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(userGroups, nil)
 
 						// group server overrides setup
 						groupOverrides := map[int64]*domain.Overrides{
@@ -438,8 +420,8 @@ func TestAuthorizer(t *testing.T) {
 							},
 						}
 
-						repo.On("GetServerOverrides", mock.Anything, serverID, userGroups[0].ID).Return(groupOverrides[userGroups[0].ID], nil)
-						repo.On("GetServerOverrides", mock.Anything, serverID, userGroups[1].ID).Return(nil, nil)
+						groupRepo.On("GetServerOverrides", mock.Anything, serverID, userGroups[0].ID).Return(groupOverrides[userGroups[0].ID], nil)
+						groupRepo.On("GetServerOverrides", mock.Anything, serverID, userGroups[1].ID).Return(nil, nil)
 
 						// user overrides setup
 						denyOverPerms := bitperms.NewPermissionBuilder().
@@ -458,7 +440,7 @@ func TestAuthorizer(t *testing.T) {
 							DenyOverrides:  denyOverPerms.String(),
 						}
 
-						repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
+						groupRepo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
 
 						// Here is a visual representation of the changes made to the computed permissions at each step of
 						// the server scoped permission computation.
@@ -481,7 +463,7 @@ func TestAuthorizer(t *testing.T) {
 						_, err := a.computePermissionsServer(context.TODO(), "userid", serverID)
 
 						Expect(err).To(BeNil())
-						repo.AssertExpectations(t)
+						groupRepo.AssertExpectations(t)
 					})
 
 					g.It("Should return the properly computed permissions value", func() {
@@ -504,8 +486,8 @@ func TestAuthorizer(t *testing.T) {
 
 				g.Describe("No user groups found", func() {
 					g.BeforeEach(func() {
-						repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(nil, domain.ErrNotFound)
-						repo.On("GetUserOverrides", mock.Anything, mock.Anything).Return(&domain.Overrides{
+						groupRepo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(nil, domain.ErrNotFound)
+						groupRepo.On("GetUserOverrides", mock.Anything, mock.Anything).Return(&domain.Overrides{
 							AllowOverrides: "0",
 							DenyOverrides:  "0",
 						}, nil)
@@ -536,9 +518,9 @@ func TestAuthorizer(t *testing.T) {
 							},
 						}
 
-						repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
-						repo.On("GetServerOverrides", mock.Anything, mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
-						repo.On("GetUserOverrides", mock.Anything, mock.Anything).Return(nil, nil)
+						groupRepo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
+						groupRepo.On("GetServerOverrides", mock.Anything, mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
+						groupRepo.On("GetUserOverrides", mock.Anything, mock.Anything).Return(nil, nil)
 					})
 
 					g.It("Should not return an error", func() {
@@ -554,9 +536,9 @@ func TestAuthorizer(t *testing.T) {
 
 				g.Describe("No user overrides", func() {
 					g.BeforeEach(func() {
-						repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
-						repo.On("GetServerOverrides", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
-						repo.On("GetUserOverrides", mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
+						groupRepo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
+						groupRepo.On("GetServerOverrides", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
+						groupRepo.On("GetUserOverrides", mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
 					})
 
 					g.It("Should not return an error", func() {
@@ -573,22 +555,11 @@ func TestAuthorizer(t *testing.T) {
 		})
 
 		g.Describe("hasPermissionRefractor()", func() {
-			var repo *mocks.GroupRepo
-			var a *authorizer
-
-			g.BeforeEach(func() {
-				repo = new(mocks.GroupRepo)
-
-				a = &authorizer{
-					groupRepo: repo,
-				}
-			})
-
 			g.Describe("NewUser has permission", func() {
 				g.BeforeEach(func() {
-					repo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
-					repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
-					repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
+					groupRepo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
+					groupRepo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
+					groupRepo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
 				})
 
 				g.It("Does not return an error", func() {
@@ -648,9 +619,9 @@ func TestAuthorizer(t *testing.T) {
 							GetPermission().String(),
 					}
 
-					repo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
-					repo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
-					repo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
+					groupRepo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
+					groupRepo.On("GetUserGroups", mock.Anything, mock.AnythingOfType("string")).Return(_userGroups, nil)
+					groupRepo.On("GetUserOverrides", mock.Anything, mock.AnythingOfType("string")).Return(_userOverrides, nil)
 				})
 
 				g.It("Returns false", func() {
@@ -667,6 +638,140 @@ func TestAuthorizer(t *testing.T) {
 
 					Expect(hasPermission).To(BeFalse())
 					mock.AssertExpectationsForObjects(t)
+				})
+			})
+		})
+
+		g.Describe("GetAuthorizedServers()", func() {
+			var authChecker domain.AuthChecker
+
+			g.BeforeEach(func() {
+				authChecker = func(permissions *bitperms.Permissions) (bool, error) {
+					return permissions.CheckFlag(perms.GetFlag(perms.FlagViewServers)), nil
+				}
+			})
+
+			g.Describe("Authorized servers found", func() {
+				g.BeforeEach(func() {
+					servers := []*domain.Server{
+						{
+							ID: 1,
+						},
+						{
+							ID: 2,
+						},
+						{
+							ID: 3,
+						},
+						{
+							ID: 4,
+						},
+					}
+
+					userGroups := []*domain.Group{
+						{
+							ID:   1,
+							Name: "group1",
+							Permissions: bitperms.NewPermissionBuilder().
+								AddFlag(perms.GetFlag(perms.FlagCreateMute)).
+								GetPermission().String(),
+						},
+					}
+
+					allowServerOverrides := &domain.Overrides{
+						GroupID: 1,
+						AllowOverrides: bitperms.NewPermissionBuilder().
+							AddFlag(perms.GetFlag(perms.FlagViewServers)).
+							GetPermission().String(),
+						DenyOverrides: "0",
+					}
+
+					denyServerOverrides := &domain.Overrides{
+						GroupID:        1,
+						AllowOverrides: "0",
+						DenyOverrides: bitperms.NewPermissionBuilder().
+							AddFlag(perms.GetFlag(perms.FlagViewServers)).
+							GetPermission().String(),
+					}
+
+					serverRepo.On("GetAll", mock.Anything).Return(servers, nil)
+					groupRepo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
+					groupRepo.On("GetUserGroups", mock.Anything, "userid").Return(userGroups, nil)
+					groupRepo.On("GetUserOverrides", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
+
+					// We want the user to be authorized on server IDs 1 and 3
+					groupRepo.On("GetServerOverrides", mock.Anything, servers[0].ID, userGroups[0].ID).Return(allowServerOverrides, nil).Once()
+					groupRepo.On("GetServerOverrides", mock.Anything, servers[1].ID, userGroups[0].ID).Return(denyServerOverrides, nil).Once()
+					groupRepo.On("GetServerOverrides", mock.Anything, servers[2].ID, userGroups[0].ID).Return(allowServerOverrides, nil).Once()
+					groupRepo.On("GetServerOverrides", mock.Anything, servers[3].ID, userGroups[0].ID).Return(denyServerOverrides, nil).Once()
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := a.GetAuthorizedServers(context.TODO(), "userid", authChecker)
+
+					Expect(err).To(BeNil())
+					serverRepo.AssertExpectations(t)
+					groupRepo.AssertExpectations(t)
+				})
+
+				g.It("Should return the expected server IDs", func() {
+					got, err := a.GetAuthorizedServers(context.TODO(), "userid", authChecker)
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal([]int64{1, 3}))
+					serverRepo.AssertExpectations(t)
+					groupRepo.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("No authorized servers found", func() {
+				g.BeforeEach(func() {
+					servers := []*domain.Server{
+						{
+							ID: 1,
+						},
+						{
+							ID: 2,
+						},
+						{
+							ID: 3,
+						},
+						{
+							ID: 4,
+						},
+					}
+
+					userGroups := []*domain.Group{
+						{
+							ID:   1,
+							Name: "group1",
+							Permissions: bitperms.NewPermissionBuilder().
+								AddFlag(perms.GetFlag(perms.FlagCreateMute)).
+								GetPermission().String(),
+						},
+					}
+
+					denyServerOverrides := &domain.Overrides{
+						GroupID:        1,
+						AllowOverrides: "0",
+						DenyOverrides: bitperms.NewPermissionBuilder().
+							AddFlag(perms.GetFlag(perms.FlagViewServers)).
+							GetPermission().String(),
+					}
+
+					serverRepo.On("GetAll", mock.Anything).Return(servers, nil)
+					groupRepo.On("GetBaseGroup", mock.Anything).Return(_baseGroup, nil)
+					groupRepo.On("GetUserGroups", mock.Anything, "userid").Return(userGroups, nil)
+					groupRepo.On("GetUserOverrides", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
+					groupRepo.On("GetServerOverrides", mock.Anything, mock.Anything, userGroups[0].ID).Return(denyServerOverrides, nil)
+				})
+
+				g.It("Should return a domain.ErrNotFound error", func() {
+					_, err := a.GetAuthorizedServers(context.TODO(), "userid", authChecker)
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					serverRepo.AssertExpectations(t)
+					groupRepo.AssertExpectations(t)
 				})
 			})
 		})
