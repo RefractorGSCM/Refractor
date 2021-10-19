@@ -25,6 +25,8 @@ import (
 	"Refractor/pkg/api/middleware"
 	"Refractor/pkg/perms"
 	"Refractor/pkg/structutils"
+	"context"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"net/http"
@@ -137,6 +139,11 @@ func (h *searchHandler) SearchChatMessages(c echo.Context) error {
 		return err
 	}
 
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
 	// Get search args
 	searchArgs, err := structutils.GetNonNilFieldMap(body)
 	if err != nil {
@@ -151,7 +158,8 @@ func (h *searchHandler) SearchChatMessages(c echo.Context) error {
 	}
 
 	// Execute search
-	total, results, err := h.service.SearchChatMessages(c.Request().Context(), searchArgs, body.Limit, body.Offset)
+	ctx := context.WithValue(c.Request().Context(), "user", user)
+	total, results, err := h.service.SearchChatMessages(ctx, searchArgs, body.Limit, body.Offset)
 	if err != nil {
 		return err
 	}
