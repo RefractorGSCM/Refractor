@@ -110,30 +110,34 @@ func init() {
 		{
 			Name:        FlagViewServers,
 			DisplayName: "View servers",
-			Description: `Allows viewing of servers. This permissions can be overridden on the server level to allow or
-						  deny access to specific servers.`,
+			Description: `Allows viewing of servers. This permissions can be overridden on the server level to deny
+						  access to specific servers. Users who don't have this permission will not be able to view the
+						  Servers page.`,
 			Scope: ScopeAny,
 		},
 		{
 			Name:        FlagViewPlayerRecords,
 			DisplayName: "View player records",
 			Description: `Allows viewing of player records. This permissions can be overridden on the server level to
-						  allow or deny accessing player records for individual servers.`,
+						  deny access to player records for individual servers. Users who don't have this permission will
+						  not be able to view the Players page.`,
 			Scope: ScopeAny,
 		},
 		{
 			Name:        FlagViewInfractionRecords,
 			DisplayName: "View infraction records",
 			Description: `Allows viewing of infraction records. This permissions can be overridden on the server level to
-						  allow or deny accessing infraction records for individual servers.`,
+						  deny access to infraction records for individual servers. Users who don't have this permission
+						  will not be able to view the Infractions page.`,
 			Scope: ScopeAny,
 		},
 		{
 			Name:        FlagViewChatRecords,
 			DisplayName: "View chat records",
 			Description: `Allows viewing of chat records. This permissions can be overridden on the server level to
-						  allow or deny accessing chat records for individual servers.`,
-			Scope: ScopeAny,
+						  deny access to chat records for individual servers. Users who don't have this permission
+						  will not be able to view the Chat Logs page.`,
+			Scope: ScopeApp,
 		},
 		{
 			Name:        FlagCreateWarning,
@@ -202,8 +206,9 @@ func init() {
 		{
 			Name:        FlagModerateFlaggedMessages,
 			DisplayName: "Moderate Flagged Messages",
-			Description: "Allows users to moderate flagged messages",
-			Scope:       ScopeAny,
+			Description: `Allows users to moderate flagged messages. Users who don't have this permission can not view
+						  the Flagged Messages page.`,
+			Scope: ScopeAny,
 		},
 		// ADD NEW FLAGS HERE. Do not touch any of the above permissions!
 	})
