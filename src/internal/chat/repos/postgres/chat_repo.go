@@ -163,7 +163,7 @@ func (r *chatRepo) GetRecentByServer(ctx context.Context, serverID int64, count 
 	return nil, errors.Wrap(domain.ErrNotFound, op)
 }
 
-func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offset int) (int, []*domain.ChatMessage, error) {
+func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, serverIDs []int64, limit, offset int) (int, []*domain.ChatMessage, error) {
 	const op = opTag + "Search"
 
 	query := `
@@ -179,13 +179,14 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offs
 		FROM ChatMessages cm
 		JOIN Servers s ON s.ServerID = cm.ServerID
 		WHERE
-			($1::VARCHAR IS NULL OR cm.PlayerID = $1) AND
-			($2::VARCHAR IS NULL OR cm.Platform = $2) AND
-			($3::INT IS NULL OR cm.ServerID = $3) AND
-			($4::VARCHAR IS NULL OR s.Game = $4) AND
-			(($5::BIGINT IS NULL OR $6::BIGINT IS NULL) OR cm.CreatedAt BETWEEN TO_TIMESTAMP($5) AND TO_TIMESTAMP($6)) AND
-			($7::VARCHAR IS NULL OR cm.MessageVectors @@ PLAINTO_TSQUERY($7))
-		ORDER BY CreatedAt ASC LIMIT $8 OFFSET $9;
+		    ($1::INT[] IS NULL OR $1::INT[] = '{}' OR cm.ServerID = ANY ($1::INT[])) AND
+			($2::VARCHAR IS NULL OR cm.PlayerID = $2) AND
+			($3::VARCHAR IS NULL OR cm.Platform = $3) AND
+			($4::INT IS NULL OR cm.ServerID = $4) AND
+			($5::VARCHAR IS NULL OR s.Game = $5) AND
+			(($6::BIGINT IS NULL OR $7::BIGINT IS NULL) OR cm.CreatedAt BETWEEN TO_TIMESTAMP($6) AND TO_TIMESTAMP($7)) AND
+			($8::VARCHAR IS NULL OR cm.MessageVectors @@ PLAINTO_TSQUERY($8))
+		ORDER BY CreatedAt ASC LIMIT $9 OFFSET $10;
 	`
 
 	var (
@@ -213,7 +214,7 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offs
 
 	//results, err := r.fetch(ctx, query, playerID, playerID, platform, platform, serverID, serverID, game, game,
 	//	startDate, endDate, startDate, endDate, searchQuery, searchQuery, limit, offset)
-	results, err := r.fetch(ctx, query, playerID, platform, serverID, game, startDate, endDate, searchQuery, limit, offset)
+	results, err := r.fetch(ctx, query, pq.Array(serverIDs), playerID, platform, serverID, game, startDate, endDate, searchQuery, limit, offset)
 	if err != nil {
 		if strings.Contains(errors.Cause(err).Error(), "syntax error in tsquery") {
 			return 0, nil, errors.Wrap(domain.ErrInvalidQuery, op)
@@ -233,15 +234,16 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, limit, offs
 		FROM ChatMessages cm
 		JOIN Servers s ON s.ServerID = cm.ServerID
 		WHERE
-			($1::VARCHAR IS NULL OR cm.PlayerID = $1) AND
-			($2::VARCHAR IS NULL OR cm.Platform = $2) AND
-			($3::INT IS NULL OR cm.ServerID = $3) AND
-		    ($4::VARCHAR IS NULL OR s.Game = $4) AND
-			(($5::BIGINT IS NULL OR $6::BIGINT IS NULL) OR cm.CreatedAt BETWEEN TO_TIMESTAMP($5) AND TO_TIMESTAMP($6)) AND
-			($7::VARCHAR IS NULL OR cm.MessageVectors @@ %s($7));
+			($1::INT[] IS NULL OR $1::INT[] = '{}' OR cm.ServerID = ANY ($1::INT[])) AND
+			($2::VARCHAR IS NULL OR cm.PlayerID = $2) AND
+			($3::VARCHAR IS NULL OR cm.Platform = $3) AND
+			($4::INT IS NULL OR cm.ServerID = $4) AND
+		    ($5::VARCHAR IS NULL OR s.Game = $5) AND
+			(($6::BIGINT IS NULL OR $7::BIGINT IS NULL) OR cm.CreatedAt BETWEEN TO_TIMESTAMP($6) AND TO_TIMESTAMP($7)) AND
+			($8::VARCHAR IS NULL OR cm.MessageVectors @@ %s($8));
 	`, toQueryMethod)
 
-	row := r.db.QueryRowContext(ctx, query, playerID, platform, serverID, game, startDate, endDate, searchQuery)
+	row := r.db.QueryRowContext(ctx, query, pq.Array(serverIDs), playerID, platform, serverID, game, startDate, endDate, searchQuery)
 
 	var resultCount int
 	if err := row.Scan(&resultCount); err != nil {

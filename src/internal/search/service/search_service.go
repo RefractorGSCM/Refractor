@@ -18,7 +18,9 @@
 package service
 
 import (
+	"Refractor/authcheckers"
 	"Refractor/domain"
+	"Refractor/pkg/perms"
 	"Refractor/pkg/whitelist"
 	"context"
 	"github.com/pkg/errors"
@@ -32,17 +34,19 @@ type searchService struct {
 	playerNameRepo domain.PlayerNameRepo
 	infractionRepo domain.InfractionRepo
 	chatRepo       domain.ChatRepo
+	authorizer     domain.Authorizer
 	timeout        time.Duration
 	logger         *zap.Logger
 }
 
 func NewSearchService(pr domain.PlayerRepo, pnr domain.PlayerNameRepo, ir domain.InfractionRepo, cr domain.ChatRepo,
-	to time.Duration, log *zap.Logger) domain.SearchService {
+	a domain.Authorizer, to time.Duration, log *zap.Logger) domain.SearchService {
 	return &searchService{
 		playerRepo:     pr,
 		playerNameRepo: pnr,
 		infractionRepo: ir,
 		chatRepo:       cr,
+		authorizer:     a,
 		timeout:        to,
 		logger:         log,
 	}
@@ -135,6 +139,10 @@ func (s searchService) SearchInfractions(c context.Context, args domain.FindArgs
 	return count, infractions, nil
 }
 
+// SearchChatMessages searches chat messages and returns matching results. If a user is provided in the context under the
+// key "user", only servers the user is authorized to search chat messages in are searched.
+//
+// If no user is set in context then this is seen as a system request and all servers are searched without any auth checks.
 func (s searchService) SearchChatMessages(c context.Context, args domain.FindArgs, limit, offset int) (int, []*domain.ChatMessage, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
@@ -152,8 +160,20 @@ func (s searchService) SearchChatMessages(c context.Context, args domain.FindArg
 		}
 	}
 
+	var authorizedServers []int64 = nil
+
+	// If user is set in context, get the slice of the IDs of the servers on which they are authorized to view chat records.
+	if user, ok := ctx.Value("user").(*domain.AuthUser); ok {
+		var err error
+		authorizedServers, err = s.authorizer.GetAuthorizedServers(ctx, user.Identity.Id,
+			authcheckers.HasPermission(perms.FlagViewChatRecords, true))
+		if err != nil {
+			return 0, nil, err
+		}
+	}
+
 	// Run search
-	count, messages, err := s.chatRepo.Search(ctx, args, limit, offset)
+	count, messages, err := s.chatRepo.Search(ctx, args, authorizedServers, limit, offset)
 	if err != nil {
 		if err == domain.ErrNotFound {
 			return 0, []*domain.ChatMessage{}, nil

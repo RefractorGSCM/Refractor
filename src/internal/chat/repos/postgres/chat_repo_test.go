@@ -355,14 +355,14 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should not return an error", func() {
-					_, _, err := repo.Search(ctx, domain.FindArgs{}, 5, 0)
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, []int64{}, 5, 0)
 
 					Expect(err).To(BeNil())
 					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
 				})
 
 				g.It("Should return the expected results", func() {
-					_, got, err := repo.Search(ctx, domain.FindArgs{}, 5, 0)
+					_, got, err := repo.Search(ctx, domain.FindArgs{}, []int64{}, 5, 0)
 
 					Expect(err).To(BeNil())
 					Expect(got).To(Equal(results))
@@ -370,7 +370,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return the correct number of total results", func() {
-					total, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+					total, _, err := repo.Search(ctx, domain.FindArgs{}, []int64{}, 10, 0)
 
 					Expect(err).To(BeNil())
 					Expect(total).To(Equal(10))
@@ -384,14 +384,14 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should not return an error", func() {
-					_, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, []int64{}, 10, 0)
 
 					Expect(err).To(BeNil())
 					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
 				})
 
 				g.It("Should return an empty array and a count of 0", func() {
-					total, got, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+					total, got, err := repo.Search(ctx, domain.FindArgs{}, []int64{}, 10, 0)
 
 					Expect(err).To(BeNil())
 					Expect(got).To(Equal([]*domain.ChatMessage{}))
@@ -406,7 +406,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return an error", func() {
-					_, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, []int64{}, 10, 0)
 
 					Expect(err).ToNot(BeNil())
 					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
@@ -419,7 +419,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return a domain.ErrInvalidQuery error", func() {
-					_, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, []int64{}, 10, 0)
 
 					Expect(errors.Cause(err)).To(Equal(domain.ErrInvalidQuery))
 					Expect(mockRepo.ExpectationsWereMet()).To(BeNil())
