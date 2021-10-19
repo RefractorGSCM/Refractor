@@ -70,5 +70,12 @@ type AuthChecker func(permissions *bitperms.Permissions) (bool, error)
 // Authorizer represents an entity which can be used to determine if a user has access to perform an action or not.
 type Authorizer interface {
 	HasPermission(ctx context.Context, scope AuthScope, userID string, authChecker AuthChecker) (bool, error)
+
+	// GetPermissions fetches the user's computed permissions given a scope. If the scope is for an AuthObjRefractor
+	// then the user's permissions scoped to the app will be returned. If the scope is AuthObjServer then the computed
+	// permissions scoped to the specified server will be returned.
 	GetPermissions(ctx context.Context, scope AuthScope, userID string) (*bitperms.Permissions, error)
+
+	// GetAuthorizedServers returns a list of server IDs on which the provided AuthChecker returns true.
+	GetAuthorizedServers(ctx context.Context, userID string, authChecker AuthChecker) ([]int64, error)
 }

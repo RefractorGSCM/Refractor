@@ -29,14 +29,16 @@ import (
 const opTag = "Authorizer."
 
 type authorizer struct {
-	groupRepo domain.GroupRepo
-	logger    *zap.Logger
+	groupRepo  domain.GroupRepo
+	serverRepo domain.ServerRepo
+	logger     *zap.Logger
 }
 
-func NewAuthorizer(gr domain.GroupRepo, log *zap.Logger) domain.Authorizer {
+func NewAuthorizer(gr domain.GroupRepo, sr domain.ServerRepo, log *zap.Logger) domain.Authorizer {
 	return &authorizer{
-		groupRepo: gr,
-		logger:    log,
+		groupRepo:  gr,
+		serverRepo: sr,
+		logger:     log,
 	}
 }
 
@@ -72,4 +74,46 @@ func (a *authorizer) GetPermissions(ctx context.Context, scope domain.AuthScope,
 	}
 
 	return nil, errors.Wrap(fmt.Errorf("an invalid AuthScope.type was provided"), "Authorizer")
+}
+
+func (a *authorizer) GetAuthorizedServers(ctx context.Context, userID string, authChecker domain.AuthChecker) ([]int64, error) {
+	// Get all servers
+	servers, err := a.serverRepo.GetAll(ctx)
+	if err != nil {
+		a.logger.Error("Could not get all servers", zap.Error(err))
+		return nil, err
+	}
+
+	authorizedServers := make([]int64, 0)
+
+	// Loop through all servers, skipping deactivated servers and checking to see if the provided authChecker returns true.
+	for _, server := range servers {
+		if server.Deactivated {
+			continue
+		}
+
+		hasPermission, err := a.HasPermission(ctx, domain.AuthScope{
+			Type: domain.AuthObjServer,
+			ID:   server.ID,
+		}, userID, authChecker)
+		if err != nil {
+			a.logger.Error("Could not check if user has permission on server",
+				zap.String("User ID", userID),
+				zap.Int64("Server ID", server.ID),
+				zap.Error(err))
+			// Do not return as an error on this server does not mean that there's an error on all servers so it's seen
+			// as a non-critical failure. Logging the error is sufficient.
+			continue
+		}
+
+		if hasPermission {
+			authorizedServers = append(authorizedServers, server.ID)
+		}
+	}
+
+	if len(authorizedServers) == 0 {
+		return nil, domain.ErrNotFound
+	}
+
+	return authorizedServers, nil
 }
