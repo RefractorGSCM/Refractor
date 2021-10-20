@@ -167,20 +167,20 @@ func (_m *InfractionRepo) PlayerIsBanned(ctx context.Context, platform string, p
 	return r0, r1, r2
 }
 
-// Search provides a mock function with given fields: ctx, args, limit, offset
-func (_m *InfractionRepo) Search(ctx context.Context, args domain.FindArgs, limit int, offset int) (int, []*domain.Infraction, error) {
-	ret := _m.Called(ctx, args, limit, offset)
+// Search provides a mock function with given fields: ctx, args, serverIDs, limit, offset
+func (_m *InfractionRepo) Search(ctx context.Context, args domain.FindArgs, serverIDs []int64, limit int, offset int) (int, []*domain.Infraction, error) {
+	ret := _m.Called(ctx, args, serverIDs, limit, offset)
 
 	var r0 int
-	if rf, ok := ret.Get(0).(func(context.Context, domain.FindArgs, int, int) int); ok {
-		r0 = rf(ctx, args, limit, offset)
+	if rf, ok := ret.Get(0).(func(context.Context, domain.FindArgs, []int64, int, int) int); ok {
+		r0 = rf(ctx, args, serverIDs, limit, offset)
 	} else {
 		r0 = ret.Get(0).(int)
 	}
 
 	var r1 []*domain.Infraction
-	if rf, ok := ret.Get(1).(func(context.Context, domain.FindArgs, int, int) []*domain.Infraction); ok {
-		r1 = rf(ctx, args, limit, offset)
+	if rf, ok := ret.Get(1).(func(context.Context, domain.FindArgs, []int64, int, int) []*domain.Infraction); ok {
+		r1 = rf(ctx, args, serverIDs, limit, offset)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).([]*domain.Infraction)
@@ -188,8 +188,8 @@ func (_m *InfractionRepo) Search(ctx context.Context, args domain.FindArgs, limi
 	}
 
 	var r2 error
-	if rf, ok := ret.Get(2).(func(context.Context, domain.FindArgs, int, int) error); ok {
-		r2 = rf(ctx, args, limit, offset)
+	if rf, ok := ret.Get(2).(func(context.Context, domain.FindArgs, []int64, int, int) error); ok {
+		r2 = rf(ctx, args, serverIDs, limit, offset)
 	} else {
 		r2 = ret.Error(2)
 	}

@@ -100,6 +100,11 @@ func (h *searchHandler) SearchInfractions(c echo.Context) error {
 		return err
 	}
 
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
 	// Get search args
 	searchArgs, err := structutils.GetNonNilFieldMap(body)
 	if err != nil {
@@ -114,7 +119,8 @@ func (h *searchHandler) SearchInfractions(c echo.Context) error {
 	}
 
 	// Execute search
-	total, results, err := h.service.SearchInfractions(c.Request().Context(), searchArgs, body.Limit, body.Offset)
+	ctx := context.WithValue(c.Request().Context(), "user", user)
+	total, results, err := h.service.SearchInfractions(ctx, searchArgs, body.Limit, body.Offset)
 	if err != nil {
 		return err
 	}

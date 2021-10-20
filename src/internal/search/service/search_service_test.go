@@ -202,7 +202,7 @@ func Test(t *testing.T) {
 						},
 					}
 
-					infractionRepo.On("Search", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					infractionRepo.On("Search", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 						Return(100, results, nil)
 
 					playerNameRepo.On("GetNames", mock.Anything, mock.Anything, mock.Anything).
@@ -230,7 +230,7 @@ func Test(t *testing.T) {
 
 			g.Describe("No results found, func()", func() {
 				g.BeforeEach(func() {
-					infractionRepo.On("Search", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					infractionRepo.On("Search", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 						Return(0, []*domain.Infraction{}, nil)
 				})
 

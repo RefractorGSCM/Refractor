@@ -48,6 +48,9 @@ type ChatRepo interface {
 	Store(ctx context.Context, message *ChatMessage) error
 	GetByID(ctx context.Context, id int64) (*ChatMessage, error)
 	GetRecentByServer(ctx context.Context, serverID int64, count int) ([]*ChatMessage, error)
+
+	// Search takes in a criteria (FindArgs) and finds matching results. serverIDs are the server IDs which can be
+	// searched. If serverIDs is null, all servers get fetched.
 	Search(ctx context.Context, args FindArgs, serverIDs []int64, limit, offset int) (int, []*ChatMessage, error)
 	GetFlaggedMessages(ctx context.Context, count int, serverIDs []int64, random bool) ([]*ChatMessage, error)
 	GetFlaggedMessageCount(ctx context.Context) (int, error)

@@ -58,7 +58,7 @@ type InfractionRepo interface {
 	Update(ctx context.Context, id int64, args UpdateArgs) (*Infraction, error)
 	Delete(ctx context.Context, id int64) error
 	GetByPlayer(ctx context.Context, playerID, platform string) ([]*Infraction, error)
-	Search(ctx context.Context, args FindArgs, limit, offset int) (int, []*Infraction, error)
+	Search(ctx context.Context, args FindArgs, serverIDs []int64, limit, offset int) (int, []*Infraction, error)
 	GetLinkedChatMessages(ctx context.Context, id int64) ([]*ChatMessage, error)
 	LinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error
 	UnlinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error

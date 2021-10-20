@@ -92,6 +92,10 @@ func (s searchService) SearchPlayers(c context.Context, term, searchType, platfo
 	return 0, nil, errors.New("unknown search type")
 }
 
+// SearchInfractions searches  infractions and returns matching results. If a user is provided in the context under the
+// key "user", only servers the user is authorized to search infractions in are searched.
+//
+// If no user is set in context then this is seen as a system request and all servers are searched without any auth checks.
 func (s searchService) SearchInfractions(c context.Context, args domain.FindArgs, limit, offset int) (int, []*domain.Infraction, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
@@ -109,8 +113,24 @@ func (s searchService) SearchInfractions(c context.Context, args domain.FindArgs
 		}
 	}
 
+	var authorizedServers []int64 = nil
+
+	// If user is set in context, get the slice of the IDs of the servers on which they are authorized to view chat records.
+	if user, ok := ctx.Value("user").(*domain.AuthUser); ok {
+		var err error
+		authorizedServers, err = s.authorizer.GetAuthorizedServers(ctx, user.Identity.Id,
+			authcheckers.HasPermission(perms.FlagViewInfractionRecords, true))
+		if err != nil {
+			if errors.Cause(err) == domain.ErrNotFound {
+				return 0, []*domain.Infraction{}, nil
+			}
+
+			return 0, nil, err
+		}
+	}
+
 	// Execute search
-	count, infractions, err := s.infractionRepo.Search(ctx, args, limit, offset)
+	count, infractions, err := s.infractionRepo.Search(ctx, args, authorizedServers, limit, offset)
 	if err != nil {
 		if err == domain.ErrNotFound {
 			return 0, []*domain.Infraction{}, nil
@@ -168,6 +188,10 @@ func (s searchService) SearchChatMessages(c context.Context, args domain.FindArg
 		authorizedServers, err = s.authorizer.GetAuthorizedServers(ctx, user.Identity.Id,
 			authcheckers.HasPermission(perms.FlagViewChatRecords, true))
 		if err != nil {
+			if errors.Cause(err) == domain.ErrNotFound {
+				return 0, []*domain.ChatMessage{}, nil
+			}
+
 			return 0, nil, err
 		}
 	}
