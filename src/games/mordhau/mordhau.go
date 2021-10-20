@@ -37,7 +37,6 @@ func NewMordhauGame(platform domain.Platform) domain.Game {
 			AlivePingInterval:         time.Second * 30,
 			EnableBroadcasts:          true,
 			BroadcastInitCommands:     []string{"listen login", "listen chat"},
-			PlayerListPollingInterval: time.Hour * 1,
 			PlayerListRefreshInterval: time.Minute * 20,
 			EnableChat:                true,
 			BroadcastPatterns: map[string]*regexp.Regexp{
