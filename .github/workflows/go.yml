@@ -25,4 +25,4 @@ jobs:
         env:
           GOPROXY: "https://proxy.golang.org"
         working-directory: ${{env.working_directory}}
-        run: go test ./src/... -v
+        run: go test ./... -v
