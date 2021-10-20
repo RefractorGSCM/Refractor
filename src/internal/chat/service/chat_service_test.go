@@ -361,22 +361,9 @@ func Test(t *testing.T) {
 		})
 
 		g.Describe("GetFlaggedMessages()", func() {
-			var servers []*domain.Server
 			var messages []*domain.ChatMessage
 
 			g.BeforeEach(func() {
-				servers = []*domain.Server{
-					{
-						ID: 1,
-					},
-					{
-						ID: 2,
-					},
-					{
-						ID: 3,
-					},
-				}
-
 				messages = []*domain.ChatMessage{
 					{
 						MessageID: 1,
@@ -412,7 +399,6 @@ func Test(t *testing.T) {
 
 				g.Describe("Results found", func() {
 					g.BeforeEach(func() {
-						serverService.On("GetAll", mock.Anything).Return(servers, nil)
 						repo.On("GetFlaggedMessages", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 							Return(messages, nil)
 						playerNameRepo.On("GetNames", mock.Anything, mock.Anything, mock.Anything).Return("currentName", []string{}, nil)
@@ -436,30 +422,8 @@ func Test(t *testing.T) {
 					})
 				})
 
-				g.Describe("No servers found", func() {
-					g.BeforeEach(func() {
-						serverService.On("GetAll", mock.Anything).Return(nil, domain.ErrNotFound)
-					})
-
-					g.It("Should not return an error", func() {
-						_, err := service.GetFlaggedMessages(ctx, 20, false)
-
-						Expect(err).To(BeNil())
-						serverService.AssertExpectations(t)
-					})
-
-					g.It("Should return an empty slice", func() {
-						got, err := service.GetFlaggedMessages(ctx, 20, false)
-
-						Expect(err).To(BeNil())
-						Expect(got).To(Equal([]*domain.ChatMessage{}))
-						serverService.AssertExpectations(t)
-					})
-				})
-
 				g.Describe("No results found", func() {
 					g.BeforeEach(func() {
-						serverService.On("GetAll", mock.Anything).Return(servers, nil)
 						repo.On("GetFlaggedMessages", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 							Return(nil, domain.ErrNotFound)
 					})
@@ -498,14 +462,9 @@ func Test(t *testing.T) {
 					g.BeforeEach(func() {
 						messages = append([]*domain.ChatMessage{}, messages[0], messages[2])
 
-						serverService.On("GetAll", mock.Anything).Return(servers, nil)
 						repo.On("GetFlaggedMessages", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(messages, nil)
-						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-							Return(true, nil).Once() // server ID 1
-						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-							Return(false, nil).Once() // server ID 2
-						authorizer.On("HasPermission", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-							Return(true, nil).Once() // server ID 3
+						authorizer.On("GetAuthorizedServers", mock.Anything, mock.Anything, mock.Anything).
+							Return([]int64{1, 3}, nil)
 						playerNameRepo.On("GetNames", mock.Anything, mock.Anything, mock.Anything).Return("currentName", []string{}, nil)
 					})
 

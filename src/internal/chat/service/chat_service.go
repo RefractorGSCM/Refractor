@@ -191,43 +191,18 @@ func (s *chatService) GetFlaggedMessages(c context.Context, count int, random bo
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	// Get servers the user has permission to view chat records of
-	allServers, err := s.serverService.GetAll(ctx)
-	if err != nil {
-		if errors.Cause(err) == domain.ErrNotFound {
-			return []*domain.ChatMessage{}, nil
-		}
-
-		return nil, err
-	}
-	user, checkAuth := ctx.Value("user").(*domain.AuthUser)
-
-	var authorizedServers []int64
-
-	for _, server := range allServers {
-		if server.Deactivated {
-			continue
-		}
-
-		if checkAuth {
-			hasPermission, err := s.authorizer.HasPermission(ctx, domain.AuthScope{
-				Type: domain.AuthObjServer,
-				ID:   server.ID,
-			}, user.Identity.Id, authcheckers.HasPermission(perms.FlagViewChatRecords, true))
-			if err != nil {
-				s.logger.Error("Could not check if user has permission to view chat records on this server",
-					zap.Error(err))
-				return nil, err
+	var authorizedServers []int64 = nil
+	if user, ok := ctx.Value("user").(*domain.AuthUser); ok {
+		var err error
+		authorizedServers, err = s.authorizer.GetAuthorizedServers(ctx, user.Identity.Id,
+			authcheckers.HasPermission(perms.FlagModerateFlaggedMessages, true))
+		if err != nil {
+			if errors.Cause(err) == domain.ErrNotFound {
+				return []*domain.ChatMessage{}, nil
 			}
 
-			if hasPermission {
-				authorizedServers = append(authorizedServers, server.ID)
-			}
-			continue
+			return nil, err
 		}
-
-		// if we're not checking auth, just add server to the list
-		authorizedServers = append(authorizedServers, server.ID)
 	}
 
 	results, err := s.repo.GetFlaggedMessages(ctx, count, authorizedServers, random)

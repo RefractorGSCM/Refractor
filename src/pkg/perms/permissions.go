@@ -104,21 +104,21 @@ func init() {
 			DisplayName: "Administrator",
 			Description: `Grants full access to Refractor. Administrator is required to be able to add, edit and delete
 						  servers as well as modify admin level settings. Admins can not create or edit groups. Only give
-						  this Permission to people who absolutely need it.`,
+						  this permission to people who absolutely need it.`,
 			Scope: ScopeApp,
 		},
 		{
 			Name:        FlagViewServers,
 			DisplayName: "View servers",
-			Description: `Allows viewing of servers. This permissions can be overridden on the server level to deny
-						  access to specific servers. Users who don't have this permission will not be able to view the
-						  Servers page.`,
+			Description: `Allows viewing of servers. This permissions can be overridden on the server level to allow or
+						  deny access to specific servers. Users who don't have this permission will not be able to view
+						  the Servers page.`,
 			Scope: ScopeAny,
 		},
 		{
 			Name:        FlagViewPlayerRecords,
 			DisplayName: "View player records",
-			Description: `Allows viewing of player records. This permissions can be overridden on the server level to
+			Description: `Allows viewing of player records. This permissions can be overridden on the server level to allow or
 						  deny access to player records for individual servers. Users who don't have this permission will
 						  not be able to view the Players page.`,
 			Scope: ScopeAny,
@@ -126,7 +126,7 @@ func init() {
 		{
 			Name:        FlagViewInfractionRecords,
 			DisplayName: "View infraction records",
-			Description: `Allows viewing of infraction records. This permissions can be overridden on the server level to
+			Description: `Allows viewing of infraction records. This permissions can be overridden on the server level to allow or
 						  deny access to infraction records for individual servers. Users who don't have this permission
 						  will not be able to view the Infractions page.`,
 			Scope: ScopeAny,
@@ -134,7 +134,7 @@ func init() {
 		{
 			Name:        FlagViewChatRecords,
 			DisplayName: "View chat records",
-			Description: `Allows viewing of chat records. This permissions can be overridden on the server level to
+			Description: `Allows viewing of chat records. This permissions can be overridden on the server level to allow or
 						  deny access to chat records for individual servers. Users who don't have this permission
 						  will not be able to view the Chat Logs page.`,
 			Scope: ScopeApp,
