@@ -20,8 +20,6 @@ package main
 import (
 	"Refractor/auth"
 	"Refractor/domain"
-	"Refractor/games/minecraft"
-	"Refractor/games/mordhau"
 	_attachmentRepo "Refractor/internal/attachment/repos/postgres"
 	_attachmentService "Refractor/internal/attachment/service"
 	_authRepo "Refractor/internal/auth/repos/kratos"
@@ -68,8 +66,6 @@ import (
 	"Refractor/pkg/conf"
 	"Refractor/pkg/perms"
 	"Refractor/pkg/tmpl"
-	"Refractor/platforms/mojang"
-	"Refractor/platforms/playfab"
 	"context"
 	"database/sql"
 	"embed"
@@ -159,8 +155,7 @@ func main() {
 
 	gameRepo := _gameRepo.NewGameRepo()
 	gameService := _gameService.NewGameService(gameRepo, time.Second*2)
-	gameService.AddGame(mordhau.NewMordhauGame(playfab.NewPlayfabPlatform()))
-	gameService.AddGame(minecraft.NewMinecraftGame(mojang.NewMojangPlatform()))
+	registerGames(gameService)
 	_gameHandler.ApplyGameHandler(apiGroup, gameService, middlewareBundle, authorizer, logger)
 
 	playerNameRepo := _playerNameRepo.NewPlayerNameRepo(db, logger)
