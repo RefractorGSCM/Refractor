@@ -86,8 +86,10 @@ func NewBrowserProtectMiddleware(config *conf.Config, repo domain.UserMetaRepo) 
 				Session: session,
 			}
 
+			ctx := c.Request().Context()
+
 			// Check if the user is deactivated
-			isDeactivated, err := repo.IsDeactivated(c.Request().Context(), user.Identity.Id)
+			isDeactivated, err := repo.IsDeactivated(ctx, user.Identity.Id)
 			if err != nil {
 				return err
 			}
@@ -95,6 +97,21 @@ func NewBrowserProtectMiddleware(config *conf.Config, repo domain.UserMetaRepo) 
 			// If they are deactivated, deny access.
 			if isDeactivated {
 				return c.HTML(http.StatusOK, "<html><body><h1>Unauthorized</h1></body></html>")
+			}
+
+			// Check if the user's username is different
+			username, err := repo.GetUsername(ctx, user.Identity.Id)
+			if err != nil {
+				return err
+			}
+
+			if user.Traits.Username != username {
+				// If username is different, update it in the user meta table
+				if _, err := repo.Update(ctx, user.Identity.Id, domain.UpdateArgs{
+					"Username": user.Traits.Username,
+				}); err != nil {
+					return err
+				}
 			}
 
 			c.Set("user", user)
@@ -115,10 +132,27 @@ func NewActivationMiddleware(repo domain.UserMetaRepo) echo.MiddlewareFunc {
 				return errors.New("could not cast user to *domain.AuthUser")
 			}
 
+			ctx := c.Request().Context()
+
 			// If this user is deactivated, deny access.
-			isDeactivated, err := repo.IsDeactivated(c.Request().Context(), user.Identity.Id)
+			isDeactivated, err := repo.IsDeactivated(ctx, user.Identity.Id)
 			if err != nil {
 				return err
+			}
+
+			// Check if the user's username is different
+			username, err := repo.GetUsername(ctx, user.Identity.Id)
+			if err != nil {
+				return err
+			}
+
+			if user.Traits.Username != username {
+				// If username is different, update it in the user meta table
+				if _, err := repo.Update(ctx, user.Identity.Id, domain.UpdateArgs{
+					"Username": user.Traits.Username,
+				}); err != nil {
+					return err
+				}
 			}
 
 			if isDeactivated {
