@@ -1,3 +1,45 @@
+# Refractor
+
+Refractor is a game server community manager written in Go. It improves game server moderation by providing features such as:
+
+- Easy installation with Docker
+- Monitoring of multiple servers
+- Multiple user accounts with advanced access control
+- Live player lists
+- Player infraction logging and lookup
+- Chat message logging and monitoring
+- Ban synchronization
+- Live chat
+- and more!
+
+For a full list of features, check out the [documentation](https://refractor.dmas.dev).
+
+## Technologies Used
+
+The backend service (this repo) is written in Go. It uses [ORY Kratos](https://github.com/ory/kratos) for secure identity management.
+
+PostgreSQL is the currently supported database, though support for other databases can be easily added.
+
+Deployment is done using Docker with Nginx as a reverse proxy and LetsEncrypt for automatic SSL encryption which renews automatically.
+
+The frontend application is written in Svelte and is available in the [Refractor-Svelte repo](https://github.com/RefractorGSCM/Refractor-Svelte/).
+
+## Contributing
+
+As Refractor is open source software, contributions are welcome!
+
+As Refractor was just recently released, there is currently no development roadmap. That said, feature requests or pull requests are always welcome!
+
+If you find any issues, please open an issue in this repository and include all relevant information including steps to reproduce.
+
+A good first contribution to Refractor would be improvements or additions to Refractor's documentation! See the Development section below for a link to the documentation repository.
+
+## Development
+
+Development environment setup steps and other developer resources can be found in Refractor's [documentation](https://refractor.dmas.dev/).
+
+Refractor's documentation source code is available in the [Refractor-Docs repository](https://github.com/RefractorGSCM/Refractor-Docs/). 
+
 # License
 
 ```
