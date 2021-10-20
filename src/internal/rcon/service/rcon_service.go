@@ -219,6 +219,11 @@ func (s *rconService) startPlayerListRefreshPolling(serverID int64, game domain.
 }
 
 func (s *rconService) RefreshPlayerList(serverID int64, game domain.Game) error {
+	// Ensure that server client exists
+	if s.clients[serverID] == nil {
+		return domain.ErrNotFound
+	}
+
 	// Get currently online players
 	onlinePlayers, err := s.getOnlinePlayers(serverID, game)
 	if err != nil {
