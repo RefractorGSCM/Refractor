@@ -20,6 +20,8 @@ package main
 import (
 	"Refractor/auth"
 	"Refractor/domain"
+	"Refractor/games/minecraft"
+	"Refractor/games/mordhau"
 	_attachmentRepo "Refractor/internal/attachment/repos/postgres"
 	_attachmentService "Refractor/internal/attachment/service"
 	_authRepo "Refractor/internal/auth/repos/kratos"
@@ -66,6 +68,8 @@ import (
 	"Refractor/pkg/conf"
 	"Refractor/pkg/perms"
 	"Refractor/pkg/tmpl"
+	"Refractor/platforms/mojang"
+	"Refractor/platforms/playfab"
 	"context"
 	"database/sql"
 	"embed"
@@ -84,6 +88,16 @@ import (
 	"net/url"
 	"time"
 )
+
+func registerGames(gs domain.GameService) {
+	// Create platform instances
+	_playfab := playfab.NewPlayfabPlatform()
+	_mojang := mojang.NewMojangPlatform()
+
+	gs.AddGame(mordhau.NewMordhauGame(_playfab))
+	gs.AddGame(minecraft.NewMinecraftGame(_mojang))
+	// ADD NEW GAME PACKAGES HERE
+}
 
 func main() {
 	config, err := conf.LoadConfig()
