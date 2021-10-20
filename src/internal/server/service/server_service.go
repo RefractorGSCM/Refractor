@@ -316,6 +316,6 @@ func (s *serverService) HandlePlayerListUpdate(serverID int64, onlinePlayers []*
 		}
 
 		// Update player in server data
-		s.serverData[serverID].OnlinePlayers[p.Platform] = p
+		s.serverData[serverID].OnlinePlayers[p.PlayerID] = p
 	}
 }
