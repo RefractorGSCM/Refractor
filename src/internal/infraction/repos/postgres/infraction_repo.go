@@ -188,7 +188,7 @@ func (r *infractionRepo) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, limit, offset int) (int, []*domain.Infraction, error) {
+func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, serverIDs []int64, limit, offset int) (int, []*domain.Infraction, error) {
 	const op = opTag + "Search"
 
 	query := `
@@ -201,15 +201,16 @@ func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, limit
 			FROM Infractions i
 			INNER JOIN Servers s ON i.ServerID = s.ServerID
 			WHERE
-				($1::VARCHAR IS NULL OR i.Type = $2) AND
-				($3::VARCHAR IS NULL OR i.PlayerID = $4) AND
-				($5::VARCHAR IS NULL OR i.Platform = $6) AND
-				($7::VARCHAR IS NULL OR i.UserID = $8) AND
-				($9::INT IS NULL OR i.ServerID = $10) AND
-				($11::VARCHAR IS NULL OR s.Game = $12)
+			    ($1::INT[] IS NULL OR $1::INT[] = '{}' OR i.ServerID = ANY ($1::INT[])) AND
+				($2::InfractionType IS NULL OR i.Type = $2) AND
+				($3::VARCHAR IS NULL OR i.PlayerID = $3) AND
+				($4::VARCHAR IS NULL OR i.Platform = $4) AND
+				($5::VARCHAR IS NULL OR i.UserID = $5) AND
+				($6::INT IS NULL OR i.ServerID = $6) AND
+				($7::VARCHAR IS NULL OR s.Game = $7)
 			) res
 		JOIN UserMeta um ON res.UserID = um.UserID
-		LIMIT $13 OFFSET $14;
+		LIMIT $8 OFFSET $9;
 	`
 
 	var (
@@ -221,8 +222,7 @@ func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, limit
 		game     = args["Game"]
 	)
 
-	rows, err := r.db.QueryContext(ctx, query, iType, iType, playerID, playerID, platform, platform, userID, userID,
-		serverID, serverID, game, game, limit, offset)
+	rows, err := r.db.QueryContext(ctx, query, pq.Array(serverIDs), iType, playerID, platform, userID, serverID, game, limit, offset)
 	if err != nil {
 		r.logger.Error("Could not execute infraction search query",
 			zap.Any("Filters", args),
@@ -255,16 +255,16 @@ func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, limit
 		FROM Infractions i
 		INNER JOIN Servers s ON i.ServerID = s.ServerID
 		WHERE
-			($1::VARCHAR IS NULL OR i.Type = $2) AND
-			($3::VARCHAR IS NULL OR i.PlayerID = $4) AND
-		    ($5::VARCHAR IS NULL OR i.Platform = $6) AND
-			($7::VARCHAR IS NULL OR i.UserID = $8) AND
-			($9::INT IS NULL OR i.ServerID = $10) AND
-			($11::VARCHAR IS NULL OR s.Game = $12)
+		    ($1::INT[] IS NULL OR $1::INT[] = '{}' OR i.ServerID = ANY ($1::INT[])) AND
+			($2::InfractionType IS NULL OR i.Type = $2) AND
+			($3::VARCHAR IS NULL OR i.PlayerID = $3) AND
+		    ($4::VARCHAR IS NULL OR i.Platform = $4) AND
+			($5::VARCHAR IS NULL OR i.UserID = $5) AND
+			($6::INT IS NULL OR i.ServerID = $6) AND
+			($7::VARCHAR IS NULL OR s.Game = $7)
 	`
 
-	row := r.db.QueryRowContext(ctx, query, iType, iType, playerID, playerID, platform, platform, userID, userID, serverID, serverID,
-		game, game)
+	row := r.db.QueryRowContext(ctx, query, pq.Array(serverIDs), iType, playerID, platform, userID, serverID, game)
 
 	var count int
 	if err := row.Scan(&count); err != nil {

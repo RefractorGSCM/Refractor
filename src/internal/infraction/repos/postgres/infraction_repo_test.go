@@ -471,14 +471,14 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should not return an error", func() {
-					_, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, nil, 10, 0)
 
 					Expect(err).To(BeNil())
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
 				})
 
 				g.It("Should return the expected results", func() {
-					_, got, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+					_, got, err := repo.Search(ctx, domain.FindArgs{}, nil, 10, 0)
 
 					Expect(err).To(BeNil())
 					Expect(got).To(Equal(results))
@@ -486,7 +486,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return the correct total results", func() {
-					total, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+					total, _, err := repo.Search(ctx, domain.FindArgs{}, nil, 10, 0)
 
 					Expect(err).To(BeNil())
 					Expect(total).To(Equal(1000))
@@ -501,14 +501,14 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should not return an error", func() {
-					_, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, nil, 10, 0)
 
 					Expect(err).To(BeNil())
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
 				})
 
 				g.It("Should return an empty array and a count of 0", func() {
-					total, got, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+					total, got, err := repo.Search(ctx, domain.FindArgs{}, nil, 10, 0)
 
 					Expect(err).To(BeNil())
 					Expect(got).To(Equal([]*domain.Infraction{}))
@@ -523,7 +523,7 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return an error", func() {
-					_, _, err := repo.Search(ctx, domain.FindArgs{}, 10, 0)
+					_, _, err := repo.Search(ctx, domain.FindArgs{}, nil, 10, 0)
 
 					Expect(err).ToNot(BeNil())
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
