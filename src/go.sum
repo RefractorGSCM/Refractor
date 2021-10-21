@@ -314,8 +314,6 @@ github.com/jackc/puddle v1.1.3/go.mod h1:m4B5Dj62Y0fbyuIc15OsIqK0+JU8nkqQjsgx7dv
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=
 github.com/jmespath/go-jmespath/internal/testify v1.5.1/go.mod h1:L3OGu8Wl2/fWfCI6z80xFu9LTZmf1ZRjMHUOPmWr69U=
-github.com/jmoiron/jsonq v0.0.0-20150511023944-e874b168d07e h1:ZZCvgaRDZg1gC9/1xrsgaJzQUCQgniKtw0xjWywWAOE=
-github.com/jmoiron/jsonq v0.0.0-20150511023944-e874b168d07e/go.mod h1:+rHyWac2R9oAZwFe1wGY2HBzFJJy++RHBg1cU23NkD8=
 github.com/jmoiron/sqlx v1.2.0/go.mod h1:1FEQNm3xlJgrMD+FBdI9+xvCksHtbpVBBw5dYhBSsks=
 github.com/joho/godotenv v1.3.0 h1:Zjp+RcGpHhGlrMbJzXTrZZPrWj+1vfm90La1wgB6Bhc=
 github.com/joho/godotenv v1.3.0/go.mod h1:7hK45KPybAkOC6peb+G5yklZfMxEjkZhHbwpqxOKXbg=
@@ -365,8 +363,6 @@ github.com/mattn/go-isatty v0.0.12 h1:wuysRhFDzyxgEmMf5xjvJ2M9dZoWAXNNr5LSBS7uHX
 github.com/mattn/go-isatty v0.0.12/go.mod h1:cbi8OIDigv2wuxKPP5vlRcQ1OAZbq2CE4Kysco4FUpU=
 github.com/mattn/go-sqlite3 v1.9.0/go.mod h1:FPy6KqzDD04eiIsT53CuJW3U88zkxoIYsOqkbpncsNc=
 github.com/mattn/go-sqlite3 v1.14.6/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4A/KQRfk6bU=
-github.com/mikroskeem/mcping v0.0.0-20210814221858-f0b64d37f7f0 h1:7fsqggOc30stz4LYE16gHldme686hdhJS4e9z0veHcw=
-github.com/mikroskeem/mcping v0.0.0-20210814221858-f0b64d37f7f0/go.mod h1:yG14CaiOXOcyqPMSfNz7foObdnUZ3gTHJ0vTl/eO9RU=
 github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/morikuni/aec v1.0.0 h1:nP9CBfwrvYnBRgY6qfDQkygYDmYwOilePFkwzv4dU8A=
 github.com/morikuni/aec v1.0.0/go.mod h1:BbKIizmSmc5MMPqRYbxO4ZU0S0+P200+tUnFx7PXmsc=
@@ -407,12 +403,6 @@ github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
-github.com/refractorgscm/rcon v0.1.1 h1:FQOKfQgvrYOLM/60aLoLST+UFpiub9ecBQ2XjvdXzZ0=
-github.com/refractorgscm/rcon v0.1.1/go.mod h1:yRZZym0LSycOdHjMSmOsAFisnZNtBHik0SytOpDBbHE=
-github.com/refractorgscm/rcon v0.1.2 h1:OXlJUh8Oe0YsZyPKbdibxpxXHcSzP5ExVw+r51lf7mo=
-github.com/refractorgscm/rcon v0.1.2/go.mod h1:yRZZym0LSycOdHjMSmOsAFisnZNtBHik0SytOpDBbHE=
-github.com/refractorgscm/rcon v0.1.3 h1:lgj/B/8gFeDRWvyfCn3B01I7DiDs8jgJ3JgV9QLx4PQ=
-github.com/refractorgscm/rcon v0.1.3/go.mod h1:yRZZym0LSycOdHjMSmOsAFisnZNtBHik0SytOpDBbHE=
 github.com/refractorgscm/rcon v0.1.4 h1:T9scp8GOn3sJonlu/3rob/Oxsp83ddgg2NQ3yVEsCO8=
 github.com/refractorgscm/rcon v0.1.4/go.mod h1:yRZZym0LSycOdHjMSmOsAFisnZNtBHik0SytOpDBbHE=
 github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
@@ -421,10 +411,6 @@ github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFR
 github.com/rs/xid v1.2.1/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
 github.com/rs/zerolog v1.13.0/go.mod h1:YbFCdg8HfsridGWAh22vktObvhZbQsZXe4/zB0OKkWU=
 github.com/rs/zerolog v1.15.0/go.mod h1:xYTKnLHcpfU2225ny5qZjxnj9NvkumZYjJHlAThCjNc=
-github.com/rumblefrog/go-a2s v1.0.0 h1:9IIVIOQ1bXZJeTilmzkJDeGa/9W1c089VciTbp+Wp1Y=
-github.com/rumblefrog/go-a2s v1.0.0/go.mod h1:JwbTgMTRGZcWzr3T2MUfDusrJU5Bdg8biEeZzPtN0So=
-github.com/rumblefrog/go-a2s v1.0.1 h1:0M4QUDB1Tz00tCz36r/AWB4YFO2ajksvPnd7Abzz9SE=
-github.com/rumblefrog/go-a2s v1.0.1/go.mod h1:JwbTgMTRGZcWzr3T2MUfDusrJU5Bdg8biEeZzPtN0So=
 github.com/satori/go.uuid v1.2.0/go.mod h1:dA0hQrYB0VpLJoorglMZABFdXlWrHn1NEOzdhQKdks0=
 github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24/go.mod h1:M+9NzErvs504Cn4c5DxATwIqPbtswREoFCre64PpcG4=
 github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc h1:jUIKcSPO9MoMJBbEoyE/RJoE8vz7Mb8AjvifMMwSyvY=
@@ -453,8 +439,6 @@ github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyC
 github.com/valyala/fasttemplate v1.0.1/go.mod h1:UQGH1tvbgY+Nz5t2n7tXsz52dQxojPUpymEIMZ47gx8=
 github.com/valyala/fasttemplate v1.2.1 h1:TVEnxayobAdVkhQfrfes2IzOB6o+z4roRkPF52WA1u4=
 github.com/valyala/fasttemplate v1.2.1/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=
-github.com/whatupdave/mcping v0.0.0-20160424190107-45b6a3b38c14 h1:PHoEMu4qA+fKjzSWGqZvDlqpsx2k6eEFYy9QZJkkQAU=
-github.com/whatupdave/mcping v0.0.0-20160424190107-45b6a3b38c14/go.mod h1:RauEKFLhC9gApHCFNATMRfKqgbLtFd2QTWtYftqaK6o=
 github.com/xanzy/go-gitlab v0.15.0/go.mod h1:8zdQa/ri1dfn8eS3Ir1SyfvOKlw7WBJ8DVThkpGiXrs=
 github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c/go.mod h1:lB8K/P019DLNhemzwFU4jHLhdvlE6uDZjXFejJXr49I=
 github.com/xdg/stringprep v1.0.0/go.mod h1:Jhud4/sHMO4oL310DaZAKk9ZaJ08SJfe+sJh0HrGL1Y=
