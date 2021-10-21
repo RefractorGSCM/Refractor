@@ -85,9 +85,12 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"log"
+	"net/http"
 	"net/url"
 	"time"
 )
+
+var VERSION string
 
 func registerGames(gs domain.GameService) {
 	// Create platform instances
@@ -103,6 +106,10 @@ func main() {
 	config, err := conf.LoadConfig()
 	if err != nil {
 		log.Fatalf("Could not load configuration. Error: %v", err)
+	}
+
+	if config.Mode == "dev" {
+		VERSION = "dev"
 	}
 
 	logger, err := setupLogger(config.Mode)
@@ -373,6 +380,16 @@ func setupEchoAPI(logger *zap.Logger, config *conf.Config) (*echo.Echo, error) {
 		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.PATCH},
 		AllowCredentials: true,
 	}))
+
+	type versionStruct struct {
+		Version string `json:"version"`
+	}
+
+	e.GET("/api/v1/version", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, &versionStruct{
+			Version: VERSION,
+		})
+	})
 
 	return e, nil
 }
