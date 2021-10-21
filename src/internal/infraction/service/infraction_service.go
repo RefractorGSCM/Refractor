@@ -202,11 +202,16 @@ func (s *infractionService) GetByID(c context.Context, id int64) (*domain.Infrac
 	// Get issuer username
 	username, err := s.userMetaRepo.GetUsername(ctx, infraction.UserID.ValueOrZero())
 	if err != nil {
-		s.logger.Error("Could not get infraction issuer's username",
-			zap.Int64("Infraction ID", infraction.InfractionID),
-			zap.String("User ID", infraction.UserID.ValueOrZero()),
-			zap.Error(err),
-		)
+		if errors.Cause(err) == domain.ErrNotFound {
+			// Infractions don't require a user ID, so if no user was found we assume this is an unknown user
+			username = "[UNKNOWN]"
+		} else {
+			s.logger.Error("Could not get infraction issuer's username",
+				zap.Int64("Infraction ID", infraction.InfractionID),
+				zap.String("User ID", infraction.UserID.ValueOrZero()),
+				zap.Error(err),
+			)
+		}
 	}
 
 	infraction.IssuerName = username
