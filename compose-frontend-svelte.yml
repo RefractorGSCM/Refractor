@@ -1,12 +1,12 @@
 version: "3.7"
 
 services:
-  refractor-frontend:
-    container_name: "refractor-frontend"
-    build:
-      dockerfile: src/Dockerfile
-      context: ./Refractor-Svelte
-    ports:
-      - "3000:3000"
-    networks:
-      - intranet
+    refractor-frontend:
+        container_name: "refractor-frontend"
+        build:
+            dockerfile: Dockerfile
+            context: ./Refractor-Svelte
+        ports:
+            - "3000:3000"
+        networks:
+            - intranet
