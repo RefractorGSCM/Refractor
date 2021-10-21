@@ -53,7 +53,7 @@ fi
 if [ ! -d "./Refractor-Svelte" ]; then
   echo ""
   echo "${bold}${yellow}Refractor-Svelte was not found. Cloning it with git now...${reset}"
-  git clone git@github.com:RefractorGSCM/Refractor-Svelte.git
+  git clone https://github.com/RefractorGSCM/Refractor-Svelte
 fi
 
 # Ensure the deploy folders are created
