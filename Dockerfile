@@ -11,13 +11,14 @@ ENV GO111MODULE=on \
 
 WORKDIR /build
 
-COPY go.mod .
-COPY go.sum .
+COPY src/go.mod .
+COPY src/go.sum .
 RUN go mod download
 
-COPY .. .
+COPY /.git .
+COPY /src .
 
-RUN go build -ldflags "-s -w -X main.VERSION=`echo $(git rev-parse --abbrev-ref HEAD):$(git rev-parse --short HEAD)`" -o refractor-bin ./main.go
+RUN go build -ldflags "-s -w -X main.VERSION=`echo $(git rev-parse --abbrev-ref HEAD):$(git rev-parse --short HEAD)`" -o refractor-bin main.go
 
 # Create actual container
 FROM alpine
