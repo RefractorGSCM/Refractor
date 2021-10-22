@@ -18,7 +18,7 @@ RUN go mod download
 COPY /.git .
 COPY /src .
 
-RUN go build -ldflags "-s -w -X main.VERSION=`echo $(git rev-parse --abbrev-ref HEAD):$(git rev-parse --short HEAD)`" -o refractor-bin main.go
+RUN go build -ldflags "-s -w -X main.VERSION=`echo $(git rev-parse --abbrev-ref HEAD):$(git describe --exact-match --tags 2> /dev/null || git rev-parse --short HEAD)`" -o refractor-bin main.go
 
 # Create actual container
 FROM alpine
