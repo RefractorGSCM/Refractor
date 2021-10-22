@@ -1,115 +1,115 @@
 version: "3.7"
 
 services:
-  postgresd:
-    container_name: "postgresd"
-    image: postgres:9.6
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER={{DB_USER}}
-      - POSTGRES_PASSWORD={{DB_USER_PWD}}
-      - POSTGRES_DB=kratos
-    volumes:
-      - ./deploy/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - intranet
+    postgresd:
+        container_name: "postgresd"
+        image: postgres:9.6
+        ports:
+            - "5432:5432"
+        environment:
+            - POSTGRES_USER={{DB_USER}}
+            - POSTGRES_PASSWORD={{DB_USER_PWD}}
+            - POSTGRES_DB=kratos
+        volumes:
+            - ./deploy/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+        networks:
+            - intranet
 
-  kratos-migrate:
-    container_name: "refractor-kratos-migrate"
-    depends_on:
-      - postgresd
-    image: oryd/kratos:v0.6.3-alpha.1
-    environment:
-      - DSN={{KRATOS_DSN}}
-    volumes:
-      - type: bind
-        source: ./deploy/kratos
-        target: /etc/config/kratos
-    command: -c /etc/config/kratos/kratos.yml migrate sql -e --yes
-    restart: on-failure
-    networks:
-      - intranet
+    kratos-migrate:
+        container_name: "refractor-kratos-migrate"
+        depends_on:
+            - postgresd
+        image: oryd/kratos:v0.6.3-alpha.1
+        environment:
+            - DSN={{KRATOS_DSN}}
+        volumes:
+            - type: bind
+              source: ./deploy/kratos
+              target: /etc/config/kratos
+        command: -c /etc/config/kratos/kratos.yml migrate sql -e --yes
+        restart: on-failure
+        networks:
+            - intranet
 
-  kratos:
-    container_name: "refractor-kratos"
-    depends_on:
-      - postgresd
-      - kratos-migrate
-    image: oryd/kratos:v0.6.3-alpha.1
-    ports:
-      - "4433:4433" # auth
-      - "4434:4434" # admin
-    restart: unless-stopped
-    environment:
-      - DSN={{KRATOS_DSN}}
-      - LOG_LEVEL=trace
-      - COURIER_SMTP_CONNECTION_URI={{SMTP_URI}}
-      - COURIER_SMTP_FROM_ADDRESS={{SMTP_FROM}}
-    command: serve -c /etc/config/kratos/kratos.yml  --watch-courier
-    volumes:
-      - type: bind
-        source: ./deploy/kratos
-        target: /etc/config/kratos
-    networks:
-      - intranet
+    kratos:
+        container_name: "refractor-kratos"
+        depends_on:
+            - postgresd
+            - kratos-migrate
+        image: oryd/kratos:v0.6.3-alpha.1
+        ports:
+            - "4433:4433" # auth
+            - "4434:4434" # admin
+        restart: unless-stopped
+        environment:
+            - DSN={{KRATOS_DSN}}
+            - LOG_LEVEL=trace
+            - COURIER_SMTP_CONNECTION_URI={{SMTP_URI}}
+            - COURIER_SMTP_FROM_ADDRESS={{SMTP_FROM}}
+        command: serve -c /etc/config/kratos/kratos.yml  --watch-courier
+        volumes:
+            - type: bind
+              source: ./deploy/kratos
+              target: /etc/config/kratos
+        networks:
+            - intranet
 
-  nginx:
-    container_name: "nginx"
-    image: nginx:1.15-alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./deploy/nginx:/etc/nginx/conf.d
-      - ./data/certbot/conf:/etc/letsencrypt
-      - ./data/certbot/www:/var/www/certbot
-    depends_on:
-      - refractor
-      - certbot
-    networks:
-      - intranet
-    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    nginx:
+        container_name: "nginx"
+        image: nginx:1.15-alpine
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./deploy/nginx:/etc/nginx/conf.d
+            - ./data/certbot/conf:/etc/letsencrypt
+            - ./data/certbot/www:/var/www/certbot
+        depends_on:
+            - refractor
+            - certbot
+        networks:
+            - intranet
+        command: '/bin/sh -c ''while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g "daemon off;"'''
 
-  certbot:
-    image: certbot/certbot
-    restart: unless-stopped
-    container_name: refractor_certbot
-    volumes:
-      - ./data/certbot/conf:/etc/letsencrypt
-      - ./data/certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; echo \"renew check\"; sleep 10 & wait $${!}; done;'"
+    certbot:
+        image: certbot/certbot
+        restart: unless-stopped
+        container_name: refractor_certbot
+        volumes:
+            - ./data/certbot/conf:/etc/letsencrypt
+            - ./data/certbot/www:/var/www/certbot
+        entrypoint: '/bin/sh -c ''trap exit TERM; while :; do certbot renew; echo "renew check"; sleep 10 & wait $${!}; done;'''
 
-  refractor:
-    container_name: "refractor"
-    restart: unless-stopped
-    depends_on:
-      - postgresd
-      - kratos
-    build:
-      dockerfile: Dockerfile
-      context: ./src
-    environment:
-      - MODE=production
-      - DB_DRIVER=postgres
-      - DB_SOURCE={{REFRACTOR_DSN}}
-      - KRATOS_PUBLIC_ROOT=https://{{DOMAIN}}/kp
-      - KRATOS_ADMIN_ROOT=http://refractor-kratos:4434
-      - FRONTEND_ROOT={{DOMAIN}}
-      - SMTP_CONNECTION_URI={{SMTP_URI}}
-      - INITIAL_USER_EMAIL={{INITIAL_USER_EMAIL}}
-      - INITIAL_USER_USERNAME={{INITIAL_USER_USERNAME}}
-      - ENCRYPTION_KEY={{ENCRYPTION_KEY}}
-    volumes:
-      - ./data/refractor:/opt/refractor
-    networks:
-      - intranet
+    refractor:
+        container_name: "refractor"
+        restart: unless-stopped
+        depends_on:
+            - postgresd
+            - kratos
+        build:
+            dockerfile: Dockerfile
+            context: .
+        environment:
+            - MODE=production
+            - DB_DRIVER=postgres
+            - DB_SOURCE={{REFRACTOR_DSN}}
+            - KRATOS_PUBLIC_ROOT=https://{{DOMAIN}}/kp
+            - KRATOS_ADMIN_ROOT=http://refractor-kratos:4434
+            - FRONTEND_ROOT={{DOMAIN}}
+            - SMTP_CONNECTION_URI={{SMTP_URI}}
+            - INITIAL_USER_EMAIL={{INITIAL_USER_EMAIL}}
+            - INITIAL_USER_USERNAME={{INITIAL_USER_USERNAME}}
+            - ENCRYPTION_KEY={{ENCRYPTION_KEY}}
+        volumes:
+            - ./data/refractor:/opt/refractor
+        networks:
+            - intranet
 
-  refractor-frontend:
-    container_name: "refractor-frontend"
-    depends_on:
-      - refractor
-      - nginx
+    refractor-frontend:
+        container_name: "refractor-frontend"
+        depends_on:
+            - refractor
+            - nginx
 
 networks:
-  intranet:
+    intranet:
