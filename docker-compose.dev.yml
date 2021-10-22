@@ -9,7 +9,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=kratos
+      - POSTGRES_DB=kratosnew
     volumes:
     - ./dev/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
@@ -21,7 +21,7 @@ services:
       - postgresd
     image: oryd/kratos:v0.6.3-alpha.1
     environment:
-      - DSN=postgres://postgres:password@postgresd:5432/kratos?sslmode=disable&max_conns=20&max_idle_conns=4
+      - DSN=postgres://postgres:password@postgresd:5432/kratosnew?sslmode=disable&max_conns=20&max_idle_conns=4
     volumes:
       - type: bind
         source: ./dev/kratos
@@ -42,7 +42,7 @@ services:
       - "4434:4434" # admin
     restart: unless-stopped
     environment:
-      - DSN=postgres://postgres:password@postgresd:5432/kratos?sslmode=disable&max_conns=20&max_idle_conns=4
+      - DSN=postgres://postgres:password@postgresd:5432/kratosnew?sslmode=disable&max_conns=20&max_idle_conns=4
       - LOG_LEVEL=trace
       - COURIER_SMTP_CONNECTION_URI=smtp://@mailhog:1025/
       - COURIER_SMTP_FROM_ADDRESS=noreply@refractor

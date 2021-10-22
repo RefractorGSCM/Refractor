@@ -1,6 +1,6 @@
 version: v0.6.3-alpha.1
 
-dsn: postgres://postgres:password@postgresd:5432:4455ratos?sslmode=disable&max_conns=20&max_idle_conns=4
+dsn: postgres://postgres:password@postgresd:5432:4455ratosnew?sslmode=disable&max_conns=20&max_idle_conns=4
 
 serve:
   public:
