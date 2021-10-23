@@ -52,11 +52,12 @@ type RCONService interface {
 	DeleteClient(serverID int64)
 	GetServerClient(serverID int64) RCONClient
 	RefreshPlayerList(serverID int64, game Game) error
-	StartReconnectRoutine(server *Server, data *ServerData)
+	StartReconnectRoutine(serverID int64, data *ServerData)
 	SubscribeJoin(sub BroadcastSubscriber)
 	SubscribeQuit(sub BroadcastSubscriber)
 	SubscribePlayerListUpdate(sub PlayerListUpdateSubscriber)
 	SubscribeServerStatus(sub ServerStatusSubscriber)
 	SubscribeChat(sub ChatReceiveSubscriber)
 	SendChatMessage(body *ChatSendBody)
+	HandleServerUpdate(server *Server)
 }

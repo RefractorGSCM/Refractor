@@ -194,7 +194,7 @@ func main() {
 	attachmentRepo := _attachmentRepo.NewAttachmentRepo(db, logger)
 	attachmentService := _attachmentService.NewAttachmentService(attachmentRepo, infractionRepo, authorizer, time.Second*2, logger)
 
-	rconService := _rconService.NewRCONService(logger, gameService)
+	rconService := _rconService.NewRCONService(logger, gameService, serverRepo)
 	commandExecutor := command_executor.NewCommandExecutor(rconService, gameService, logger)
 
 	_serverHandler.ApplyServerHandler(apiGroup, serverService, rconService, gameService, authorizer, middlewareBundle, logger)
@@ -244,6 +244,7 @@ func main() {
 	websocketService.SubscribeChatSend(chatService.HandleUserSendChat)
 	rconService.SubscribePlayerListUpdate(serverService.HandlePlayerListUpdate)
 	rconService.SubscribePlayerListUpdate(websocketService.HandlePlayerListUpdate)
+	serverService.SubscribeServerUpdate(rconService.HandleServerUpdate)
 
 	// Connect RCON clients for all existing servers
 	if err := SetupServerClients(rconService, serverService, logger); err != nil {

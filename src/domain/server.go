@@ -89,6 +89,8 @@ type ServerRepo interface {
 	Exists(ctx context.Context, args FindArgs) (bool, error)
 }
 
+type ServerUpdateSubscriber func(server *Server)
+
 type ServerService interface {
 	Store(c context.Context, server *Server) error
 	GetByID(c context.Context, id int64) (*Server, error)
@@ -104,4 +106,5 @@ type ServerService interface {
 	HandlePlayerQuit(fields broadcast.Fields, serverID int64, game Game)
 	HandleServerStatusChange(serverID int64, status string)
 	HandlePlayerListUpdate(serverID int64, players []*OnlinePlayer, game Game)
+	SubscribeServerUpdate(sub ServerUpdateSubscriber)
 }
