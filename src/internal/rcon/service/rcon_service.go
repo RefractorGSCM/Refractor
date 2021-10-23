@@ -288,10 +288,11 @@ func (s *rconService) getBroadcastHandler(serverID int64, game domain.Game) func
 				sub(msgBody, serverID, game)
 			}
 			break
-		case broadcast.TypeInfraction:
-			for _, sub := range s.modActionSubs {
-				sub(bcast.Fields, serverID, game)
-			}
+			//case broadcast.TypeBan:
+			//	for _, sub := range s.modActionSubs {
+			//		sub(bcast.Fields, serverID, game)
+			//	}
+			//	break
 		}
 	}
 }
