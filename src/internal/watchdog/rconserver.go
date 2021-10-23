@@ -27,7 +27,7 @@ import (
 func StartRCONServerWatchdog(rconService domain.RCONService, serverService domain.ServerService, log *zap.Logger) error {
 	for {
 		// Run every 15 seconds
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 15)
 
 		rconClients := rconService.GetClients()
 		allServerData, err := serverService.GetAllServerData()
@@ -55,7 +55,7 @@ func StartRCONServerWatchdog(rconService domain.RCONService, serverService domai
 
 						// Start reconnection routine
 						log.Info("Reconnect routine not started. Starting...", zap.Int64("Server", server.ID))
-						go rconService.StartReconnectRoutine(server, serverData)
+						go rconService.StartReconnectRoutine(server.ID, serverData)
 						serverData.ReconnectInProgress = true
 					}
 				}
