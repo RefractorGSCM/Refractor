@@ -38,6 +38,7 @@ type rconService struct {
 
 	joinSubs       []domain.BroadcastSubscriber
 	quitSubs       []domain.BroadcastSubscriber
+	modActionSubs  []domain.BroadcastSubscriber
 	playerListSubs []domain.PlayerListUpdateSubscriber
 	statusSubs     []domain.ServerStatusSubscriber
 	chatSubs       []domain.ChatReceiveSubscriber
@@ -286,6 +287,11 @@ func (s *rconService) getBroadcastHandler(serverID int64, game domain.Game) func
 			for _, sub := range s.chatSubs {
 				sub(msgBody, serverID, game)
 			}
+			break
+		case broadcast.TypeInfraction:
+			for _, sub := range s.modActionSubs {
+				sub(bcast.Fields, serverID, game)
+			}
 		}
 	}
 }
@@ -457,6 +463,10 @@ func (s *rconService) SubscribeServerStatus(sub domain.ServerStatusSubscriber) {
 
 func (s *rconService) SubscribeChat(sub domain.ChatReceiveSubscriber) {
 	s.chatSubs = append(s.chatSubs, sub)
+}
+
+func (s *rconService) SubscribeModeratorAction(sub domain.BroadcastSubscriber) {
+	s.modActionSubs = append(s.modActionSubs, sub)
 }
 
 func (s *rconService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {

@@ -58,6 +58,7 @@ type RCONService interface {
 	SubscribePlayerListUpdate(sub PlayerListUpdateSubscriber)
 	SubscribeServerStatus(sub ServerStatusSubscriber)
 	SubscribeChat(sub ChatReceiveSubscriber)
+	SubscribeModeratorAction(sub BroadcastSubscriber)
 	SendChatMessage(body *ChatSendBody)
 	HandleServerUpdate(server *Server)
 }
