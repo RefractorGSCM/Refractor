@@ -30,9 +30,10 @@ type Broadcast struct {
 }
 
 const (
-	TypeJoin = "JOIN"
-	TypeQuit = "QUIT"
-	TypeChat = "CHAT"
+	TypeJoin       = "JOIN"
+	TypeQuit       = "QUIT"
+	TypeChat       = "CHAT"
+	TypeInfraction = "INFRACTION"
 )
 
 func GetBroadcastType(broadcast string, patterns map[string]*regexp.Regexp) *Broadcast {
