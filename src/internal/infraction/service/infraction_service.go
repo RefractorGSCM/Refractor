@@ -657,3 +657,16 @@ func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID i
 		return
 	}
 }
+
+func (s *infractionService) HandleModerationAction(fields broadcast.Fields, serverID int64, game domain.Game) {
+	//ctx, cancel := context.WithTimeout(context.TODO(), time.Second*2)
+	//defer cancel()
+	//
+	//adminName := fields["AdminName"]
+	//adminPlayerID := fields["AdminPlayerID"]
+	//playerID := fields["PlayerID"]
+	//duration := fields["Duration"]
+	//reason := fields["Reason"]
+
+	// NOTE: Functionality paused for now. See issue #3 in RefractorGSCM/Refractor.
+}
