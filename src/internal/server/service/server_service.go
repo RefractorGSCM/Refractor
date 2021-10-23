@@ -38,6 +38,7 @@ type serverService struct {
 	timeout            time.Duration
 	logger             *zap.Logger
 	serverData         map[int64]*domain.ServerData
+	serverUpdateSubs   []domain.ServerUpdateSubscriber
 }
 
 func NewServerService(repo domain.ServerRepo, pr domain.PlayerRepo, pss domain.PlayerStatsService,
@@ -50,6 +51,7 @@ func NewServerService(repo domain.ServerRepo, pr domain.PlayerRepo, pss domain.P
 		timeout:            timeout,
 		logger:             log,
 		serverData:         map[int64]*domain.ServerData{},
+		serverUpdateSubs:   []domain.ServerUpdateSubscriber{},
 	}
 }
 
@@ -196,7 +198,17 @@ func (s *serverService) Update(c context.Context, id int64, args domain.UpdateAr
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.Update(ctx, id, args)
+	updated, err := s.repo.Update(ctx, id, args)
+	if err != nil {
+		return nil, err
+	}
+
+	// Notify update subs of update
+	for _, sub := range s.serverUpdateSubs {
+		sub(updated)
+	}
+
+	return updated, nil
 }
 
 func (s *serverService) CreateServerData(id int64) error {
@@ -318,4 +330,8 @@ func (s *serverService) HandlePlayerListUpdate(serverID int64, onlinePlayers []*
 		// Update player in server data
 		s.serverData[serverID].OnlinePlayers[p.PlayerID] = p
 	}
+}
+
+func (s *serverService) SubscribeServerUpdate(sub domain.ServerUpdateSubscriber) {
+	s.serverUpdateSubs = append(s.serverUpdateSubs, sub)
 }
