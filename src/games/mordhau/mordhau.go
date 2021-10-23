@@ -40,10 +40,10 @@ func NewMordhauGame(platform domain.Platform) domain.Game {
 			PlayerListRefreshInterval: time.Minute * 20,
 			EnableChat:                true,
 			BroadcastPatterns: map[string]*regexp.Regexp{
-				broadcast.TypeJoin:       regexp.MustCompile("^Login: (?P<Date>[0-9\\.-]+): (?P<Name>.+) \\((?P<PlayerID>[0-9a-fA-F]+)\\) logged in$"),
-				broadcast.TypeQuit:       regexp.MustCompile("^Login: (?P<Date>[0-9\\.-]+): (?P<Name>.+) \\((?P<PlayerID>[0-9a-fA-F]+)\\) logged out$"),
-				broadcast.TypeChat:       regexp.MustCompile("^Chat: (?P<PlayerID>[0-9a-fA-F]+), (?P<Name>.+), \\((?P<Channel>.+)\\) (?P<Message>.+)$"),
-				broadcast.TypeInfraction: regexp.MustCompile("^Punishment: Admin (?P<AdminName>.+) \\((?P<AdminPlayerID>[0-9a-fA-F]+)\\) banned player (?P<PlayerID>[0-9a-fA-F]+) \\(Duration: (?P<Duration>\\d+), Reason: (?P<Reason>.+)\\)$"),
+				broadcast.TypeJoin: regexp.MustCompile("^Login: (?P<Date>[0-9\\.-]+): (?P<Name>.+) \\((?P<PlayerID>[0-9a-fA-F]+)\\) logged in$"),
+				broadcast.TypeQuit: regexp.MustCompile("^Login: (?P<Date>[0-9\\.-]+): (?P<Name>.+) \\((?P<PlayerID>[0-9a-fA-F]+)\\) logged out$"),
+				broadcast.TypeChat: regexp.MustCompile("^Chat: (?P<PlayerID>[0-9a-fA-F]+), (?P<Name>.+), \\((?P<Channel>.+)\\) (?P<Message>.+)$"),
+				//broadcast.TypeBan: regexp.MustCompile("^Punishment: Admin (?P<AdminName>.+) \\((?P<AdminPlayerID>[0-9a-fA-F]+)\\) banned player (?P<PlayerID>[0-9a-fA-F]+) \\(Duration: (?P<Duration>\\d+), Reason: (?P<Reason>.+)\\)$"),
 			},
 			IgnoredBroadcastPatterns: []*regexp.Regexp{
 				regexp.MustCompile("Keeping client alive for another [0-9]+ seconds"),
