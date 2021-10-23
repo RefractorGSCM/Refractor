@@ -403,8 +403,8 @@ github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
-github.com/refractorgscm/rcon v0.1.4 h1:T9scp8GOn3sJonlu/3rob/Oxsp83ddgg2NQ3yVEsCO8=
-github.com/refractorgscm/rcon v0.1.4/go.mod h1:yRZZym0LSycOdHjMSmOsAFisnZNtBHik0SytOpDBbHE=
+github.com/refractorgscm/rcon v0.1.5 h1:mMvWP04LivtCKzAf3b6N3Gr0YmYJkTxj+pcq3wO8/aU=
+github.com/refractorgscm/rcon v0.1.5/go.mod h1:yRZZym0LSycOdHjMSmOsAFisnZNtBHik0SytOpDBbHE=
 github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
