@@ -90,6 +90,11 @@ func (gc GameConfig) PlayerListRefreshEnabled() bool {
 	return gc.PlayerListPollingInterval != 0
 }
 
+// InfractionDetectionEnabled returns true if an infraction broadcast pattern is set and broadcasts are enabled.
+func (gc GameConfig) InfractionDetectionEnabled() bool {
+	return gc.EnableBroadcasts && gc.BroadcastPatterns["INFRACTION"] != nil
+}
+
 type GameService interface {
 	AddGame(game Game)
 	GetAllGames() []Game
