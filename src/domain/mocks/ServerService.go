@@ -193,6 +193,11 @@ func (_m *ServerService) Store(c context.Context, server *domain.Server) error {
 	return r0
 }
 
+// SubscribeServerUpdate provides a mock function with given fields: sub
+func (_m *ServerService) SubscribeServerUpdate(sub domain.ServerUpdateSubscriber) {
+	_m.Called(sub)
+}
+
 // Update provides a mock function with given fields: c, id, args
 func (_m *ServerService) Update(c context.Context, id int64, args domain.UpdateArgs) (*domain.Server, error) {
 	ret := _m.Called(c, id, args)

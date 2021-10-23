@@ -22,6 +22,7 @@ import (
 	"Refractor/internal/rcon/clientcreator"
 	"Refractor/pkg/broadcast"
 	"Refractor/pkg/regexutils"
+	"context"
 	"fmt"
 	"go.uber.org/zap"
 	"net"
@@ -32,6 +33,7 @@ type rconService struct {
 	logger        *zap.Logger
 	clients       map[int64]domain.RCONClient
 	gameService   domain.GameService
+	serverRepo    domain.ServerRepo
 	clientCreator domain.ClientCreator
 
 	joinSubs       []domain.BroadcastSubscriber
@@ -42,10 +44,11 @@ type rconService struct {
 	prevPlayers    map[int64]map[string]*domain.OnlinePlayer
 }
 
-func NewRCONService(log *zap.Logger, gs domain.GameService) domain.RCONService {
+func NewRCONService(log *zap.Logger, gs domain.GameService, sr domain.ServerRepo) domain.RCONService {
 	return &rconService{
 		logger:         log,
 		clients:        map[int64]domain.RCONClient{},
+		serverRepo:     sr,
 		clientCreator:  clientcreator.NewClientCreator(),
 		gameService:    gs,
 		joinSubs:       []domain.BroadcastSubscriber{},
@@ -289,7 +292,9 @@ func (s *rconService) getBroadcastHandler(serverID int64, game domain.Game) func
 
 func (s *rconService) getDisconnectHandler(serverID int64) func(error, bool) {
 	return func(err error, expected bool) {
-		s.logger.Warn("RCON client disconnected", zap.Int64("Server", serverID), zap.Bool("Expected", expected), zap.Error(err))
+		if !expected {
+			s.logger.Warn("RCON client disconnected", zap.Int64("Server", serverID), zap.Bool("Expected", expected), zap.Error(err))
+		}
 
 		for _, sub := range s.statusSubs {
 			sub(serverID, "Offline")
@@ -332,11 +337,32 @@ func (s *rconService) getOnlinePlayers(serverID int64, game domain.Game) ([]*dom
 	return onlinePlayers, nil
 }
 
-func (s *rconService) StartReconnectRoutine(server *domain.Server, data *domain.ServerData) {
+func (s *rconService) StartReconnectRoutine(serverID int64, data *domain.ServerData) {
 	var delay = time.Second * 5
 
+	var server *domain.Server
 	for {
 		time.Sleep(delay)
+
+		// Check if client is already connected
+		if s.clients[serverID] != nil {
+			s.logger.Info("Server RCON client already connected", zap.Int64("Server ID", serverID))
+			break
+		}
+
+		// Get updated server. We do this because it's possible that the server has been updated since this reconnect
+		// service was started. Fetching the server each run isn't very expensive, and it lets us be sure that we're
+		// connecting to the right place with the right settings!
+		var err error
+		server, err = s.serverRepo.GetByID(context.TODO(), serverID)
+		if err != nil {
+			s.logger.Warn(
+				"RCON reconnect routine could not get server by ID",
+				zap.Int64("Server", server.ID),
+				zap.Error(err),
+			)
+			continue
+		}
 
 		if err := s.CreateClient(server); err != nil {
 			switch errType := err.(type) {
@@ -437,5 +463,26 @@ func (s *rconService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, 
 	// Broadcast join
 	for _, sub := range s.joinSubs {
 		sub(fields, serverID, game)
+	}
+}
+
+func (s *rconService) HandleServerUpdate(server *domain.Server) {
+	s.logger.Info("Received server update", zap.Int64("Server ID", server.ID))
+
+	client := s.clients[server.ID]
+	if client != nil {
+		if err := client.Disconnect(); err != nil {
+			return
+		}
+		s.DeleteClient(server.ID)
+	}
+
+	// Notify disconnect
+	for _, sub := range s.statusSubs {
+		sub(server.ID, "Offline")
+	}
+
+	if err := s.CreateClient(server); err != nil {
+		return
 	}
 }
