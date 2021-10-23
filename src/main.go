@@ -240,10 +240,11 @@ func main() {
 	rconService.SubscribeServerStatus(websocketService.HandleServerStatusChange)
 	rconService.SubscribeChat(chatService.HandleChatReceive)
 	rconService.SubscribeJoin(infractionService.HandlePlayerJoin)
-	websocketService.SubscribeChatSend(rconService.SendChatMessage)
-	websocketService.SubscribeChatSend(chatService.HandleUserSendChat)
 	rconService.SubscribePlayerListUpdate(serverService.HandlePlayerListUpdate)
 	rconService.SubscribePlayerListUpdate(websocketService.HandlePlayerListUpdate)
+	rconService.SubscribeModeratorAction(infractionService.HandleModerationAction)
+	websocketService.SubscribeChatSend(rconService.SendChatMessage)
+	websocketService.SubscribeChatSend(chatService.HandleUserSendChat)
 	serverService.SubscribeServerUpdate(rconService.HandleServerUpdate)
 
 	// Connect RCON clients for all existing servers

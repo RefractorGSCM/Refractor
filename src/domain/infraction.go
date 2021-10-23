@@ -77,4 +77,5 @@ type InfractionService interface {
 	UnlinkChatMessages(c context.Context, id int64, messageIDs ...int64) error
 	PlayerIsBanned(c context.Context, platform, playerID string) (bool, int64, error)
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
+	HandleModerationAction(fields broadcast.Fields, serverID int64, game Game)
 }
