@@ -1,3 +1,8 @@
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/RefractorGSCM/Refractor/Test?label=tests&style=flat-square)
+![GitHub](https://img.shields.io/github/license/RefractorGSCM/Refractor?style=flat-square)
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/RefractorGSCM/Refractor?style=flat-square)
+![GitHub contributors](https://img.shields.io/github/contributors/RefractorGSCM/Refractor?style=flat-square)
+
 # Refractor
 
 Refractor is a game server community manager written in Go. It improves game server moderation by providing features such as:
