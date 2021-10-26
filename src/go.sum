@@ -407,6 +407,8 @@ github.com/refractorgscm/rcon v0.1.5 h1:mMvWP04LivtCKzAf3b6N3Gr0YmYJkTxj+pcq3wO8
 github.com/refractorgscm/rcon v0.1.5/go.mod h1:yRZZym0LSycOdHjMSmOsAFisnZNtBHik0SytOpDBbHE=
 github.com/refractorgscm/rcon v0.1.6 h1:U4DeWNaGB+Np0Sq7cI1VR0eY5MNkVifpJYqyhWDoX48=
 github.com/refractorgscm/rcon v0.1.6/go.mod h1:yRZZym0LSycOdHjMSmOsAFisnZNtBHik0SytOpDBbHE=
+github.com/refractorgscm/rcon v0.1.7 h1:tq0Q+ZeVfsEKztMo+F15kHcUl2m87bguH1T1QK2Nvuw=
+github.com/refractorgscm/rcon v0.1.7/go.mod h1:yRZZym0LSycOdHjMSmOsAFisnZNtBHik0SytOpDBbHE=
 github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
