@@ -20,7 +20,7 @@ require (
 	github.com/ory/kratos-client-go v0.7.0-alpha.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/refractorgscm/rcon v0.1.6
+	github.com/refractorgscm/rcon v0.1.7 // indirect
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.18.1
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
