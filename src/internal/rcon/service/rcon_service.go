@@ -307,6 +307,11 @@ func (s *rconService) getDisconnectHandler(serverID int64) func(error, bool) {
 			sub(serverID, "Offline")
 		}
 
+		client := s.clients[serverID]
+		if client != nil {
+			_ = client.Disconnect()
+		}
+
 		// Delete the client from the list of clients. Reconnection attempts will be made in the watchdog.
 		s.DeleteClient(serverID)
 	}
