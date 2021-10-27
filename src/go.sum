@@ -411,6 +411,10 @@ github.com/refractorgscm/rcon v0.1.7 h1:tq0Q+ZeVfsEKztMo+F15kHcUl2m87bguH1T1QK2N
 github.com/refractorgscm/rcon v0.1.7/go.mod h1:yRZZym0LSycOdHjMSmOsAFisnZNtBHik0SytOpDBbHE=
 github.com/refractorgscm/rcon v0.1.8 h1:X2ItK2W68Mx0Ikl+HH9DySI8svah7p2USOQvIl5qoXM=
 github.com/refractorgscm/rcon v0.1.8/go.mod h1:yRZZym0LSycOdHjMSmOsAFisnZNtBHik0SytOpDBbHE=
+github.com/refractorgscm/rcon v0.1.9 h1:2kysFwOHEkQSAHYPvQGaC3efJOl1G8buLo0kb6VY6g4=
+github.com/refractorgscm/rcon v0.1.9/go.mod h1:yRZZym0LSycOdHjMSmOsAFisnZNtBHik0SytOpDBbHE=
+github.com/refractorgscm/rcon v0.1.10 h1:ebuYGsNUUMapOOCtvL6jWlTS6IhL8i2LxW80jRkoVvo=
+github.com/refractorgscm/rcon v0.1.10/go.mod h1:yRZZym0LSycOdHjMSmOsAFisnZNtBHik0SytOpDBbHE=
 github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
