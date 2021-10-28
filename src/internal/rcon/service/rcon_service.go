@@ -299,9 +299,11 @@ func (s *rconService) getBroadcastHandler(serverID int64, game domain.Game) func
 
 func (s *rconService) getDisconnectHandler(serverID int64) func(error, bool) {
 	return func(err error, expected bool) {
-		if !expected {
-			s.logger.Warn("RCON client disconnected", zap.Int64("Server", serverID), zap.Bool("Expected", expected), zap.Error(err))
+		if expected {
+			return
 		}
+
+		s.logger.Warn("RCON client disconnected", zap.Int64("Server", serverID), zap.Bool("Expected", expected), zap.Error(err))
 
 		for _, sub := range s.statusSubs {
 			sub(serverID, "Offline")
