@@ -272,7 +272,7 @@ func (r *userRepo) GetLinkedPlayers(ctx context.Context, userID string) ([]*doma
 
 	results := make([]*domain.Player, 0)
 	for rows.Next() {
-		res := &domain.Player{}
+		res := &domain.DBPlayer{}
 
 		if err := rows.Scan(&res.PlayerID, &res.Platform, &res.Watched, &res.LastSeen,
 			&res.CreatedAt, &res.ModifiedAt); err != nil {
@@ -280,7 +280,7 @@ func (r *userRepo) GetLinkedPlayers(ctx context.Context, userID string) ([]*doma
 			return nil, errors.Wrap(err, op)
 		}
 
-		results = append(results, res)
+		results = append(results, res.Player())
 	}
 
 	return results, nil
