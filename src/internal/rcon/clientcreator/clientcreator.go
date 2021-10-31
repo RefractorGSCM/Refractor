@@ -20,7 +20,6 @@ package clientcreator
 import (
 	"Refractor/domain"
 	"github.com/refractorgscm/rcon"
-	"github.com/refractorgscm/rcon/presets"
 	"strconv"
 )
 
@@ -56,7 +55,7 @@ func (c *clientCreator) GetClientFromConfig(game domain.Game, server *domain.Ser
 		EndianMode:          rconSettings.EndianMode,
 		BroadcastChecker:    rconSettings.BroadcastChecker,
 		RestrictedPacketIDs: rconSettings.RestrictedPacketIDs,
-	}, &presets.DebugLogger{})
+	}, nil)
 
 	return &Client{
 		game:   game,
