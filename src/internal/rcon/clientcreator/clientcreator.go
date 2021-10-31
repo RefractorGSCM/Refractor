@@ -20,6 +20,7 @@ package clientcreator
 import (
 	"Refractor/domain"
 	"github.com/refractorgscm/rcon"
+	"github.com/refractorgscm/rcon/presets"
 	"strconv"
 )
 
@@ -45,19 +46,17 @@ func (c *clientCreator) GetClientFromConfig(game domain.Game, server *domain.Ser
 		return nil, err
 	}
 
-	gameConfig := game.GetConfig()
+	rconSettings := game.GetRCONSettings()
 
 	// Create RCON client
-	client := rcon.NewClient(&rcon.ClientConfig{
-		Host:                     server.Address,
-		Port:                     uint16(port),
-		Password:                 server.RCONPassword,
-		SendHeartbeatCommand:     gameConfig.AlivePingEnabled(),
-		AttemptReconnect:         false,
-		HeartbeatCommandInterval: gameConfig.AlivePingInterval,
-		EnableBroadcasts:         gameConfig.EnableBroadcasts,
-		NonBroadcastPatterns:     gameConfig.IgnoredBroadcastPatterns,
-	})
+	client := rcon.NewClient(&rcon.Config{
+		Host:                server.Address,
+		Port:                uint16(port),
+		Password:            server.RCONPassword,
+		EndianMode:          rconSettings.EndianMode,
+		BroadcastChecker:    rconSettings.BroadcastChecker,
+		RestrictedPacketIDs: rconSettings.RestrictedPacketIDs,
+	}, &presets.DebugLogger{})
 
 	return &Client{
 		game:   game,
