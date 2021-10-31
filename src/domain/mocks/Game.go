@@ -118,3 +118,19 @@ func (_m *Game) GetPlayerListCommand() string {
 
 	return r0
 }
+
+// GetRCONSettings provides a mock function with given fields:
+func (_m *Game) GetRCONSettings() *domain.GameRCONSettings {
+	ret := _m.Called()
+
+	var r0 *domain.GameRCONSettings
+	if rf, ok := ret.Get(0).(func() *domain.GameRCONSettings); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.GameRCONSettings)
+		}
+	}
+
+	return r0
+}
