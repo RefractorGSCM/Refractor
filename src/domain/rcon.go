@@ -20,6 +20,7 @@ package domain
 import (
 	"Refractor/pkg/broadcast"
 	"github.com/refractorgscm/rcon"
+	"sync"
 )
 
 type ClientCreator interface {
@@ -29,11 +30,12 @@ type ClientCreator interface {
 type RCONClient interface {
 	ExecCommand(string) (string, error)
 	Connect() error
-	ListenForBroadcasts([]string, chan error)
-	SetBroadcastHandler(handlerFunc rcon.BroadcastHandlerFunc)
-	SetDisconnectHandler(handlerFunc rcon.DisconnectHandlerFunc)
+	WaitGroup() *sync.WaitGroup
+	SetBroadcastHandler(handlerFunc rcon.BroadcastHandler)
+	SetDisconnectHandler(handlerFunc rcon.DisconnectHandler)
+	SetBroadcastChecker(handlerFunc rcon.BroadcastMessageChecker)
 	GetGame() Game
-	Disconnect() error
+	Close() error
 }
 
 type OnlinePlayer struct {

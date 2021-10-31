@@ -20,6 +20,8 @@ package mordhau
 import (
 	"Refractor/domain"
 	"Refractor/pkg/broadcast"
+	"github.com/refractorgscm/rcon/endian"
+	"github.com/refractorgscm/rcon/presets"
 	"regexp"
 	"time"
 )
@@ -36,7 +38,7 @@ func NewMordhauGame(platform domain.Platform) domain.Game {
 			UseRCON:                   true,
 			AlivePingInterval:         time.Second * 30,
 			EnableBroadcasts:          true,
-			BroadcastInitCommands:     []string{"listen login", "listen chat", "listen punishment"},
+			RCONInitCommands:          []string{"listen login", "listen chat", "listen punishment"},
 			PlayerListRefreshInterval: time.Minute * 10,
 			EnableChat:                true,
 			BroadcastPatterns: map[string]*regexp.Regexp{
@@ -83,5 +85,14 @@ func (g *mordhau) GetBroadcastCommand() string {
 func (g *mordhau) GetDefaultSettings() *domain.GameSettings {
 	return &domain.GameSettings{
 		BanCommandPattern: "Ban {{PLAYER_ID}} {{DURATION}} {{REASON}}",
+	}
+}
+
+func (g *mordhau) GetRCONSettings() *domain.GameRCONSettings {
+	return &domain.GameRCONSettings{
+		// Mordhau has presets within the RefractorGSCM/RCON library so we can simply use those.
+		RestrictedPacketIDs: presets.MordhauRestrictedPacketIDs,
+		BroadcastChecker:    presets.MordhauBroadcastChecker,
+		EndianMode:          endian.Little,
 	}
 }

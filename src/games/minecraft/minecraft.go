@@ -19,6 +19,7 @@ package minecraft
 
 import (
 	"Refractor/domain"
+	"github.com/refractorgscm/rcon/endian"
 	"regexp"
 	"time"
 )
@@ -73,5 +74,13 @@ func (g *minecraft) GetBroadcastCommand() string {
 func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 	return &domain.GameSettings{
 		BanCommandPattern: "ban {{PLAYER_NAME}} {{REASON}}",
+	}
+}
+
+func (g *minecraft) GetRCONSettings() *domain.GameRCONSettings {
+	return &domain.GameRCONSettings{
+		RestrictedPacketIDs: nil, // nil since minecraft has no relevant restricted RCON packet IDs.
+		BroadcastChecker:    nil, // nil since minecraft doesn't support broadcasts.
+		EndianMode:          endian.Little,
 	}
 }
