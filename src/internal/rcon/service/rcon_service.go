@@ -67,8 +67,10 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 	}
 
 	// Check if a client already exists. If one does, close the associated connections and delete it.
-	if s.clients[server.ID] != nil {
-		_ = s.clients[server.ID].Disconnect()
+	currentClient := s.clients[server.ID]
+	if currentClient != nil {
+		_ = currentClient.Close()
+		currentClient.WaitGroup().Wait() // wait for the client to disconnect
 		delete(s.clients, server.ID)
 	}
 
@@ -88,23 +90,20 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 	client.SetBroadcastHandler(s.getBroadcastHandler(server.ID, game))
 	client.SetDisconnectHandler(s.getDisconnectHandler(server.ID))
 
-	// Connect the main socket
+	// Connect the client
 	if err := client.Connect(); err != nil {
 		return err
 	}
 
-	// Connect broadcast socket
-	if gameConfig.EnableBroadcasts {
-		errorChan := make(chan error)
-		go client.ListenForBroadcasts(gameConfig.BroadcastInitCommands, errorChan)
-
-		go func() {
-			select {
-			case err := <-errorChan:
-				s.logger.Error("Broadcast listener error", zap.Int64("Server", server.ID), zap.Error(err))
-				break
-			}
-		}()
+	// Run init commands
+	for _, cmd := range game.GetConfig().RCONInitCommands {
+		if _, err := client.ExecCommand(cmd); err != nil {
+			s.logger.Error("Could not execute RCON init command",
+				zap.Int64("Server ID", server.ID),
+				zap.String("Command", cmd),
+				zap.Error(err))
+			continue
+		}
 	}
 
 	if gameConfig.PlayerListPollingEnabled() {
@@ -299,19 +298,10 @@ func (s *rconService) getBroadcastHandler(serverID int64, game domain.Game) func
 
 func (s *rconService) getDisconnectHandler(serverID int64) func(error, bool) {
 	return func(err error, expected bool) {
-		if expected {
-			return
-		}
-
 		s.logger.Warn("RCON client disconnected", zap.Int64("Server", serverID), zap.Bool("Expected", expected), zap.Error(err))
 
 		for _, sub := range s.statusSubs {
 			sub(serverID, "Offline")
-		}
-
-		client := s.clients[serverID]
-		if client != nil {
-			_ = client.Disconnect()
 		}
 
 		// Delete the client from the list of clients. Reconnection attempts will be made in the watchdog.
@@ -489,7 +479,7 @@ func (s *rconService) HandleServerUpdate(server *domain.Server) {
 
 	client := s.clients[server.ID]
 	if client != nil {
-		if err := client.Disconnect(); err != nil {
+		if err := client.Close(); err != nil {
 			return
 		}
 		s.DeleteClient(server.ID)

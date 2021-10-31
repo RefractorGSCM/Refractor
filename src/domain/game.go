@@ -18,6 +18,8 @@
 package domain
 
 import (
+	"github.com/refractorgscm/rcon"
+	"github.com/refractorgscm/rcon/endian"
 	"regexp"
 	"time"
 )
@@ -32,7 +34,30 @@ type Game interface {
 	GetPlayerListCommand() string
 	GetCommandOutputPatterns() *CommandOutputPatterns
 	GetBroadcastCommand() string
+	GetRCONSettings() *GameRCONSettings
 	GetDefaultSettings() *GameSettings
+}
+
+// GameRCONSettings is a struct which holds RCON settings for a single game.
+type GameRCONSettings struct {
+	// RestrictedPacketIDs is an int32 slice which gets passed into a game's RCON client upon creation.
+	// RCON works by sending data packets with a unique ID to the server, and the server responds with a data packet of
+	// its own with a matching ID to the original request.
+	//
+	// RCON packet IDs are usually kept unique by simply incrementing a number every time a new packet is created.
+	//
+	// For some games, there are special (or reserved) packet IDs which mean specific things. Due to this, we may want
+	// to make sure that the auto incrementing packet ID never becomes any of those restricted IDs to prevent confusion
+	// between the game server and the RCON client.
+	RestrictedPacketIDs []int32
+
+	// BroadcastChecker is a function which will be called with each RCON packet sent by the game server as an argument.
+	// It should check if the passed in packet is a broadcast using any relevant criteria. True is returned if the
+	// checked packet is a broadcast, false otherwise.
+	BroadcastChecker rcon.BroadcastMessageChecker
+
+	// EndianMode represents the byte order used by a game's RCON implementation.
+	EndianMode endian.Mode
 }
 
 type CommandOutputPatterns struct {
@@ -50,9 +75,9 @@ type GameConfig struct {
 	// notifications from the server of various events such as player join, player quit, etc.
 	EnableBroadcasts bool
 
-	// BroadcastInitCommands is a string slice containing commands which will be executed on the broadcast listener
+	// RCONInitCommands is a string slice containing commands which will be executed on the broadcast listener
 	// socket when connection is established.
-	BroadcastInitCommands []string
+	RCONInitCommands []string
 
 	// BroadcastPatterns is a map containing the regex patterns of various broadcast types. These are used to
 	// parse data inside the broadcasts. If EnableBroadcasts is false, this can safely be set to nil or unset.
