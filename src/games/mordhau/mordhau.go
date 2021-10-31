@@ -38,7 +38,7 @@ func NewMordhauGame(platform domain.Platform) domain.Game {
 			UseRCON:                   true,
 			AlivePingInterval:         time.Second * 30,
 			EnableBroadcasts:          true,
-			RCONInitCommands:          []string{"listen login", "listen chat", "listen punishment"},
+			RCONInitCommands:          []string{"listen login", "listen chat"},
 			PlayerListRefreshInterval: time.Minute * 10,
 			EnableChat:                true,
 			BroadcastPatterns: map[string]*regexp.Regexp{
