@@ -18,17 +18,110 @@
 package params
 
 import (
-	validation "github.com/go-ozzo/ozzo-validation"
-	"strings"
+	"Refractor/domain"
+	"net/http"
 )
 
 type SetGameSettingsParams struct {
-	BanCommandPattern string `json:"ban_command_pattern"`
+	InfractionCreate *domain.InfractionCommands `json:"create"`
+	InfractionUpdate *domain.InfractionCommands `json:"update"`
+	InfractionDelete *domain.InfractionCommands `json:"delete"`
+	InfractionRepeal *domain.InfractionCommands `json:"repeal"`
+}
+
+type cmdFieldErrBody struct {
+	Index   int    `json:"index"`
+	Message string `json:"message"`
+}
+
+func buildManualError(field, nested string, errBody interface{}) error {
+	err := &domain.HTTPError{
+		Success: false,
+		Message: "Input errors exist",
+		Status:  http.StatusBadRequest,
+	}
+
+	err.ValidationErrors = map[string]interface{}{}
+
+	if nested != "" {
+		err.ValidationErrors = map[string]map[string]interface{}{
+			field: {
+				nested: errBody,
+			},
+		}
+	} else {
+		err.ValidationErrors = map[string]interface{}{
+			field: errBody,
+		}
+	}
+
+	return err
 }
 
 func (body SetGameSettingsParams) Validate() error {
-	body.BanCommandPattern = strings.TrimSpace(body.BanCommandPattern)
+	// Validate existence of main fields
+	if body.InfractionCreate == nil {
+		return buildManualError("create", "", "this field is required")
+	}
 
-	return ValidateStruct(&body,
-		validation.Field(&body.BanCommandPattern, validation.Required, validation.Length(1, 128)))
+	if body.InfractionUpdate == nil {
+		return buildManualError("update", "", "this field is required")
+	}
+
+	if body.InfractionDelete == nil {
+		return buildManualError("delete", "", "this field is required")
+	}
+
+	if body.InfractionRepeal == nil {
+		return buildManualError("repeal", "", "this field is required")
+	}
+
+	// Validate commands
+	if err := validateActCmds(body.InfractionCreate, "create"); err != nil {
+		return err
+	}
+
+	if err := validateActCmds(body.InfractionUpdate, "update"); err != nil {
+		return err
+	}
+
+	if err := validateActCmds(body.InfractionDelete, "delete"); err != nil {
+		return err
+	}
+
+	if err := validateActCmds(body.InfractionRepeal, "repeal"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateActCmds(cmds *domain.InfractionCommands, act string) error {
+	if err := validateCmdArr(cmds.Warn, act, "warn"); err != nil {
+		return err
+	}
+	if err := validateCmdArr(cmds.Mute, act, "warn"); err != nil {
+		return err
+	}
+	if err := validateCmdArr(cmds.Kick, act, "warn"); err != nil {
+		return err
+	}
+	if err := validateCmdArr(cmds.Ban, act, "warn"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateCmdArr(arr []string, act, infr string) error {
+	for idx, cmd := range arr {
+		if len(cmd) < 1 || len(cmd) > 256 {
+			return buildManualError(act, infr, &cmdFieldErrBody{
+				Index:   idx,
+				Message: "length must be between 1 and 256",
+			})
+		}
+	}
+
+	return nil
 }

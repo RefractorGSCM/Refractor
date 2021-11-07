@@ -156,7 +156,30 @@ func Test(t *testing.T) {
 
 				g.BeforeEach(func() {
 					expected = &domain.GameSettings{
-						BanCommandPattern: "test",
+						CreateInfractionCommands: &domain.InfractionCommands{
+							Warn: []string{"test1"},
+							Mute: []string{"test2"},
+							Kick: []string{"test3"},
+							Ban:  []string{"test4"},
+						},
+						UpdateInfractionCommands: &domain.InfractionCommands{
+							Warn: []string{"test1"},
+							Mute: []string{"test2"},
+							Kick: []string{"test3"},
+							Ban:  []string{"test4"},
+						},
+						DeleteInfractionCommands: &domain.InfractionCommands{
+							Warn: []string{"test1"},
+							Mute: []string{"test2"},
+							Kick: []string{"test3"},
+							Ban:  []string{"test4"},
+						},
+						RepealInfractionCommands: &domain.InfractionCommands{
+							Warn: []string{"test1"},
+							Mute: []string{"test2"},
+							Kick: []string{"test3"},
+							Ban:  []string{"test4"},
+						},
 					}
 
 					service.AddGame(game)

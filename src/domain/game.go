@@ -130,7 +130,19 @@ type GameService interface {
 }
 
 type GameSettings struct {
-	BanCommandPattern string `json:"ban_command_pattern"`
+	CreateInfractionCommands *InfractionCommands `json:"create"`
+	UpdateInfractionCommands *InfractionCommands `json:"update"`
+	DeleteInfractionCommands *InfractionCommands `json:"delete"`
+	RepealInfractionCommands *InfractionCommands `json:"repeal"`
+}
+
+func (gs *GameSettings) InfractionActionMap() map[string]*InfractionCommands {
+	return map[string]*InfractionCommands{
+		InfractionCommandCreate: gs.CreateInfractionCommands,
+		InfractionCommandUpdate: gs.UpdateInfractionCommands,
+		InfractionCommandDelete: gs.DeleteInfractionCommands,
+		InfractionCommandRepeal: gs.RepealInfractionCommands,
+	}
 }
 
 type GameRepo interface {

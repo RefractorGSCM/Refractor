@@ -103,6 +103,11 @@ func (_m *RCONService) SubscribeJoin(sub domain.BroadcastSubscriber) {
 	_m.Called(sub)
 }
 
+// SubscribeModeratorAction provides a mock function with given fields: sub
+func (_m *RCONService) SubscribeModeratorAction(sub domain.BroadcastSubscriber) {
+	_m.Called(sub)
+}
+
 // SubscribePlayerListUpdate provides a mock function with given fields: sub
 func (_m *RCONService) SubscribePlayerListUpdate(sub domain.PlayerListUpdateSubscriber) {
 	_m.Called(sub)

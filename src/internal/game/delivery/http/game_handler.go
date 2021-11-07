@@ -127,7 +127,10 @@ func (h *gameHandler) SetGameSettings(c echo.Context) error {
 
 	// Set game settings
 	gs := &domain.GameSettings{
-		BanCommandPattern: body.BanCommandPattern,
+		CreateInfractionCommands: body.InfractionCreate,
+		UpdateInfractionCommands: body.InfractionUpdate,
+		DeleteInfractionCommands: body.InfractionDelete,
+		RepealInfractionCommands: body.InfractionRepeal,
 	}
 
 	// Get the game

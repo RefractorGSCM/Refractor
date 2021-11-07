@@ -19,7 +19,7 @@ package command_executor
 
 import (
 	"Refractor/domain"
-	"context"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"strconv"
 	"strings"
@@ -39,8 +39,8 @@ func NewCommandExecutor(rs domain.RCONService, gs domain.GameService, log *zap.L
 	}
 }
 
-func (e *executor) RunBanCommand(ctx context.Context, payload *domain.PlayerCommandPayload, serverID int64, game domain.Game) error {
-	// Get ban command from game settings
+func (e *executor) RunInfractionCommands(infrType, action string, payload *domain.PlayerCommandPayload, serverID int64, game domain.Game) error {
+	// Get commands to run from game settings
 	gameSettings, err := e.gameService.GetGameSettings(game)
 	if err != nil {
 		e.logger.Error("Could not get game settings from game repo",
@@ -49,32 +49,47 @@ func (e *executor) RunBanCommand(ctx context.Context, payload *domain.PlayerComm
 		return err
 	}
 
-	banCmd := gameSettings.BanCommandPattern
-
-	// Replace placeholders inside banCmd with payload data
-	banCmd = strings.ReplaceAll(banCmd, "{{PLAYER_ID}}", payload.PlayerID)
-	banCmd = strings.ReplaceAll(banCmd, "{{PLAYER_NAME}}", payload.Name)
-	banCmd = strings.ReplaceAll(banCmd, "{{DURATION}}", strconv.FormatInt(payload.Duration, 10))
-	banCmd = strings.ReplaceAll(banCmd, "{{REASON}}", payload.Reason)
-
-	// Ban the player for the correct remainder
-	client := e.rconService.GetServerClient(serverID)
-	res, err := client.ExecCommand(banCmd)
-	if err != nil {
-		e.logger.Error("Could not execute ban command",
-			zap.String("Player ID", payload.PlayerID),
-			zap.String("Platform", payload.Platform),
-			zap.Int64("Server ID", serverID),
-			zap.Error(err))
-		return err
+	infrActionMap := gameSettings.InfractionActionMap()
+	actMap := infrActionMap[action]
+	if actMap == nil {
+		return errors.New("no infraction action type: " + action)
 	}
 
-	e.logger.Info("Banned player from server",
-		zap.Int64("Server ID", serverID),
-		zap.String("Player ID", payload.PlayerID),
-		zap.String("Platform", payload.Platform),
-		zap.String("Reason", payload.Reason),
-		zap.String("Response From Server", res))
+	cmdMap := actMap.Map()
+	cmds := cmdMap[infrType]
+	if cmds == nil {
+		return errors.New("no commands found for infraction type: " + infrType)
+	}
+
+	// Run the command
+	client := e.rconService.GetServerClient(serverID)
+
+	// Parse and run the commands
+	for _, cmd := range cmds {
+		// Replace placeholders inside command with payload data
+		runCmd := strings.ReplaceAll(cmd, "{{PLAYER_ID}}", payload.PlayerID)
+		runCmd = strings.ReplaceAll(runCmd, "{{PLAYER_NAME}}", payload.Name)
+		runCmd = strings.ReplaceAll(runCmd, "{{DURATION}}", strconv.FormatInt(payload.Duration, 10))
+		runCmd = strings.ReplaceAll(runCmd, "{{REASON}}", payload.Reason)
+
+		res, err := client.ExecCommand(runCmd)
+		if err != nil {
+			e.logger.Error("Could not execute ban command",
+				zap.String("Player ID", payload.PlayerID),
+				zap.String("Platform", payload.Platform),
+				zap.Int64("Server ID", serverID),
+				zap.Error(err))
+			return err
+		}
+
+		e.logger.Info("Ran Infraction Command",
+			zap.String("Command", runCmd),
+			zap.Int64("Server ID", serverID),
+			zap.String("Player ID", payload.PlayerID),
+			zap.String("Platform", payload.Platform),
+			zap.String("Reason", payload.Reason),
+			zap.String("Response From Server", res))
+	}
 
 	return nil
 }
