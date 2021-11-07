@@ -649,7 +649,7 @@ func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID i
 		Reason:   "Refractor Ban Synchronization",
 	}
 
-	if err := s.commandExecutor.RunBanCommand(ctx, payload, serverID, game); err != nil {
+	if err := s.commandExecutor.RunInfractionCommands(domain.InfractionTypeBan, domain.InfractionCommandCreate, payload, serverID, game); err != nil {
 		s.logger.Error("Could not run ban command",
 			zap.String("Player ID", playerID),
 			zap.String("Platform", platform),

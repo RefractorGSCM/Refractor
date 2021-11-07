@@ -17,8 +17,6 @@
 
 package domain
 
-import "context"
-
 type PlayerCommandPayload struct {
 	PlayerID string
 	Platform string
@@ -28,5 +26,5 @@ type PlayerCommandPayload struct {
 }
 
 type CommandExecutor interface {
-	RunBanCommand(ctx context.Context, payload *PlayerCommandPayload, serverID int64, game Game) error
+	RunInfractionCommands(infrType, action string, payload *PlayerCommandPayload, serverID int64, game Game) error
 }

@@ -84,7 +84,30 @@ func (g *mordhau) GetBroadcastCommand() string {
 
 func (g *mordhau) GetDefaultSettings() *domain.GameSettings {
 	return &domain.GameSettings{
-		BanCommandPattern: "Ban {{PLAYER_ID}} {{DURATION}} {{REASON}}",
+		CreateInfractionCommands: &domain.InfractionCommands{
+			Warn: []string{"Say {{PLAYER_NAME}} has been warned for: {{REASON}}"},
+			Mute: []string{"Mute {{PLAYER_ID}} {{DURATION}}"},
+			Kick: []string{"Kick {{PLAYER_ID}} {{REASON}}"},
+			Ban:  []string{"Ban {{PLAYER_ID}} {{DURATION}} {{REASON}}"},
+		},
+		UpdateInfractionCommands: &domain.InfractionCommands{
+			Warn: []string{},
+			Mute: []string{"Mute {{PLAYER_ID}} {{DURATION}}"},
+			Kick: []string{},
+			Ban:  []string{"Ban {{PLAYER_ID}} {{DURATION}} {{REASON}}"},
+		},
+		DeleteInfractionCommands: &domain.InfractionCommands{
+			Warn: []string{},
+			Mute: []string{"Unmute {{PLAYER_ID}}"},
+			Kick: []string{},
+			Ban:  []string{"Unban {{PLAYER_ID}}"},
+		},
+		RepealInfractionCommands: &domain.InfractionCommands{
+			Warn: []string{},
+			Mute: []string{"Unmute {{PLAYER_ID}}"},
+			Kick: []string{},
+			Ban:  []string{"Unban {{PLAYER_ID}}"},
+		},
 	}
 }
 

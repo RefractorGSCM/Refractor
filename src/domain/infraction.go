@@ -79,3 +79,26 @@ type InfractionService interface {
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 	HandleModerationAction(fields broadcast.Fields, serverID int64, game Game)
 }
+
+const (
+	InfractionCommandCreate = "CREATE"
+	InfractionCommandUpdate = "UPDATE"
+	InfractionCommandDelete = "DELETE"
+	InfractionCommandRepeal = "REPEAL"
+)
+
+type InfractionCommands struct {
+	Warn []string `json:"warn"`
+	Mute []string `json:"mute"`
+	Kick []string `json:"kick"`
+	Ban  []string `json:"ban"`
+}
+
+func (ic *InfractionCommands) Map() map[string][]string {
+	return map[string][]string{
+		InfractionTypeWarning: ic.Warn,
+		InfractionTypeMute:    ic.Mute,
+		InfractionTypeKick:    ic.Kick,
+		InfractionTypeBan:     ic.Ban,
+	}
+}
