@@ -19,7 +19,7 @@ package file
 
 import (
 	"Refractor/domain"
-	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -50,7 +50,7 @@ func (r *gameRepo) GetSettings(game domain.Game) (*domain.GameSettings, error) {
 	}
 
 	// Check if data file exists
-	if _, err := os.Stat(fmt.Sprintf("./data/%s_settings.gob", game.GetName())); os.IsNotExist(err) {
+	if _, err := os.Stat(fmt.Sprintf("./data/%s_settings.json", game.GetName())); os.IsNotExist(err) {
 		// If it doesn't, use SetSettings to create it
 		if err := r.SetSettings(game, game.GetDefaultSettings()); err != nil {
 			return nil, errors.Wrap(err, op)
@@ -58,7 +58,7 @@ func (r *gameRepo) GetSettings(game domain.Game) (*domain.GameSettings, error) {
 	}
 
 	// Open data file and decode the data within
-	file, err := os.Open(fmt.Sprintf("./data/%s_settings.gob", game.GetName()))
+	file, err := os.Open(fmt.Sprintf("./data/%s_settings.json", game.GetName()))
 	if err != nil {
 		return nil, errors.Wrap(err, op)
 	}
@@ -67,7 +67,7 @@ func (r *gameRepo) GetSettings(game domain.Game) (*domain.GameSettings, error) {
 		_ = file.Close()
 	}()
 
-	decoder := gob.NewDecoder(file)
+	decoder := json.NewDecoder(file)
 
 	decodedSettings := &domain.GameSettings{}
 	if err := decoder.Decode(decodedSettings); err != nil {
@@ -91,7 +91,7 @@ func (r *gameRepo) SetSettings(game domain.Game, settings *domain.GameSettings) 
 	}
 
 	// Create data file
-	file, err := os.Create(fmt.Sprintf("./data/%s_settings.gob", game.GetName()))
+	file, err := os.Create(fmt.Sprintf("./data/%s_settings.json", game.GetName()))
 	if err != nil {
 		return errors.Wrap(err, op)
 	}
@@ -100,8 +100,8 @@ func (r *gameRepo) SetSettings(game domain.Game, settings *domain.GameSettings) 
 		_ = file.Close()
 	}()
 
-	// Gob encode the settings struct
-	encoder := gob.NewEncoder(file)
+	// JSON encode the settings struct
+	encoder := json.NewEncoder(file)
 
 	if err := encoder.Encode(settings); err != nil {
 		return errors.Wrap(err, op)
