@@ -45,6 +45,7 @@ func Test(t *testing.T) {
 		var rconService *mocks.RCONService
 		var gameService *mocks.GameService
 		var serverRepo *mocks.ServerRepo
+		var playerNameRepo *mocks.PlayerNameRepo
 		var cmdexec *executor
 		var game *mocks.Game
 		var ctx context.Context
@@ -53,11 +54,13 @@ func Test(t *testing.T) {
 			rconService = new(mocks.RCONService)
 			gameService = new(mocks.GameService)
 			serverRepo = new(mocks.ServerRepo)
+			playerNameRepo = new(mocks.PlayerNameRepo)
 			cmdexec = &executor{
-				rconService: rconService,
-				gameService: gameService,
-				serverRepo:  serverRepo,
-				logger:      zap.NewNop(),
+				rconService:    rconService,
+				gameService:    gameService,
+				serverRepo:     serverRepo,
+				playerNameRepo: playerNameRepo,
+				logger:         zap.NewNop(),
 			}
 			game = new(mocks.Game)
 			ctx = context.TODO()
@@ -129,13 +132,18 @@ func Test(t *testing.T) {
 					Expect(repealPayload.GetCommands()).To(Equal(expectedRepealCommands))
 					Expect(repealPayload.GetServerIDs()).To(Equal([]int64{serverID}))
 				})
-			})
 
-			g.Describe("Player name not set on infraction", func() {
-				g.It("Should return an error", func() {
-					_, err := cmdexec.PrepareInfractionCommands(ctx, &domain.Infraction{}, domain.InfractionCommandCreate, serverID)
+				g.Describe("Player was not set", func() {
+					g.BeforeEach(func() {
+						infraction.PlayerName = ""
+						playerNameRepo.On("GetNames", mock.Anything, mock.Anything, mock.Anything).Return("name", nil, nil)
+					})
 
-					Expect(err).ToNot(BeNil())
+					g.It("Should not return an error", func() {
+						_, err := cmdexec.PrepareInfractionCommands(ctx, infraction, domain.InfractionCommandCreate, serverID)
+
+						Expect(err).To(BeNil())
+					})
 				})
 			})
 
