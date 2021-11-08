@@ -641,20 +641,26 @@ func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID i
 		return
 	}
 
-	payload := &domain.PlayerCommandPayload{
-		PlayerID: playerID,
-		Platform: platform,
-		Name:     name,
-		Duration: timeRemaining,
-		Reason:   "Refractor Ban Synchronization",
+	// Prepare ban sync commands using infraction creation commands
+	// TODO: Sync should be it's own category to be used for infraction synchronization
+	preparedCommands, err := s.commandExecutor.PrepareInfractionCommands(ctx, &domain.CustomInfractionPayload{
+		PlayerID:   playerID,
+		Platform:   platform,
+		PlayerName: name,
+		Duration:   timeRemaining,
+		Reason:     "Refractor Ban Synchronization",
+	}, domain.InfractionCommandCreate, serverID)
+	if err != nil {
+		s.logger.Error("Could not run player join ban sync infraction commands",
+			zap.Error(err))
 	}
 
-	if err := s.commandExecutor.RunInfractionCommands(domain.InfractionTypeBan, domain.InfractionCommandCreate, payload, serverID, game); err != nil {
-		s.logger.Error("Could not run ban command",
+	// Run commands
+	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+		s.logger.Error("Could not run ban sync commands",
 			zap.String("Player ID", playerID),
 			zap.String("Platform", platform),
 			zap.Error(err))
-		return
 	}
 }
 

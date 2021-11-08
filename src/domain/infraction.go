@@ -103,12 +103,35 @@ func (ic *InfractionCommands) Map() map[string][]string {
 	}
 }
 
-func (i *Infraction) CommandPayload() *PlayerCommandPayload {
-	return &PlayerCommandPayload{
-		PlayerID: i.PlayerID,
-		Platform: i.Platform,
-		Name:     i.PlayerName,
-		Duration: i.Duration.ValueOrZero(),
-		Reason:   i.Reason.ValueOrZero(),
-	}
+type InfractionPayload interface {
+	GetPlayerID() string
+	GetPlatform() string
+	GetPlayerName() string
+	GetType() string
+	GetDuration() int64
+	GetReason() string
+}
+
+func (i *Infraction) GetPlayerID() string {
+	return i.PlayerID
+}
+
+func (i *Infraction) GetPlatform() string {
+	return i.Platform
+}
+
+func (i *Infraction) GetPlayerName() string {
+	return i.PlayerName
+}
+
+func (i *Infraction) GetType() string {
+	return i.Type
+}
+
+func (i *Infraction) GetDuration() int64 {
+	return i.Duration.ValueOrZero()
+}
+
+func (i *Infraction) GetReason() string {
+	return i.Reason.ValueOrZero()
 }
