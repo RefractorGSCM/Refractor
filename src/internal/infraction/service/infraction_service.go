@@ -146,6 +146,20 @@ func (s *infractionService) Store(c context.Context, infraction *domain.Infracti
 		}
 	}
 
+	// Run infraction creation commands
+	preparedCommands, err := s.commandExecutor.PrepareInfractionCommands(ctx, infraction,
+		domain.InfractionCommandCreate, infraction.ServerID)
+	if err != nil {
+		s.logger.Error("Could not prepare ban create commands",
+			zap.Error(err))
+	}
+
+	// Run commands
+	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+		s.logger.Error("Could not run infraction creation commands",
+			zap.Error(err))
+	}
+
 	return infraction, nil
 }
 

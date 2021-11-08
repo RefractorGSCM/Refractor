@@ -27,27 +27,40 @@ import (
 )
 
 type executor struct {
-	rconService domain.RCONService
-	gameService domain.GameService
-	serverRepo  domain.ServerRepo
-	logger      *zap.Logger
+	rconService    domain.RCONService
+	gameService    domain.GameService
+	serverRepo     domain.ServerRepo
+	playerNameRepo domain.PlayerNameRepo
+	logger         *zap.Logger
 }
 
-func NewCommandExecutor(rs domain.RCONService, gs domain.GameService, sr domain.ServerRepo, log *zap.Logger) domain.CommandExecutor {
+func NewCommandExecutor(rs domain.RCONService, gs domain.GameService, sr domain.ServerRepo, pnr domain.PlayerNameRepo,
+	log *zap.Logger) domain.CommandExecutor {
 	return &executor{
-		rconService: rs,
-		gameService: gs,
-		serverRepo:  sr,
-		logger:      log,
+		rconService:    rs,
+		gameService:    gs,
+		serverRepo:     sr,
+		playerNameRepo: pnr,
+		logger:         log,
 	}
 }
 
 func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction domain.InfractionPayload, action string,
 	serverID int64) (domain.CommandPayload, error) {
 
-	// Make sure player name is set on infraction
-	if infraction.GetPlayerName() == "" {
-		return nil, errors.New("player name must be set")
+	// If player name is not set, fetch it
+	playerName := infraction.GetPlayerName()
+	if playerName == "" {
+		name, _, err := e.playerNameRepo.GetNames(ctx, infraction.GetPlayerID(), infraction.GetPlatform())
+		if err != nil {
+			e.logger.Error("Could not get player name",
+				zap.String("Player ID", infraction.GetPlayerID()),
+				zap.String("Platform", infraction.GetPlatform()),
+				zap.Error(err))
+			return nil, err
+		}
+
+		playerName = name
 	}
 
 	// Get server
@@ -98,7 +111,7 @@ func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction dom
 		// Replace placeholders inside command with payload data
 		runCmd := strings.ReplaceAll(cmd, "{{PLAYER_ID}}", infraction.GetPlayerID())
 		runCmd = strings.ReplaceAll(runCmd, "{{PLATFORM}}", infraction.GetPlatform())
-		runCmd = strings.ReplaceAll(runCmd, "{{PLAYER_NAME}}", infraction.GetPlayerName())
+		runCmd = strings.ReplaceAll(runCmd, "{{PLAYER_NAME}}", playerName)
 		runCmd = strings.ReplaceAll(runCmd, "{{DURATION}}", strconv.FormatInt(infraction.GetDuration(), 10))
 		runCmd = strings.ReplaceAll(runCmd, "{{REASON}}", infraction.GetReason())
 
