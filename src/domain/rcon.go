@@ -29,6 +29,7 @@ type ClientCreator interface {
 
 type RCONClient interface {
 	ExecCommand(string) (string, error)
+	ExecCommandNoResponse(string) error
 	Connect() error
 	WaitGroup() *sync.WaitGroup
 	SetBroadcastHandler(handlerFunc rcon.BroadcastHandler)

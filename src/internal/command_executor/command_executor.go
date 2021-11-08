@@ -33,10 +33,11 @@ type executor struct {
 	logger      *zap.Logger
 }
 
-func NewCommandExecutor(rs domain.RCONService, gs domain.GameService, log *zap.Logger) domain.CommandExecutor {
+func NewCommandExecutor(rs domain.RCONService, gs domain.GameService, sr domain.ServerRepo, log *zap.Logger) domain.CommandExecutor {
 	return &executor{
 		rconService: rs,
 		gameService: gs,
+		serverRepo:  sr,
 		logger:      log,
 	}
 }
@@ -119,8 +120,7 @@ func (e *executor) RunCommands(payload domain.CommandPayload) error {
 		// TODO: (e.g because client was nil) to be executed at a later time.
 
 		for _, cmd := range payload.GetCommands() {
-			res, err := client.ExecCommand(cmd)
-			if err != nil {
+			if err := client.ExecCommandNoResponse(cmd); err != nil {
 				e.logger.Error("Could not execute command on server",
 					zap.String("Command", cmd),
 					zap.Int64("Server ID", serverID),
@@ -130,9 +130,7 @@ func (e *executor) RunCommands(payload domain.CommandPayload) error {
 
 			e.logger.Info("Executed command on server",
 				zap.String("Command", cmd),
-				zap.Int64("Server ID", serverID),
-				zap.String("Server Response", res),
-				zap.Error(err))
+				zap.Int64("Server ID", serverID))
 		}
 	}
 
