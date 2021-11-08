@@ -647,6 +647,7 @@ func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID i
 		PlayerID:   playerID,
 		Platform:   platform,
 		PlayerName: name,
+		Type:       domain.InfractionTypeBan,
 		Duration:   timeRemaining,
 		Reason:     "Refractor Ban Synchronization",
 	}, domain.InfractionCommandCreate, serverID)
