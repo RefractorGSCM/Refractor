@@ -43,7 +43,6 @@ func Test(t *testing.T) {
 
 	g.Describe("Command Executor", func() {
 		var rconService *mocks.RCONService
-		var rconClient *mocks.RCONClient
 		var gameService *mocks.GameService
 		var serverRepo *mocks.ServerRepo
 		var cmdexec *executor
@@ -52,7 +51,6 @@ func Test(t *testing.T) {
 
 		g.BeforeEach(func() {
 			rconService = new(mocks.RCONService)
-			rconClient = new(mocks.RCONClient)
 			gameService = new(mocks.GameService)
 			serverRepo = new(mocks.ServerRepo)
 			cmdexec = &executor{

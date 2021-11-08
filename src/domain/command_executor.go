@@ -24,15 +24,40 @@ type CommandPayload interface {
 	GetServerIDs() []int64
 }
 
-type PlayerCommandPayload struct {
-	PlayerID string
-	Platform string
-	Name     string
-	Duration int64
-	Reason   string
+type CommandExecutor interface {
+	PrepareInfractionCommands(ctx context.Context, infraction InfractionPayload, action string, serverID int64) (CommandPayload, error)
+	RunCommands(payload CommandPayload) error
 }
 
-type CommandExecutor interface {
-	PrepareInfractionCommands(ctx context.Context, infraction *Infraction, action string, serverID int64) (CommandPayload, error)
-	RunCommands(payload CommandPayload) error
+type CustomInfractionPayload struct {
+	PlayerID   string
+	Platform   string
+	PlayerName string
+	Type       string
+	Duration   int64
+	Reason     string
+}
+
+func (p *CustomInfractionPayload) GetPlayerID() string {
+	return p.PlayerID
+}
+
+func (p *CustomInfractionPayload) GetPlatform() string {
+	return p.Platform
+}
+
+func (p *CustomInfractionPayload) GetPlayerName() string {
+	return p.PlayerName
+}
+
+func (p *CustomInfractionPayload) GetType() string {
+	return p.Type
+}
+
+func (p *CustomInfractionPayload) GetDuration() int64 {
+	return p.Duration
+}
+
+func (p *CustomInfractionPayload) GetReason() string {
+	return p.Reason
 }

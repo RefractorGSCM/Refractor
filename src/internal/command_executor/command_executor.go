@@ -41,11 +41,11 @@ func NewCommandExecutor(rs domain.RCONService, gs domain.GameService, log *zap.L
 	}
 }
 
-func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction *domain.Infraction, action string,
+func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction domain.InfractionPayload, action string,
 	serverID int64) (domain.CommandPayload, error) {
 
 	// Make sure player name is set on infraction
-	if infraction.PlayerName == "" {
+	if infraction.GetPlayerName() == "" {
 		return nil, errors.New("player name must be set")
 	}
 
@@ -84,9 +84,9 @@ func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction *do
 	}
 
 	cmdMap := actMap.Map()
-	cmds := cmdMap[infraction.Type]
+	cmds := cmdMap[infraction.GetType()]
 	if cmds == nil {
-		return nil, errors.New("no commands found for infraction type: " + infraction.Type)
+		return nil, errors.New("no commands found for infraction type: " + infraction.GetType())
 	}
 
 	// Prepare the commands
@@ -95,11 +95,11 @@ func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction *do
 	// Parse and run the commands
 	for _, cmd := range cmds {
 		// Replace placeholders inside command with payload data
-		runCmd := strings.ReplaceAll(cmd, "{{PLAYER_ID}}", infraction.PlayerID)
-		runCmd = strings.ReplaceAll(runCmd, "{{PLATFORM}}", infraction.Platform)
-		runCmd = strings.ReplaceAll(runCmd, "{{PLAYER_NAME}}", infraction.PlayerName)
-		runCmd = strings.ReplaceAll(runCmd, "{{DURATION}}", strconv.FormatInt(infraction.Duration.ValueOrZero(), 10))
-		runCmd = strings.ReplaceAll(runCmd, "{{REASON}}", infraction.Reason.ValueOrZero())
+		runCmd := strings.ReplaceAll(cmd, "{{PLAYER_ID}}", infraction.GetPlayerID())
+		runCmd = strings.ReplaceAll(runCmd, "{{PLATFORM}}", infraction.GetPlatform())
+		runCmd = strings.ReplaceAll(runCmd, "{{PLAYER_NAME}}", infraction.GetPlayerName())
+		runCmd = strings.ReplaceAll(runCmd, "{{DURATION}}", strconv.FormatInt(infraction.GetDuration(), 10))
+		runCmd = strings.ReplaceAll(runCmd, "{{REASON}}", infraction.GetReason())
 
 		commands = append(commands, runCmd)
 	}
