@@ -20,13 +20,20 @@ package command_executor
 import (
 	"Refractor/domain"
 	"Refractor/domain/mocks"
+	"context"
 	"fmt"
 	"github.com/franela/goblin"
+	"github.com/guregu/null"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 	"testing"
 )
+
+// The command executor is one of the most heavily tested parts of Refractor. This is important because thee commands
+// executed have a very real effect on player experience. We can't have the wrong commands being executed, or have
+// commands which execute when they shouldn't, or it would be very detrimental to a game server.
 
 func Test(t *testing.T) {
 	g := goblin.Goblin(t)
@@ -38,116 +45,194 @@ func Test(t *testing.T) {
 		var rconService *mocks.RCONService
 		var rconClient *mocks.RCONClient
 		var gameService *mocks.GameService
+		var serverRepo *mocks.ServerRepo
 		var cmdexec *executor
-		var payload *domain.PlayerCommandPayload
 		var game *mocks.Game
+		var ctx context.Context
 
 		g.BeforeEach(func() {
 			rconService = new(mocks.RCONService)
 			rconClient = new(mocks.RCONClient)
 			gameService = new(mocks.GameService)
+			serverRepo = new(mocks.ServerRepo)
 			cmdexec = &executor{
 				rconService: rconService,
 				gameService: gameService,
+				serverRepo:  serverRepo,
 				logger:      zap.NewNop(),
 			}
-			payload = &domain.PlayerCommandPayload{
-				PlayerID: "id",
-				Platform: "platform",
-				Name:     "name",
-				Duration: 1234,
-				Reason:   "test reason",
-			}
 			game = new(mocks.Game)
+			ctx = context.TODO()
 		})
 
-		g.Describe("RunInfractionCommands()", func() {
-			g.Describe("Successful execute", func() {
+		g.Describe("PrepareInfractionCommands()", func() {
+			var infraction *domain.Infraction
+			var serverID int64
+
+			g.BeforeEach(func() {
+				serverID = 6
+				infraction = &domain.Infraction{
+					InfractionID: 1,
+					PlayerID:     "playerid1",
+					Platform:     "platform1",
+					ServerID:     serverID,
+					Type:         domain.InfractionTypeBan,
+					Reason:       null.NewString("test reason", true),
+					Duration:     null.NewInt(420, true),
+					PlayerName:   "Test Player Name",
+				}
+			})
+
+			g.Describe("Successful prepare", func() {
 				g.BeforeEach(func() {
+					serverRepo.On("GetByID", mock.Anything, serverID).Return(&domain.Server{
+						Game: "testgame",
+					}, nil)
+					gameService.On("GetGame", "testgame").Return(game, nil)
 					gameService.On("GetGameSettings", mock.Anything).Return(&domain.GameSettings{
 						Commands: &domain.GameCommandSettings{
 							CreateInfractionCommands: &domain.InfractionCommands{
 								Warn: []string{},
 								Mute: []string{},
-								Kick: []string{"test {{PLAYER_NAME}} {{PLAYER_ID}} {{DURATION}} {{REASON}}"},
-								Ban:  []string{"ban {{PLAYER_NAME}} {{REASON}}"},
-							},
-							UpdateInfractionCommands: &domain.InfractionCommands{
-								Warn: []string{},
-								Mute: []string{},
 								Kick: []string{},
-								Ban:  []string{},
+								Ban:  []string{"Ban {{PLAYER_NAME}} {{DURATION}} {{REASON}}"},
 							},
-							DeleteInfractionCommands: &domain.InfractionCommands{
-								Warn: []string{},
-								Mute: []string{},
-								Kick: []string{},
-								Ban:  []string{"unban {{PLAYER_NAME}}"},
-							},
+							UpdateInfractionCommands: nil,
+							DeleteInfractionCommands: nil,
 							RepealInfractionCommands: &domain.InfractionCommands{
 								Warn: []string{},
 								Mute: []string{},
 								Kick: []string{},
-								Ban:  []string{"unban {{PLAYER_NAME}}"},
+								Ban:  []string{"Test {{PLAYER_NAME}} {{PLAYER_ID}} {{PLATFORM}} {{DURATION}} {{REASON}}"},
 							},
 						},
 					}, nil)
-
-					expectedKickCommand := fmt.Sprintf("test %s %s %d %s", payload.Name, payload.PlayerID,
-						payload.Duration, payload.Reason)
-					expectedBanCommand := fmt.Sprintf("ban %s %s", payload.Name, payload.Reason)
-
-					rconService.On("GetServerClient", mock.Anything).Return(rconClient, nil)
-
-					rconClient.On("ExecCommand", expectedKickCommand).Return("res", nil).Once()
-					rconClient.On("ExecCommand", expectedBanCommand).Return("res", nil).Once()
 				})
 
 				g.It("Should not return an error", func() {
-					err := cmdexec.RunInfractionCommands(domain.InfractionTypeKick, domain.InfractionCommandCreate, payload, 1, game)
-					Expect(err).To(BeNil())
+					_, err := cmdexec.PrepareInfractionCommands(ctx, infraction, domain.InfractionCommandCreate, serverID)
 
-					err = cmdexec.RunInfractionCommands(domain.InfractionTypeBan, domain.InfractionCommandCreate, payload, 1, game)
 					Expect(err).To(BeNil())
+				})
 
-					rconClient.AssertExpectations(t)
+				g.It("Should return a command payload with the correct values", func() {
+					expectedCreateCommands := []string{fmt.Sprintf("Ban %s %d %s", infraction.PlayerName,
+						infraction.Duration.ValueOrZero(), infraction.Reason.ValueOrZero())}
+					expectedRepealCommands := []string{fmt.Sprintf("Test %s %s %s %d %s", infraction.PlayerName,
+						infraction.PlayerID, infraction.Platform, infraction.Duration.ValueOrZero(), infraction.Reason.ValueOrZero())}
+
+					createPayload, err := cmdexec.PrepareInfractionCommands(ctx, infraction, domain.InfractionCommandCreate, serverID)
+					Expect(err).To(BeNil())
+					Expect(createPayload.GetCommands()).To(Equal(expectedCreateCommands))
+					Expect(createPayload.GetServerIDs()).To(Equal([]int64{serverID}))
+
+					repealPayload, err := cmdexec.PrepareInfractionCommands(ctx, infraction, domain.InfractionCommandRepeal, serverID)
+					Expect(err).To(BeNil())
+					Expect(repealPayload.GetCommands()).To(Equal(expectedRepealCommands))
+					Expect(repealPayload.GetServerIDs()).To(Equal([]int64{serverID}))
+				})
+			})
+
+			g.Describe("Player name not set on infraction", func() {
+				g.It("Should return an error", func() {
+					_, err := cmdexec.PrepareInfractionCommands(ctx, &domain.Infraction{}, domain.InfractionCommandCreate, serverID)
+
+					Expect(err).ToNot(BeNil())
+				})
+			})
+
+			g.Describe("Server repo error", func() {
+				g.BeforeEach(func() {
+					serverRepo.On("GetByID", mock.Anything, serverID).Return(nil, fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					_, err := cmdexec.PrepareInfractionCommands(ctx, &domain.Infraction{PlayerName: "name"}, domain.InfractionCommandCreate, serverID)
+
+					Expect(err).ToNot(BeNil())
+					serverRepo.AssertExpectations(t)
 				})
 			})
 
 			g.Describe("Game not found", func() {
 				g.BeforeEach(func() {
-					gameService.On("GetGameSettings", mock.Anything).Return(nil, domain.ErrNotFound)
-
-					game.On("GetName").Return("non-existent")
+					serverRepo.On("GetByID", mock.Anything, serverID).Return(&domain.Server{Game: "testgame"}, nil)
+					gameService.On("GetGame", mock.Anything).Return(nil, domain.ErrNotFound)
 				})
 
 				g.It("Should return an error", func() {
-					err := cmdexec.RunInfractionCommands(domain.InfractionTypeKick, domain.InfractionCommandCreate, payload, 1, game)
+					_, err := cmdexec.PrepareInfractionCommands(ctx, &domain.Infraction{PlayerName: "name"}, domain.InfractionCommandCreate, serverID)
 
-					Expect(err).ToNot(BeNil())
-				})
-
-				g.It("Should not run any commands", func() {
-					rconService.AssertNotCalled(t, "ExecCommand", mock.Anything)
-					rconService.AssertExpectations(t)
+					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					serverRepo.AssertExpectations(t)
+					gameService.AssertExpectations(t)
 				})
 			})
 
-			g.Describe("Invalid infraction type", func() {
+			g.Describe("Game has no commands set", func() {
 				g.BeforeEach(func() {
-					gameService.On("GetGameSettings", mock.Anything).Return(&domain.GameSettings{Commands: &domain.GameCommandSettings{}}, nil)
+					serverRepo.On("GetByID", mock.Anything, serverID).Return(&domain.Server{Game: "testgame"}, nil)
+					gameService.On("GetGame", mock.Anything).Return(game, nil)
+					gameService.On("GetGameSettings", mock.Anything).Return(&domain.GameSettings{
+						Commands: &domain.GameCommandSettings{},
+					}, nil)
 				})
 
 				g.It("Should return an error", func() {
-					err := cmdexec.RunInfractionCommands("invalid", domain.InfractionCommandCreate, payload, 1, game)
+					_, err := cmdexec.PrepareInfractionCommands(ctx, &domain.Infraction{PlayerName: "name"}, domain.InfractionCommandCreate, serverID)
 
 					Expect(err).ToNot(BeNil())
+					serverRepo.AssertExpectations(t)
 					gameService.AssertExpectations(t)
 				})
+			})
 
-				g.It("Should not run any commands", func() {
-					rconService.AssertNotCalled(t, "ExecCommand", mock.Anything)
-					rconService.AssertExpectations(t)
+			g.Describe("Invalid action provided", func() {
+				g.BeforeEach(func() {
+					serverRepo.On("GetByID", mock.Anything, serverID).Return(&domain.Server{Game: "testgame"}, nil)
+					gameService.On("GetGame", mock.Anything).Return(game, nil)
+					gameService.On("GetGameSettings", mock.Anything).Return(&domain.GameSettings{
+						Commands: &domain.GameCommandSettings{
+							CreateInfractionCommands: &domain.InfractionCommands{},
+							UpdateInfractionCommands: &domain.InfractionCommands{},
+							DeleteInfractionCommands: &domain.InfractionCommands{},
+							RepealInfractionCommands: &domain.InfractionCommands{},
+						},
+					}, nil)
+				})
+
+				g.It("Should return the correct error", func() {
+					_, err := cmdexec.PrepareInfractionCommands(ctx, &domain.Infraction{PlayerName: "name"}, "invalid", serverID)
+
+					Expect(err).ToNot(BeNil())
+					Expect(err.Error()).To(Equal("no infraction action type: invalid"))
+					serverRepo.AssertExpectations(t)
+					gameService.AssertExpectations(t)
+				})
+			})
+
+			g.Describe("Invalid infraction type provided", func() {
+				g.BeforeEach(func() {
+					serverRepo.On("GetByID", mock.Anything, serverID).Return(&domain.Server{Game: "testgame"}, nil)
+					gameService.On("GetGame", mock.Anything).Return(game, nil)
+					gameService.On("GetGameSettings", mock.Anything).Return(&domain.GameSettings{
+						Commands: &domain.GameCommandSettings{
+							CreateInfractionCommands: &domain.InfractionCommands{},
+							UpdateInfractionCommands: &domain.InfractionCommands{},
+							DeleteInfractionCommands: &domain.InfractionCommands{},
+							RepealInfractionCommands: &domain.InfractionCommands{},
+						},
+					}, nil)
+				})
+
+				g.It("Should return the correct error", func() {
+					_, err := cmdexec.PrepareInfractionCommands(ctx, &domain.Infraction{Type: "invalid", PlayerName: "name"},
+						domain.InfractionCommandCreate, serverID)
+
+					Expect(err).ToNot(BeNil())
+					Expect(err.Error()).To(Equal("no commands found for infraction type: invalid"))
+					serverRepo.AssertExpectations(t)
+					gameService.AssertExpectations(t)
 				})
 			})
 		})

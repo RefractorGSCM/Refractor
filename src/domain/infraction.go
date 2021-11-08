@@ -102,3 +102,13 @@ func (ic *InfractionCommands) Map() map[string][]string {
 		InfractionTypeBan:     ic.Ban,
 	}
 }
+
+func (i *Infraction) CommandPayload() *PlayerCommandPayload {
+	return &PlayerCommandPayload{
+		PlayerID: i.PlayerID,
+		Platform: i.Platform,
+		Name:     i.PlayerName,
+		Duration: i.Duration.ValueOrZero(),
+		Reason:   i.Reason.ValueOrZero(),
+	}
+}
