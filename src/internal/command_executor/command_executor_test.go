@@ -65,29 +65,31 @@ func Test(t *testing.T) {
 			g.Describe("Successful execute", func() {
 				g.BeforeEach(func() {
 					gameService.On("GetGameSettings", mock.Anything).Return(&domain.GameSettings{
-						CreateInfractionCommands: &domain.InfractionCommands{
-							Warn: []string{},
-							Mute: []string{},
-							Kick: []string{"test {{PLAYER_NAME}} {{PLAYER_ID}} {{DURATION}} {{REASON}}"},
-							Ban:  []string{"ban {{PLAYER_NAME}} {{REASON}}"},
-						},
-						UpdateInfractionCommands: &domain.InfractionCommands{
-							Warn: []string{},
-							Mute: []string{},
-							Kick: []string{},
-							Ban:  []string{},
-						},
-						DeleteInfractionCommands: &domain.InfractionCommands{
-							Warn: []string{},
-							Mute: []string{},
-							Kick: []string{},
-							Ban:  []string{"unban {{PLAYER_NAME}}"},
-						},
-						RepealInfractionCommands: &domain.InfractionCommands{
-							Warn: []string{},
-							Mute: []string{},
-							Kick: []string{},
-							Ban:  []string{"unban {{PLAYER_NAME}}"},
+						Commands: &domain.GameCommandSettings{
+							CreateInfractionCommands: &domain.InfractionCommands{
+								Warn: []string{},
+								Mute: []string{},
+								Kick: []string{"test {{PLAYER_NAME}} {{PLAYER_ID}} {{DURATION}} {{REASON}}"},
+								Ban:  []string{"ban {{PLAYER_NAME}} {{REASON}}"},
+							},
+							UpdateInfractionCommands: &domain.InfractionCommands{
+								Warn: []string{},
+								Mute: []string{},
+								Kick: []string{},
+								Ban:  []string{},
+							},
+							DeleteInfractionCommands: &domain.InfractionCommands{
+								Warn: []string{},
+								Mute: []string{},
+								Kick: []string{},
+								Ban:  []string{"unban {{PLAYER_NAME}}"},
+							},
+							RepealInfractionCommands: &domain.InfractionCommands{
+								Warn: []string{},
+								Mute: []string{},
+								Kick: []string{},
+								Ban:  []string{"unban {{PLAYER_NAME}}"},
+							},
 						},
 					}, nil)
 
@@ -133,7 +135,7 @@ func Test(t *testing.T) {
 
 			g.Describe("Invalid infraction type", func() {
 				g.BeforeEach(func() {
-					gameService.On("GetGameSettings", mock.Anything).Return(&domain.GameSettings{}, nil)
+					gameService.On("GetGameSettings", mock.Anything).Return(&domain.GameSettings{Commands: &domain.GameCommandSettings{}}, nil)
 				})
 
 				g.It("Should return an error", func() {

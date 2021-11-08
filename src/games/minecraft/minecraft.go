@@ -73,29 +73,31 @@ func (g *minecraft) GetBroadcastCommand() string {
 
 func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 	return &domain.GameSettings{
-		CreateInfractionCommands: &domain.InfractionCommands{
-			Warn: []string{},
-			Mute: []string{},
-			Kick: []string{"kick {{PLAYER_NAME}} {{REASON}}"},
-			Ban:  []string{"ban {{PLAYER_NAME}} {{REASON}}"},
-		},
-		UpdateInfractionCommands: &domain.InfractionCommands{
-			Warn: []string{},
-			Mute: []string{},
-			Kick: []string{"kick {{PLAYER_NAME}} {{REASON}}"},
-			Ban:  []string{"ban {{PLAYER_NAME}} {{REASON}}"},
-		},
-		DeleteInfractionCommands: &domain.InfractionCommands{
-			Warn: []string{},
-			Mute: []string{},
-			Kick: []string{},
-			Ban:  []string{"pardon {{PLAYER_NAME}}"},
-		},
-		RepealInfractionCommands: &domain.InfractionCommands{
-			Warn: []string{},
-			Mute: []string{},
-			Kick: []string{},
-			Ban:  []string{"pardon {{PLAYER_NAME}}"},
+		Commands: &domain.GameCommandSettings{
+			CreateInfractionCommands: &domain.InfractionCommands{
+				Warn: []string{},
+				Mute: []string{},
+				Kick: []string{"kick {{PLAYER_NAME}} {{REASON}}"},
+				Ban:  []string{"ban {{PLAYER_NAME}} {{REASON}}"},
+			},
+			UpdateInfractionCommands: &domain.InfractionCommands{
+				Warn: []string{},
+				Mute: []string{},
+				Kick: []string{"kick {{PLAYER_NAME}} {{REASON}}"},
+				Ban:  []string{"ban {{PLAYER_NAME}} {{REASON}}"},
+			},
+			DeleteInfractionCommands: &domain.InfractionCommands{
+				Warn: []string{},
+				Mute: []string{},
+				Kick: []string{},
+				Ban:  []string{"pardon {{PLAYER_NAME}}"},
+			},
+			RepealInfractionCommands: &domain.InfractionCommands{
+				Warn: []string{},
+				Mute: []string{},
+				Kick: []string{},
+				Ban:  []string{"pardon {{PLAYER_NAME}}"},
+			},
 		},
 	}
 }

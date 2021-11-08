@@ -48,9 +48,9 @@ func ApplyGameHandler(apiGroup *echo.Group, s domain.GameService, mware domain.M
 	gameGroup := apiGroup.Group("/games", mware.ProtectMiddleware, mware.ActivationMiddleware)
 
 	gameGroup.GET("/", handler.GetGames)
-	gameGroup.GET("/settings/:game", handler.GetGameSettings, enforcer.CheckAuth(authcheckers.DenyAll))                // super admin only
-	gameGroup.PATCH("/settings/:game", handler.SetGameSettings, enforcer.CheckAuth(authcheckers.DenyAll))              // super admin only
-	gameGroup.GET("/settings/:game/default", handler.GetDefaultGameSettings, enforcer.CheckAuth(authcheckers.DenyAll)) // super admin only
+	gameGroup.GET("/settings/:game", handler.GetGameSettings, enforcer.CheckAuth(authcheckers.DenyAll))                   // super admin only
+	gameGroup.PATCH("/settings/:game/commands", handler.SetGameCommandSettings, enforcer.CheckAuth(authcheckers.DenyAll)) // super admin only
+	gameGroup.GET("/settings/:game/default", handler.GetDefaultGameSettings, enforcer.CheckAuth(authcheckers.DenyAll))    // super admin only
 }
 
 type resGame struct {
@@ -105,7 +105,7 @@ func (h *gameHandler) GetGameSettings(c echo.Context) error {
 	})
 }
 
-func (h *gameHandler) SetGameSettings(c echo.Context) error {
+func (h *gameHandler) SetGameCommandSettings(c echo.Context) error {
 	gameName := c.Param("game")
 
 	if len(strings.TrimSpace(gameName)) == 0 || !h.service.GameExists(gameName) {
@@ -113,6 +113,11 @@ func (h *gameHandler) SetGameSettings(c echo.Context) error {
 			Success: false,
 			Message: "Invalid game",
 		})
+	}
+
+	game, err := h.service.GetGame(gameName)
+	if err != nil {
+		return err
 	}
 
 	// Validate request body
@@ -125,18 +130,18 @@ func (h *gameHandler) SetGameSettings(c echo.Context) error {
 		return err
 	}
 
-	// Set game settings
-	gs := &domain.GameSettings{
+	// Get current game settings
+	gs, err := h.service.GetGameSettings(game)
+	if err != nil {
+		return err
+	}
+
+	// Set game command settings
+	gs.Commands = &domain.GameCommandSettings{
 		CreateInfractionCommands: body.InfractionCreate,
 		UpdateInfractionCommands: body.InfractionUpdate,
 		DeleteInfractionCommands: body.InfractionDelete,
 		RepealInfractionCommands: body.InfractionRepeal,
-	}
-
-	// Get the game
-	game, err := h.service.GetGame(gameName)
-	if err != nil {
-		return err
 	}
 
 	if err := h.service.SetGameSettings(game, gs); err != nil {
@@ -145,7 +150,7 @@ func (h *gameHandler) SetGameSettings(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
-		Message: "Game settings set",
+		Message: "Game command settings set",
 		Payload: gs,
 	})
 }

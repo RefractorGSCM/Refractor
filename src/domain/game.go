@@ -129,19 +129,23 @@ type GameService interface {
 	SetGameSettings(game Game, settings *GameSettings) error
 }
 
-type GameSettings struct {
+type GameCommandSettings struct {
 	CreateInfractionCommands *InfractionCommands `json:"create"`
 	UpdateInfractionCommands *InfractionCommands `json:"update"`
 	DeleteInfractionCommands *InfractionCommands `json:"delete"`
 	RepealInfractionCommands *InfractionCommands `json:"repeal"`
 }
 
-func (gs *GameSettings) InfractionActionMap() map[string]*InfractionCommands {
+type GameSettings struct {
+	Commands *GameCommandSettings `json:"commands"`
+}
+
+func (gcs *GameCommandSettings) InfractionActionMap() map[string]*InfractionCommands {
 	return map[string]*InfractionCommands{
-		InfractionCommandCreate: gs.CreateInfractionCommands,
-		InfractionCommandUpdate: gs.UpdateInfractionCommands,
-		InfractionCommandDelete: gs.DeleteInfractionCommands,
-		InfractionCommandRepeal: gs.RepealInfractionCommands,
+		InfractionCommandCreate: gcs.CreateInfractionCommands,
+		InfractionCommandUpdate: gcs.UpdateInfractionCommands,
+		InfractionCommandDelete: gcs.DeleteInfractionCommands,
+		InfractionCommandRepeal: gcs.RepealInfractionCommands,
 	}
 }
 
