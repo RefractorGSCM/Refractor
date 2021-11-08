@@ -15,24 +15,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package domain
+package command_executor
 
-import "context"
+import "Refractor/domain"
 
-type CommandPayload interface {
-	GetCommands() []string
-	GetServerIDs() []int64
+type infractionCommand struct {
+	Commands []string
+	Servers  []int64
 }
 
-type PlayerCommandPayload struct {
-	PlayerID string
-	Platform string
-	Name     string
-	Duration int64
-	Reason   string
+func newInfractionCommand(cmds []string, servers []int64) domain.CommandPayload {
+	return &infractionCommand{cmds, servers}
 }
 
-type CommandExecutor interface {
-	PrepareInfractionCommands(ctx context.Context, infraction *Infraction, action string, serverID int64) (CommandPayload, error)
-	RunCommands(payload CommandPayload) error
+func (ic *infractionCommand) GetCommands() []string {
+	return ic.Commands
+}
+
+func (ic *infractionCommand) GetServerIDs() []int64 {
+	return ic.Servers
 }

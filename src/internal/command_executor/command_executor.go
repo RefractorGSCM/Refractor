@@ -19,6 +19,7 @@ package command_executor
 
 import (
 	"Refractor/domain"
+	"context"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"strconv"
@@ -28,6 +29,7 @@ import (
 type executor struct {
 	rconService domain.RCONService
 	gameService domain.GameService
+	serverRepo  domain.ServerRepo
 	logger      *zap.Logger
 }
 
@@ -39,61 +41,99 @@ func NewCommandExecutor(rs domain.RCONService, gs domain.GameService, log *zap.L
 	}
 }
 
-func (e *executor) RunInfractionCommands(infrType, action string, payload *domain.PlayerCommandPayload, serverID int64, game domain.Game) error {
+func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction *domain.Infraction, action string,
+	serverID int64) (domain.CommandPayload, error) {
+
+	// Make sure player name is set on infraction
+	if infraction.PlayerName == "" {
+		return nil, errors.New("player name must be set")
+	}
+
+	// Get server
+	server, err := e.serverRepo.GetByID(ctx, serverID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get server game
+	game, err := e.gameService.GetGame(server.Game)
+	if err != nil {
+		return nil, err
+	}
+
 	// Get commands to run from game settings
 	gameSettings, err := e.gameService.GetGameSettings(game)
 	if err != nil {
 		e.logger.Error("Could not get game settings from game repo",
 			zap.String("Game name", game.GetName()),
 			zap.Error(err))
-		return err
+		return nil, err
 	}
 
+	// Check if this game has commands set
 	if gameSettings.Commands == nil {
-		e.logger.Warn("Could not run infraction commands as no commands are set")
-		return nil
+		e.logger.Warn("Could not prepare infraction commands as no commands are set")
+		return nil, domain.ErrNotFound
 	}
 
+	// Determine commands to prepare based on action and infraction type
 	infrActionMap := gameSettings.Commands.InfractionActionMap()
 	actMap := infrActionMap[action]
 	if actMap == nil {
-		return errors.New("no infraction action type: " + action)
+		return nil, errors.New("no infraction action type: " + action)
 	}
 
 	cmdMap := actMap.Map()
-	cmds := cmdMap[infrType]
+	cmds := cmdMap[infraction.Type]
 	if cmds == nil {
-		return errors.New("no commands found for infraction type: " + infrType)
+		return nil, errors.New("no commands found for infraction type: " + infraction.Type)
 	}
 
-	// Run the command
-	client := e.rconService.GetServerClient(serverID)
+	// Prepare the commands
+	commands := make([]string, 0)
 
 	// Parse and run the commands
 	for _, cmd := range cmds {
 		// Replace placeholders inside command with payload data
-		runCmd := strings.ReplaceAll(cmd, "{{PLAYER_ID}}", payload.PlayerID)
-		runCmd = strings.ReplaceAll(runCmd, "{{PLAYER_NAME}}", payload.Name)
-		runCmd = strings.ReplaceAll(runCmd, "{{DURATION}}", strconv.FormatInt(payload.Duration, 10))
-		runCmd = strings.ReplaceAll(runCmd, "{{REASON}}", payload.Reason)
+		runCmd := strings.ReplaceAll(cmd, "{{PLAYER_ID}}", infraction.PlayerID)
+		runCmd = strings.ReplaceAll(runCmd, "{{PLATFORM}}", infraction.Platform)
+		runCmd = strings.ReplaceAll(runCmd, "{{PLAYER_NAME}}", infraction.PlayerName)
+		runCmd = strings.ReplaceAll(runCmd, "{{DURATION}}", strconv.FormatInt(infraction.Duration.ValueOrZero(), 10))
+		runCmd = strings.ReplaceAll(runCmd, "{{REASON}}", infraction.Reason.ValueOrZero())
 
-		res, err := client.ExecCommand(runCmd)
-		if err != nil {
-			e.logger.Error("Could not execute ban command",
-				zap.String("Player ID", payload.PlayerID),
-				zap.String("Platform", payload.Platform),
-				zap.Int64("Server ID", serverID),
-				zap.Error(err))
-			return err
+		commands = append(commands, runCmd)
+	}
+
+	return newInfractionCommand(commands, []int64{serverID}), nil
+}
+
+func (e *executor) RunCommands(payload domain.CommandPayload) error {
+	for _, serverID := range payload.GetServerIDs() {
+		client := e.rconService.GetServerClient(serverID)
+		if client == nil {
+			e.logger.Warn("Could not run commands on server. RCON client was nil.", zap.Int64("Server ID", serverID))
+			continue
 		}
 
-		e.logger.Info("Ran Infraction Command",
-			zap.String("Command", runCmd),
-			zap.Int64("Server ID", serverID),
-			zap.String("Player ID", payload.PlayerID),
-			zap.String("Platform", payload.Platform),
-			zap.String("Reason", payload.Reason),
-			zap.String("Response From Server", res))
+		// TODO: Implement command queue or similar mechanism which can record commands which could not be executed
+		// TODO: (e.g because client was nil) to be executed at a later time.
+
+		for _, cmd := range payload.GetCommands() {
+			res, err := client.ExecCommand(cmd)
+			if err != nil {
+				e.logger.Error("Could not execute command on server",
+					zap.String("Command", cmd),
+					zap.Int64("Server ID", serverID),
+					zap.Error(err))
+				return err
+			}
+
+			e.logger.Info("Executed command on server",
+				zap.String("Command", cmd),
+				zap.Int64("Server ID", serverID),
+				zap.String("Server Response", res),
+				zap.Error(err))
+		}
 	}
 
 	return nil
