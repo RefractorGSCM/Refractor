@@ -49,7 +49,12 @@ func (e *executor) RunInfractionCommands(infrType, action string, payload *domai
 		return err
 	}
 
-	infrActionMap := gameSettings.InfractionActionMap()
+	if gameSettings.Commands == nil {
+		e.logger.Warn("Could not run infraction commands as no commands are set")
+		return nil
+	}
+
+	infrActionMap := gameSettings.Commands.InfractionActionMap()
 	actMap := infrActionMap[action]
 	if actMap == nil {
 		return errors.New("no infraction action type: " + action)
