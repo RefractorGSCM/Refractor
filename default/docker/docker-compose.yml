@@ -97,6 +97,7 @@ services:
             - KRATOS_ADMIN_ROOT=http://refractor-kratos:4434
             - FRONTEND_ROOT={{DOMAIN}}
             - SMTP_CONNECTION_URI={{SMTP_URI}}
+            - SMTP_FROM_ADDRESS={{SMTP_FROM}}
             - INITIAL_USER_EMAIL={{INITIAL_USER_EMAIL}}
             - INITIAL_USER_USERNAME={{INITIAL_USER_USERNAME}}
             - ENCRYPTION_KEY={{ENCRYPTION_KEY}}
