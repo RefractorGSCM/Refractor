@@ -37,6 +37,7 @@ type Config struct {
 	InitialUserEmail    string `mapstructure:"INITIAL_USER_EMAIL"`
 	InitialUserUsername string `mapstructure:"INITIAL_USER_USERNAME"`
 	SmtpConnectionUri   string `mapstructure:"SMTP_CONNECTION_URI"`
+	SmtpFromAddress     string `mapstructure:"SMTP_FROM_ADDRESS"`
 	EncryptionKey       string `mapstructure:"ENCRYPTION_KEY"`
 }
 
@@ -52,6 +53,7 @@ func LoadConfig() (*Config, error) {
 		RequireEnv("KRATOS_ADMIN_ROOT").
 		RequireEnv("FRONTEND_ROOT").
 		RequireEnv("SMTP_CONNECTION_URI").
+		RequireEnv("SMTP_FROM_ADDRESS").
 		RequireEnv("ENCRYPTION_KEY").
 		RequireEnv("INITIAL_USER_EMAIL").
 		RequireEnv("INITIAL_USER_USERNAME").
@@ -69,6 +71,7 @@ func LoadConfig() (*Config, error) {
 		InitialUserEmail:    os.Getenv("INITIAL_USER_EMAIL"),
 		InitialUserUsername: os.Getenv("INITIAL_USER_USERNAME"),
 		SmtpConnectionUri:   os.Getenv("SMTP_CONNECTION_URI"),
+		SmtpFromAddress:     os.Getenv("SMTP_FROM_ADDRESS"),
 		EncryptionKey:       os.Getenv("ENCRYPTION_KEY"),
 	}
 
