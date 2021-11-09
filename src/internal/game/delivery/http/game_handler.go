@@ -50,6 +50,7 @@ func ApplyGameHandler(apiGroup *echo.Group, s domain.GameService, mware domain.M
 	gameGroup.GET("/", handler.GetGames)
 	gameGroup.GET("/settings/:game", handler.GetGameSettings, enforcer.CheckAuth(authcheckers.DenyAll))                   // super admin only
 	gameGroup.PATCH("/settings/:game/commands", handler.SetGameCommandSettings, enforcer.CheckAuth(authcheckers.DenyAll)) // super admin only
+	gameGroup.PATCH("/settings/:game/general", handler.SetGeneralSettings, enforcer.CheckAuth(authcheckers.DenyAll))      // super admin only
 	gameGroup.GET("/settings/:game/default", handler.GetDefaultGameSettings, enforcer.CheckAuth(authcheckers.DenyAll))    // super admin only
 }
 
@@ -121,7 +122,7 @@ func (h *gameHandler) SetGameCommandSettings(c echo.Context) error {
 	}
 
 	// Validate request body
-	var body params.SetGameSettingsParams
+	var body params.SetGameCommandSettingsParams
 	if err := c.Bind(&body); err != nil {
 		return err
 	}
@@ -151,6 +152,53 @@ func (h *gameHandler) SetGameCommandSettings(c echo.Context) error {
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
 		Message: "Game command settings set",
+		Payload: gs,
+	})
+}
+
+func (h *gameHandler) SetGeneralSettings(c echo.Context) error {
+	gameName := c.Param("game")
+
+	if len(strings.TrimSpace(gameName)) == 0 || !h.service.GameExists(gameName) {
+		return c.JSON(http.StatusBadRequest, &domain.Response{
+			Success: false,
+			Message: "Invalid game",
+		})
+	}
+
+	game, err := h.service.GetGame(gameName)
+	if err != nil {
+		return err
+	}
+
+	// Validate request body
+	var body params.SetGameGeneralSettingsParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	// Get current game settings
+	gs, err := h.service.GetGameSettings(game)
+	if err != nil {
+		return err
+	}
+
+	// Set game command settings
+	gs.General = &domain.GeneralSettings{
+		EnableBanSync: body.EnableBanSync,
+	}
+
+	if err := h.service.SetGameSettings(game, gs); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Game general settings set",
 		Payload: gs,
 	})
 }

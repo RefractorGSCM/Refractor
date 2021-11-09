@@ -99,6 +99,9 @@ func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 				Ban:  []string{"pardon {{PLAYER_NAME}}"},
 			},
 		},
+		General: &domain.GeneralSettings{
+			EnableBanSync: true,
+		},
 	}
 }
 
