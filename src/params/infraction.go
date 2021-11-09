@@ -156,3 +156,11 @@ func (body UpdateInfractionParams) Validate() error {
 		validation.Field(&body.Duration, rules.InfractionDurationRules...),
 	)
 }
+
+type SetInfractionRepealedParams struct {
+	Repealed bool `json:"repealed" form:"repealed"`
+}
+
+func (body SetInfractionRepealedParams) Validate() error {
+	return nil
+}
