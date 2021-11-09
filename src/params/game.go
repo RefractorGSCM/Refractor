@@ -22,7 +22,7 @@ import (
 	"net/http"
 )
 
-type SetGameSettingsParams struct {
+type SetGameCommandSettingsParams struct {
 	InfractionCreate *domain.InfractionCommands `json:"create"`
 	InfractionUpdate *domain.InfractionCommands `json:"update"`
 	InfractionDelete *domain.InfractionCommands `json:"delete"`
@@ -58,7 +58,7 @@ func buildManualError(field, nested string, errBody interface{}) error {
 	return err
 }
 
-func (body SetGameSettingsParams) Validate() error {
+func (body SetGameCommandSettingsParams) Validate() error {
 	// Validate existence of main fields
 	if body.InfractionCreate == nil {
 		return buildManualError("create", "", "this field is required")
@@ -123,5 +123,13 @@ func validateCmdArr(arr []string, act, infr string) error {
 		}
 	}
 
+	return nil
+}
+
+type SetGameGeneralSettingsParams struct {
+	EnableBanSync bool `json:"enable_ban_sync"`
+}
+
+func (body SetGameGeneralSettingsParams) Validate() error {
 	return nil
 }

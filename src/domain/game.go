@@ -136,8 +136,13 @@ type GameCommandSettings struct {
 	RepealInfractionCommands *InfractionCommands `json:"repeal"`
 }
 
+type GeneralSettings struct {
+	EnableBanSync bool `json:"enable_ban_sync"`
+}
+
 type GameSettings struct {
 	Commands *GameCommandSettings `json:"commands"`
+	General  *GeneralSettings     `json:"general"`
 }
 
 func (gcs *GameCommandSettings) InfractionActionMap() map[string]*InfractionCommands {
