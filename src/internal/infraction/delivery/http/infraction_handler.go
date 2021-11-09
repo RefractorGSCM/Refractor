@@ -72,8 +72,9 @@ func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, as
 		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateKick, true)))
 	infractionGroup.POST("/ban/:serverId", handler.CreateBan,
 		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateBan, true)))
-	infractionGroup.PATCH("/:id", handler.UpdateInfraction)  // perms checked in service
-	infractionGroup.DELETE("/:id", handler.DeleteInfraction) // perms checked in service
+	infractionGroup.PATCH("/:id", handler.UpdateInfraction)            // perms checked in service
+	infractionGroup.POST("/:id/repeal", handler.SetInfractionRepealed) // perms checked in service
+	infractionGroup.DELETE("/:id", handler.DeleteInfraction)           // perms checked in service
 	infractionGroup.GET("/player/:platform/:playerId", handler.GetPlayerInfractions,
 		rEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagViewPlayerRecords, true))) // additional server specific perms checks done in service
 	infractionGroup.GET("/:id", handler.GetByID)                        // perms checked in service
@@ -467,6 +468,51 @@ func (h *infractionHandler) UpdateInfraction(c echo.Context) error {
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
 		Message: "Infraction updated",
+		Payload: updated,
+	})
+}
+
+func (h *infractionHandler) SetInfractionRepealed(c echo.Context) error {
+	infractionIDString := c.Param("id")
+
+	infractionID, err := strconv.ParseInt(infractionIDString, 10, 64)
+	if err != nil {
+		return domain.NewHTTPError(fmt.Errorf("invalid infraction id"), http.StatusBadRequest, "")
+	}
+
+	// Validate request body
+	var body params.SetInfractionRepealedParams
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if ok, err := api.ValidateRequestBody(body); !ok {
+		return err
+	}
+
+	user, ok := c.Get("user").(*domain.AuthUser)
+	if !ok {
+		return fmt.Errorf("could not cast user to *domain.AuthUser")
+	}
+
+	// Attach user to request context for use in the service
+	ctx := c.Request().Context()
+	ctx = context.WithValue(ctx, "user", user)
+
+	// Set repealed status of infraction
+	updated, err := h.service.SetRepealed(ctx, infractionID, body.Repealed)
+	if err != nil {
+		return err
+	}
+
+	h.logger.Info("Infraction repeal status set",
+		zap.Any("Is Repealed", updated.Repealed),
+		zap.String("User ID", user.Identity.Id),
+	)
+
+	return c.JSON(http.StatusOK, &domain.Response{
+		Success: true,
+		Message: "Infraction repeal status set",
 		Payload: updated,
 	})
 }

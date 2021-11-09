@@ -70,6 +70,7 @@ type InfractionService interface {
 	Store(c context.Context, infraction *Infraction, attachments []*Attachment, linkedMessages []int64) (*Infraction, error)
 	GetByID(c context.Context, id int64) (*Infraction, error)
 	Update(c context.Context, id int64, args UpdateArgs) (*Infraction, error)
+	SetRepealed(c context.Context, id int64, repealed bool) (*Infraction, error)
 	Delete(c context.Context, id int64) error
 	GetByPlayer(c context.Context, playerID, platform string) ([]*Infraction, error)
 	GetLinkedChatMessages(c context.Context, id int64) ([]*ChatMessage, error)
