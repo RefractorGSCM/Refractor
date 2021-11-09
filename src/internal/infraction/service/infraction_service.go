@@ -736,7 +736,10 @@ func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID i
 		return
 	}
 
-	if !isBanned {
+	if !isBanned || timeRemaining < 2 {
+		// timeRemaining < 2 because if the ban is almost done, there's no need to reset it. The minimum timeRemaining
+		// value can be 1, so if a banned player continuously rejoined with less than 1 minute remaining in their ban,
+		// they would be re-banned for a minute. Very minor problem, but worth preventing to improve player experience.
 		return
 	}
 
