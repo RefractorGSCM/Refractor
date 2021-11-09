@@ -3,8 +3,10 @@
 package mocks
 
 import (
-	domain "Refractor/domain"
+	broadcast "Refractor/pkg/broadcast"
 	context "context"
+
+	domain "Refractor/domain"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -97,6 +99,16 @@ func (_m *InfractionService) GetLinkedChatMessages(c context.Context, id int64) 
 	return r0, r1
 }
 
+// HandleModerationAction provides a mock function with given fields: fields, serverID, game
+func (_m *InfractionService) HandleModerationAction(fields broadcast.Fields, serverID int64, game domain.Game) {
+	_m.Called(fields, serverID, game)
+}
+
+// HandlePlayerJoin provides a mock function with given fields: fields, serverID, game
+func (_m *InfractionService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
+	_m.Called(fields, serverID, game)
+}
+
 // LinkChatMessages provides a mock function with given fields: c, id, messageIDs
 func (_m *InfractionService) LinkChatMessages(c context.Context, id int64, messageIDs ...int64) error {
 	_va := make([]interface{}, len(messageIDs))
@@ -116,6 +128,57 @@ func (_m *InfractionService) LinkChatMessages(c context.Context, id int64, messa
 	}
 
 	return r0
+}
+
+// PlayerIsBanned provides a mock function with given fields: c, platform, playerID
+func (_m *InfractionService) PlayerIsBanned(c context.Context, platform string, playerID string) (bool, int64, error) {
+	ret := _m.Called(c, platform, playerID)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
+		r0 = rf(c, platform, playerID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 int64
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) int64); ok {
+		r1 = rf(c, platform, playerID)
+	} else {
+		r1 = ret.Get(1).(int64)
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
+		r2 = rf(c, platform, playerID)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// Repeal provides a mock function with given fields: c, id
+func (_m *InfractionService) Repeal(c context.Context, id int64) (*domain.Infraction, error) {
+	ret := _m.Called(c, id)
+
+	var r0 *domain.Infraction
+	if rf, ok := ret.Get(0).(func(context.Context, int64) *domain.Infraction); ok {
+		r0 = rf(c, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Infraction)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
+		r1 = rf(c, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // Store provides a mock function with given fields: c, infraction, attachments, linkedMessages

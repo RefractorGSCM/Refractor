@@ -150,13 +150,14 @@ func (s *infractionService) Store(c context.Context, infraction *domain.Infracti
 	preparedCommands, err := s.commandExecutor.PrepareInfractionCommands(ctx, infraction,
 		domain.InfractionCommandCreate, infraction.ServerID)
 	if err != nil {
-		s.logger.Error("Could not prepare ban create commands",
+		s.logger.Error("Could not prepare infraction create commands",
 			zap.Error(err))
+		return infraction, nil
 	}
 
 	// Run commands
 	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
-		s.logger.Error("Could not run infraction creation commands",
+		s.logger.Error("Could not run infraction create commands",
 			zap.Error(err))
 	}
 
@@ -334,6 +335,71 @@ func (s *infractionService) Update(c context.Context, id int64, args domain.Upda
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
+	// Update the infraction
+	updated, err := s.update(ctx, id, args)
+	if err != nil {
+		return nil, err
+	}
+
+	// Run infraction update commands
+	preparedCommands, err := s.commandExecutor.PrepareInfractionCommands(ctx, updated,
+		domain.InfractionCommandUpdate, updated.ServerID)
+	if err != nil {
+		s.logger.Error("Could not prepare infraction update commands",
+			zap.Error(err))
+		return updated, nil
+	}
+
+	// Run commands
+	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+		s.logger.Error("Could not run infraction update commands",
+			zap.Error(err))
+	}
+
+	return updated, nil
+}
+
+// SetRepealed sets the repeal status of an infraction. It leverages the update function.
+// If a user is set inside the passed in context with the key "user" then that user's
+// permission to update the target infraction is checked. Otherwise, calls to this function are seen as trusted and
+// are not authorized.
+//
+// When allowing this function to be executed by user requests, make sure they are authorized by setting the user in
+// context under the key "user".
+func (s *infractionService) SetRepealed(c context.Context, id int64, isRepealed bool) (*domain.Infraction, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	// Update the infraction
+	updated, err := s.update(ctx, id, domain.UpdateArgs{
+		"Repealed": isRepealed,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Run infraction repealed commands if repeal was set to true
+	if isRepealed {
+		preparedCommands, err := s.commandExecutor.PrepareInfractionCommands(ctx, updated,
+			domain.InfractionCommandRepeal, updated.ServerID)
+		if err != nil {
+			s.logger.Error("Could not prepare infraction repeal commands",
+				zap.Error(err))
+			return updated, nil
+		}
+
+		// Run commands
+		if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+			s.logger.Error("Could not run infraction repeal commands",
+				zap.Error(err))
+		}
+	}
+
+	return updated, nil
+}
+
+// update runs the actual update logic for other update related functions which wrap around it.
+func (s *infractionService) update(ctx context.Context, id int64, args domain.UpdateArgs) (*domain.Infraction, error) {
 	// Get infraction which will be modified
 	infraction, err := s.repo.GetByID(ctx, id)
 	if err != nil {
@@ -461,7 +527,26 @@ func (s *infractionService) Delete(c context.Context, id int64) error {
 		}
 	}
 
-	return s.repo.Delete(ctx, id)
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+
+	// Run infraction deletion commands
+	preparedCommands, err := s.commandExecutor.PrepareInfractionCommands(ctx, infraction,
+		domain.InfractionCommandDelete, infraction.ServerID)
+	if err != nil {
+		s.logger.Error("Could not prepare infraction delete commands",
+			zap.Error(err))
+		return nil
+	}
+
+	// Run commands
+	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+		s.logger.Error("Could not run infraction delete commands",
+			zap.Error(err))
+	}
+
+	return nil
 }
 
 func (s *infractionService) hasDeletePermissions(ctx context.Context, infraction *domain.Infraction, user *domain.AuthUser) (bool, error) {
