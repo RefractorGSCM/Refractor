@@ -110,6 +110,9 @@ func (g *mordhau) GetDefaultSettings() *domain.GameSettings {
 				Ban:  []string{"Unban {{PLAYER_ID}}"},
 			},
 		},
+		General: &domain.GeneralSettings{
+			EnableBanSync: true,
+		},
 	}
 }
 
