@@ -32,22 +32,22 @@ import (
 )
 
 type infractionService struct {
-	repo             domain.InfractionRepo
-	playerRepo       domain.PlayerRepo
-	playerNameRepo   domain.PlayerNameRepo
-	serverRepo       domain.ServerRepo
-	attachmentRepo   domain.AttachmentRepo
-	userMetaRepo     domain.UserMetaRepo
-	websocketService domain.WebsocketService
-	authorizer       domain.Authorizer
-	commandExecutor  domain.CommandExecutor
-	timeout          time.Duration
-	logger           *zap.Logger
-	infractionTypes  map[string]domain.InfractionType
+	repo            domain.InfractionRepo
+	playerRepo      domain.PlayerRepo
+	playerNameRepo  domain.PlayerNameRepo
+	serverRepo      domain.ServerRepo
+	attachmentRepo  domain.AttachmentRepo
+	userMetaRepo    domain.UserMetaRepo
+	gameService     domain.GameService
+	authorizer      domain.Authorizer
+	commandExecutor domain.CommandExecutor
+	timeout         time.Duration
+	logger          *zap.Logger
+	infractionTypes map[string]domain.InfractionType
 }
 
 func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, pnr domain.PlayerNameRepo, sr domain.ServerRepo,
-	ar domain.AttachmentRepo, umr domain.UserMetaRepo, wss domain.WebsocketService, a domain.Authorizer,
+	ar domain.AttachmentRepo, umr domain.UserMetaRepo, gs domain.GameService, a domain.Authorizer,
 	ce domain.CommandExecutor, to time.Duration, log *zap.Logger) domain.InfractionService {
 	return &infractionService{
 		repo:            repo,
@@ -56,6 +56,7 @@ func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, pnr 
 		serverRepo:      sr,
 		attachmentRepo:  ar,
 		userMetaRepo:    umr,
+		gameService:     gs,
 		authorizer:      a,
 		commandExecutor: ce,
 		timeout:         to,
@@ -719,6 +720,17 @@ func (s *infractionService) PlayerIsBanned(c context.Context, platform, playerID
 }
 
 func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
+	// Return if ban sync is disabled on this game
+	settings, err := s.gameService.GetGameSettings(game)
+	if err != nil {
+		s.logger.Error("Could not get game settings", zap.Error(err))
+		return
+	}
+
+	if !settings.General.EnableBanSync {
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*2)
 	defer cancel()
 

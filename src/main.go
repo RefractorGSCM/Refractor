@@ -208,7 +208,7 @@ func main() {
 	_groupHandler.ApplyGroupHandler(apiGroup, groupService, authorizer, middlewareBundle, logger)
 
 	infractionService := _infractionService.NewInfractionService(infractionRepo, playerRepo, playerNameRepo, serverRepo,
-		attachmentRepo, userMetaRepo, websocketService, authorizer, commandExecutor, time.Second*2, logger)
+		attachmentRepo, userMetaRepo, gameService, authorizer, commandExecutor, time.Second*2, logger)
 	_infractionHandler.ApplyInfractionHandler(apiGroup, infractionService, attachmentService, authorizer, middlewareBundle, logger)
 
 	playerService := _playerService.NewPlayerService(playerRepo, playerNameRepo, time.Second*2, logger)
