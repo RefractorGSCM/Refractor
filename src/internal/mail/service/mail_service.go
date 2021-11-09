@@ -21,7 +21,6 @@ import (
 	"Refractor/domain"
 	"Refractor/pkg/conf"
 	"bytes"
-	"fmt"
 	"github.com/go-gomail/gomail"
 	"html/template"
 	"net/url"
@@ -31,6 +30,7 @@ import (
 type mailService struct {
 	uri    *url.URL
 	dialer *gomail.Dialer
+	config *conf.Config
 }
 
 func NewMailService(config *conf.Config) (domain.MailService, error) {
@@ -58,12 +58,13 @@ func NewMailService(config *conf.Config) (domain.MailService, error) {
 	return &mailService{
 		uri:    uri,
 		dialer: dialer,
+		config: config,
 	}, nil
 }
 
 func (s *mailService) SendMail(to []string, sub string, body string) error {
 	m := gomail.NewMessage()
-	m.SetHeader("From", fmt.Sprintf("refractor@%s", s.uri.Hostname()))
+	m.SetHeader("From", s.config.SmtpFromAddress)
 	m.SetHeader("To", to...)
 	m.SetHeader("Subject", sub)
 	m.SetBody("text/html", body)
