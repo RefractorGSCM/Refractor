@@ -72,9 +72,9 @@ func ApplyInfractionHandler(apiGroup *echo.Group, s domain.InfractionService, as
 		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateKick, true)))
 	infractionGroup.POST("/ban/:serverId", handler.CreateBan,
 		sEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagCreateBan, true)))
-	infractionGroup.PATCH("/:id", handler.UpdateInfraction)            // perms checked in service
-	infractionGroup.POST("/:id/repeal", handler.SetInfractionRepealed) // perms checked in service
-	infractionGroup.DELETE("/:id", handler.DeleteInfraction)           // perms checked in service
+	infractionGroup.PATCH("/:id", handler.UpdateInfraction)              // perms checked in service
+	infractionGroup.POST("/:id/repealed", handler.SetInfractionRepealed) // perms checked in service
+	infractionGroup.DELETE("/:id", handler.DeleteInfraction)             // perms checked in service
 	infractionGroup.GET("/player/:platform/:playerId", handler.GetPlayerInfractions,
 		rEnforcer.CheckAuth(authcheckers.HasPermission(perms.FlagViewPlayerRecords, true))) // additional server specific perms checks done in service
 	infractionGroup.GET("/:id", handler.GetByID)                        // perms checked in service
