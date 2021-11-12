@@ -138,7 +138,8 @@ type GameCommandSettings struct {
 }
 
 type GeneralSettings struct {
-	EnableBanSync bool `json:"enable_ban_sync"`
+	EnableBanSync  bool `json:"enable_ban_sync"`
+	EnableMuteSync bool `json:"enable_mute_sync"`
 }
 
 type GameSettings struct {
