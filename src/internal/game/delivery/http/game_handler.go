@@ -143,6 +143,7 @@ func (h *gameHandler) SetGameCommandSettings(c echo.Context) error {
 		UpdateInfractionCommands: body.InfractionUpdate,
 		DeleteInfractionCommands: body.InfractionDelete,
 		RepealInfractionCommands: body.InfractionRepeal,
+		SyncInfractionCommands:   body.InfractionSync,
 	}
 
 	if err := h.service.SetGameSettings(game, gs); err != nil {

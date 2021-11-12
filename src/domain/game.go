@@ -134,6 +134,7 @@ type GameCommandSettings struct {
 	UpdateInfractionCommands *InfractionCommands `json:"update"`
 	DeleteInfractionCommands *InfractionCommands `json:"delete"`
 	RepealInfractionCommands *InfractionCommands `json:"repeal"`
+	SyncInfractionCommands   *InfractionCommands `json:"sync"`
 }
 
 type GeneralSettings struct {
@@ -151,6 +152,7 @@ func (gcs *GameCommandSettings) InfractionActionMap() map[string]*InfractionComm
 		InfractionCommandUpdate: gcs.UpdateInfractionCommands,
 		InfractionCommandDelete: gcs.DeleteInfractionCommands,
 		InfractionCommandRepeal: gcs.RepealInfractionCommands,
+		InfractionCommandSync:   gcs.SyncInfractionCommands,
 	}
 }
 

@@ -98,6 +98,10 @@ func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 				Kick: []string{},
 				Ban:  []string{"pardon {{PLAYER_NAME}}"},
 			},
+			SyncInfractionCommands: &domain.InfractionCommands{
+				Ban:  []string{"ban {{PLAYER_NAME}} Refractor Ban Sync"},
+				Mute: []string{},
+			},
 		},
 		General: &domain.GeneralSettings{
 			EnableBanSync: true,
