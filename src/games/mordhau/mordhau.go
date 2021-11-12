@@ -109,9 +109,14 @@ func (g *mordhau) GetDefaultSettings() *domain.GameSettings {
 				Kick: []string{},
 				Ban:  []string{"Unban {{PLAYER_ID}}"},
 			},
+			SyncInfractionCommands: &domain.InfractionCommands{
+				Mute: []string{"Mute {{PLAYER_ID}} {{DURATION}}"},
+				Ban:  []string{"Ban {{PLAYER_ID}} {{DURATION}} Refractor Ban Sync"},
+			},
 		},
 		General: &domain.GeneralSettings{
-			EnableBanSync: true,
+			EnableBanSync:  true,
+			EnableMuteSync: true,
 		},
 	}
 }

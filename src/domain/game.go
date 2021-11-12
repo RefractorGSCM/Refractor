@@ -134,15 +134,28 @@ type GameCommandSettings struct {
 	UpdateInfractionCommands *InfractionCommands `json:"update"`
 	DeleteInfractionCommands *InfractionCommands `json:"delete"`
 	RepealInfractionCommands *InfractionCommands `json:"repeal"`
+	SyncInfractionCommands   *InfractionCommands `json:"sync"`
 }
 
 type GeneralSettings struct {
-	EnableBanSync bool `json:"enable_ban_sync"`
+	EnableBanSync  bool `json:"enable_ban_sync"`
+	EnableMuteSync bool `json:"enable_mute_sync"`
 }
 
 type GameSettings struct {
 	Commands *GameCommandSettings `json:"commands"`
 	General  *GeneralSettings     `json:"general"`
+}
+
+// Prepare prepares the data to be sent to the frontend
+func (gs *GameSettings) Prepare() *GameSettings {
+	gs.Commands.CreateInfractionCommands = gs.Commands.CreateInfractionCommands.Prepare()
+	gs.Commands.UpdateInfractionCommands = gs.Commands.UpdateInfractionCommands.Prepare()
+	gs.Commands.DeleteInfractionCommands = gs.Commands.DeleteInfractionCommands.Prepare()
+	gs.Commands.RepealInfractionCommands = gs.Commands.RepealInfractionCommands.Prepare()
+	gs.Commands.SyncInfractionCommands = gs.Commands.SyncInfractionCommands.Prepare()
+
+	return gs
 }
 
 func (gcs *GameCommandSettings) InfractionActionMap() map[string]*InfractionCommands {
@@ -151,6 +164,7 @@ func (gcs *GameCommandSettings) InfractionActionMap() map[string]*InfractionComm
 		InfractionCommandUpdate: gcs.UpdateInfractionCommands,
 		InfractionCommandDelete: gcs.DeleteInfractionCommands,
 		InfractionCommandRepeal: gcs.RepealInfractionCommands,
+		InfractionCommandSync:   gcs.SyncInfractionCommands,
 	}
 }
 

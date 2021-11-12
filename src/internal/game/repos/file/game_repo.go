@@ -23,6 +23,7 @@ import (
 	"fmt"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"os"
 	"time"
 )
@@ -30,12 +31,14 @@ import (
 const opTag = "GameRepo.File."
 
 type gameRepo struct {
-	cache *gocache.Cache
+	cache  *gocache.Cache
+	logger *zap.Logger
 }
 
-func NewGameRepo() domain.GameRepo {
+func NewGameRepo(log *zap.Logger) domain.GameRepo {
 	return &gameRepo{
-		cache: gocache.New(time.Hour, time.Hour),
+		cache:  gocache.New(time.Hour, time.Hour),
+		logger: log,
 	}
 }
 
@@ -51,8 +54,10 @@ func (r *gameRepo) GetSettings(game domain.Game) (*domain.GameSettings, error) {
 
 	// Check if data file exists
 	if _, err := os.Stat(fmt.Sprintf("./data/%s_settings.json", game.GetName())); os.IsNotExist(err) {
+		r.logger.Info("Game settings file does not exist. Creating from defaults...", zap.String("Game", game.GetName()))
 		// If it doesn't, use SetSettings to create it
 		if err := r.SetSettings(game, game.GetDefaultSettings()); err != nil {
+			r.logger.Error("Could not create game settings file", zap.String("Game", game.GetName()), zap.Error(err))
 			return nil, errors.Wrap(err, op)
 		}
 	}
@@ -101,9 +106,13 @@ func (r *gameRepo) SetSettings(game domain.Game, settings *domain.GameSettings) 
 	}()
 
 	// JSON encode the settings struct
-	encoder := json.NewEncoder(file)
+	data, err := json.MarshalIndent(settings, "", "  ")
+	if err != nil {
+		return errors.Wrap(err, op)
+	}
 
-	if err := encoder.Encode(settings); err != nil {
+	// Write to the file
+	if _, err := file.Write(data); err != nil {
 		return errors.Wrap(err, op)
 	}
 

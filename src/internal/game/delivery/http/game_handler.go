@@ -102,7 +102,7 @@ func (h *gameHandler) GetGameSettings(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
-		Payload: settings,
+		Payload: settings.Prepare(),
 	})
 }
 
@@ -143,6 +143,7 @@ func (h *gameHandler) SetGameCommandSettings(c echo.Context) error {
 		UpdateInfractionCommands: body.InfractionUpdate,
 		DeleteInfractionCommands: body.InfractionDelete,
 		RepealInfractionCommands: body.InfractionRepeal,
+		SyncInfractionCommands:   body.InfractionSync,
 	}
 
 	if err := h.service.SetGameSettings(game, gs); err != nil {
@@ -189,7 +190,8 @@ func (h *gameHandler) SetGeneralSettings(c echo.Context) error {
 
 	// Set game command settings
 	gs.General = &domain.GeneralSettings{
-		EnableBanSync: body.EnableBanSync,
+		EnableBanSync:  body.EnableBanSync,
+		EnableMuteSync: body.EnableMuteSync,
 	}
 
 	if err := h.service.SetGameSettings(game, gs); err != nil {
@@ -218,7 +220,7 @@ func (h *gameHandler) GetDefaultGameSettings(c echo.Context) error {
 		return err
 	}
 
-	defSettings := game.GetDefaultSettings()
+	defSettings := game.GetDefaultSettings().Prepare()
 
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
