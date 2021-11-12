@@ -174,7 +174,7 @@ func main() {
 
 	authorizer := _authorizer.NewAuthorizer(groupRepo, serverRepo, logger)
 
-	gameRepo := _gameRepo.NewGameRepo()
+	gameRepo := _gameRepo.NewGameRepo(logger)
 	gameService := _gameService.NewGameService(gameRepo, time.Second*2)
 	registerGames(gameService)
 	_gameHandler.ApplyGameHandler(apiGroup, gameService, middlewareBundle, authorizer, logger)

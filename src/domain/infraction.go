@@ -86,13 +86,14 @@ const (
 	InfractionCommandUpdate = "UPDATE"
 	InfractionCommandDelete = "DELETE"
 	InfractionCommandRepeal = "REPEAL"
+	InfractionCommandSync   = "SYNC"
 )
 
 type InfractionCommands struct {
-	Warn []string `json:"warn"`
-	Mute []string `json:"mute"`
-	Kick []string `json:"kick"`
-	Ban  []string `json:"ban"`
+	Warn []string `json:"warn,omitempty"`
+	Mute []string `json:"mute,omitempty"`
+	Kick []string `json:"kick,omitempty"`
+	Ban  []string `json:"ban,omitempty"`
 }
 
 func (ic *InfractionCommands) Map() map[string][]string {
