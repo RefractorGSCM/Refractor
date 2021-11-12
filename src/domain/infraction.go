@@ -63,6 +63,7 @@ type InfractionRepo interface {
 	LinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error
 	UnlinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error
 	PlayerIsBanned(ctx context.Context, platform, playerID string) (bool, int64, error)
+	PlayerIsMuted(ctx context.Context, platform, playerID string) (bool, int64, error)
 	GetPlayerTotalInfractions(ctx context.Context, platform, playerID string) (int, error)
 }
 
@@ -77,6 +78,7 @@ type InfractionService interface {
 	LinkChatMessages(c context.Context, id int64, messageIDs ...int64) error
 	UnlinkChatMessages(c context.Context, id int64, messageIDs ...int64) error
 	PlayerIsBanned(c context.Context, platform, playerID string) (bool, int64, error)
+	PlayerIsMuted(c context.Context, platform, playerID string) (bool, int64, error)
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 	HandleModerationAction(fields broadcast.Fields, serverID int64, game Game)
 }
@@ -86,6 +88,7 @@ const (
 	InfractionCommandUpdate = "UPDATE"
 	InfractionCommandDelete = "DELETE"
 	InfractionCommandRepeal = "REPEAL"
+	InfractionCommandSync   = "SYNC"
 )
 
 type InfractionCommands struct {
@@ -102,6 +105,24 @@ func (ic *InfractionCommands) Map() map[string][]string {
 		InfractionTypeKick:    ic.Kick,
 		InfractionTypeBan:     ic.Ban,
 	}
+}
+
+// Prepare will replace all nil fields with empty arrays for a consistent experience on the frontend
+func (ic *InfractionCommands) Prepare() *InfractionCommands {
+	if ic.Warn == nil {
+		ic.Warn = make([]string, 0)
+	}
+	if ic.Mute == nil {
+		ic.Mute = make([]string, 0)
+	}
+	if ic.Kick == nil {
+		ic.Kick = make([]string, 0)
+	}
+	if ic.Ban == nil {
+		ic.Ban = make([]string, 0)
+	}
+
+	return ic
 }
 
 type InfractionPayload interface {
