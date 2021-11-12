@@ -104,7 +104,8 @@ func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 			},
 		},
 		General: &domain.GeneralSettings{
-			EnableBanSync: true,
+			EnableBanSync:  true,
+			EnableMuteSync: true,
 		},
 	}
 }

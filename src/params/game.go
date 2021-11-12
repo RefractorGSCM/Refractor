@@ -143,7 +143,8 @@ func validateCmdArr(arr []string, act, infr string) error {
 }
 
 type SetGameGeneralSettingsParams struct {
-	EnableBanSync bool `json:"enable_ban_sync"`
+	EnableBanSync  bool `json:"enable_ban_sync"`
+	EnableMuteSync bool `json:"enable_mute_sync"`
 }
 
 func (body SetGameGeneralSettingsParams) Validate() error {

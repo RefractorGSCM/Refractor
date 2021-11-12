@@ -190,7 +190,8 @@ func (h *gameHandler) SetGeneralSettings(c echo.Context) error {
 
 	// Set game command settings
 	gs.General = &domain.GeneralSettings{
-		EnableBanSync: body.EnableBanSync,
+		EnableBanSync:  body.EnableBanSync,
+		EnableMuteSync: body.EnableMuteSync,
 	}
 
 	if err := h.service.SetGameSettings(game, gs); err != nil {
