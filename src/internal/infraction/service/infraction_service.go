@@ -715,8 +715,14 @@ func (s *infractionService) PlayerIsBanned(c context.Context, platform, playerID
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.
-		PlayerIsBanned(ctx, platform, playerID)
+	return s.repo.PlayerIsBanned(ctx, platform, playerID)
+}
+
+func (s *infractionService) PlayerIsMuted(c context.Context, platform, playerID string) (bool, int64, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	return s.repo.PlayerIsMuted(ctx, platform, playerID)
 }
 
 func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
@@ -727,10 +733,6 @@ func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID i
 		return
 	}
 
-	if !settings.General.EnableBanSync {
-		return
-	}
-
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*2)
 	defer cancel()
 
@@ -738,44 +740,51 @@ func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID i
 	platform := game.GetPlatform().GetName()
 	name := fields["Name"]
 
-	// Check if this player should be banned
-	isBanned, timeRemaining, err := s.PlayerIsBanned(ctx, platform, playerID)
-	if err != nil {
-		s.logger.Error("Could not check if player is banned",
-			zap.String("Player ID", playerID),
-			zap.String("Platform", platform),
-			zap.Error(err))
-		return
+	// Synchronize ban and mute infractions
+	if settings.General.EnableMuteSync {
+		// Check if this player should be banned
+		isBanned, timeRemaining, err := s.PlayerIsBanned(ctx, platform, playerID)
+		if err != nil {
+			s.logger.Error("Could not check if player is banned",
+				zap.String("Player ID", playerID),
+				zap.String("Platform", platform),
+				zap.Error(err))
+			return
+		}
+
+		if !isBanned || timeRemaining < 2 {
+			// timeRemaining < 2 because if the ban is almost done, there's no need to reset it. The minimum timeRemaining
+			// value can be 1, so if a banned player continuously rejoined with less than 1 minute remaining in their ban,
+			// they would be re-banned for a minute. Very minor problem, but worth preventing to improve player experience.
+			return
+		}
+
+		// Prepare ban sync commands using infraction creation commands
+		// TODO: Sync should be it's own category to be used for infraction synchronization
+		preparedCommands, err := s.commandExecutor.PrepareInfractionCommands(ctx, &domain.CustomInfractionPayload{
+			PlayerID:   playerID,
+			Platform:   platform,
+			PlayerName: name,
+			Type:       domain.InfractionTypeBan,
+			Duration:   timeRemaining,
+			Reason:     "Refractor Ban Synchronization",
+		}, domain.InfractionCommandCreate, serverID)
+		if err != nil {
+			s.logger.Error("Could not run player join ban sync infraction commands",
+				zap.Error(err))
+		}
+
+		// Run commands
+		if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+			s.logger.Error("Could not run ban sync commands",
+				zap.String("Player ID", playerID),
+				zap.String("Platform", platform),
+				zap.Error(err))
+		}
 	}
 
-	if !isBanned || timeRemaining < 2 {
-		// timeRemaining < 2 because if the ban is almost done, there's no need to reset it. The minimum timeRemaining
-		// value can be 1, so if a banned player continuously rejoined with less than 1 minute remaining in their ban,
-		// they would be re-banned for a minute. Very minor problem, but worth preventing to improve player experience.
-		return
-	}
+	if settings.General.EnableBanSync {
 
-	// Prepare ban sync commands using infraction creation commands
-	// TODO: Sync should be it's own category to be used for infraction synchronization
-	preparedCommands, err := s.commandExecutor.PrepareInfractionCommands(ctx, &domain.CustomInfractionPayload{
-		PlayerID:   playerID,
-		Platform:   platform,
-		PlayerName: name,
-		Type:       domain.InfractionTypeBan,
-		Duration:   timeRemaining,
-		Reason:     "Refractor Ban Synchronization",
-	}, domain.InfractionCommandCreate, serverID)
-	if err != nil {
-		s.logger.Error("Could not run player join ban sync infraction commands",
-			zap.Error(err))
-	}
-
-	// Run commands
-	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
-		s.logger.Error("Could not run ban sync commands",
-			zap.String("Player ID", playerID),
-			zap.String("Platform", platform),
-			zap.Error(err))
 	}
 }
 
