@@ -63,6 +63,7 @@ type InfractionRepo interface {
 	LinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error
 	UnlinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error
 	PlayerIsBanned(ctx context.Context, platform, playerID string) (bool, int64, error)
+	PlayerIsMuted(ctx context.Context, platform, playerID string) (bool, int64, error)
 	GetPlayerTotalInfractions(ctx context.Context, platform, playerID string) (int, error)
 }
 
@@ -77,6 +78,7 @@ type InfractionService interface {
 	LinkChatMessages(c context.Context, id int64, messageIDs ...int64) error
 	UnlinkChatMessages(c context.Context, id int64, messageIDs ...int64) error
 	PlayerIsBanned(c context.Context, platform, playerID string) (bool, int64, error)
+	PlayerIsMuted(c context.Context, platform, playerID string) (bool, int64, error)
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 	HandleModerationAction(fields broadcast.Fields, serverID int64, game Game)
 }
