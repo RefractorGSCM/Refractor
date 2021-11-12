@@ -147,6 +147,17 @@ type GameSettings struct {
 	General  *GeneralSettings     `json:"general"`
 }
 
+// Prepare prepares the data to be sent to the frontend
+func (gs *GameSettings) Prepare() *GameSettings {
+	gs.Commands.CreateInfractionCommands = gs.Commands.CreateInfractionCommands.Prepare()
+	gs.Commands.UpdateInfractionCommands = gs.Commands.UpdateInfractionCommands.Prepare()
+	gs.Commands.DeleteInfractionCommands = gs.Commands.DeleteInfractionCommands.Prepare()
+	gs.Commands.RepealInfractionCommands = gs.Commands.RepealInfractionCommands.Prepare()
+	gs.Commands.SyncInfractionCommands = gs.Commands.SyncInfractionCommands.Prepare()
+
+	return gs
+}
+
 func (gcs *GameCommandSettings) InfractionActionMap() map[string]*InfractionCommands {
 	return map[string]*InfractionCommands{
 		InfractionCommandCreate: gcs.CreateInfractionCommands,

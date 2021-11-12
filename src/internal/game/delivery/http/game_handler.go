@@ -102,7 +102,7 @@ func (h *gameHandler) GetGameSettings(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,
-		Payload: settings,
+		Payload: settings.Prepare(),
 	})
 }
 
@@ -220,7 +220,7 @@ func (h *gameHandler) GetDefaultGameSettings(c echo.Context) error {
 		return err
 	}
 
-	defSettings := game.GetDefaultSettings()
+	defSettings := game.GetDefaultSettings().Prepare()
 
 	return c.JSON(http.StatusOK, &domain.Response{
 		Success: true,

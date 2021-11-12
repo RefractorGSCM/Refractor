@@ -92,10 +92,10 @@ const (
 )
 
 type InfractionCommands struct {
-	Warn []string `json:"warn,omitempty"`
-	Mute []string `json:"mute,omitempty"`
-	Kick []string `json:"kick,omitempty"`
-	Ban  []string `json:"ban,omitempty"`
+	Warn []string `json:"warn"`
+	Mute []string `json:"mute"`
+	Kick []string `json:"kick"`
+	Ban  []string `json:"ban"`
 }
 
 func (ic *InfractionCommands) Map() map[string][]string {
@@ -105,6 +105,24 @@ func (ic *InfractionCommands) Map() map[string][]string {
 		InfractionTypeKick:    ic.Kick,
 		InfractionTypeBan:     ic.Ban,
 	}
+}
+
+// Prepare will replace all nil fields with empty arrays for a consistent experience on the frontend
+func (ic *InfractionCommands) Prepare() *InfractionCommands {
+	if ic.Warn == nil {
+		ic.Warn = make([]string, 0)
+	}
+	if ic.Mute == nil {
+		ic.Mute = make([]string, 0)
+	}
+	if ic.Kick == nil {
+		ic.Kick = make([]string, 0)
+	}
+	if ic.Ban == nil {
+		ic.Ban = make([]string, 0)
+	}
+
+	return ic
 }
 
 type InfractionPayload interface {

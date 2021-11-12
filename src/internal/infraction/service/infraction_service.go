@@ -742,50 +742,123 @@ func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID i
 
 	// Synchronize ban and mute infractions
 	if settings.General.EnableMuteSync {
-		// Check if this player should be banned
-		isBanned, timeRemaining, err := s.PlayerIsBanned(ctx, platform, playerID)
-		if err != nil {
-			s.logger.Error("Could not check if player is banned",
-				zap.String("Player ID", playerID),
+		if err := s.syncMute(ctx, platform, playerID, name, serverID); err != nil {
+			s.logger.Error("Could not synchronize mutes",
 				zap.String("Platform", platform),
-				zap.Error(err))
-			return
-		}
-
-		if !isBanned || timeRemaining < 2 {
-			// timeRemaining < 2 because if the ban is almost done, there's no need to reset it. The minimum timeRemaining
-			// value can be 1, so if a banned player continuously rejoined with less than 1 minute remaining in their ban,
-			// they would be re-banned for a minute. Very minor problem, but worth preventing to improve player experience.
-			return
-		}
-
-		// Prepare ban sync commands using infraction creation commands
-		// TODO: Sync should be it's own category to be used for infraction synchronization
-		preparedCommands, err := s.commandExecutor.PrepareInfractionCommands(ctx, &domain.CustomInfractionPayload{
-			PlayerID:   playerID,
-			Platform:   platform,
-			PlayerName: name,
-			Type:       domain.InfractionTypeBan,
-			Duration:   timeRemaining,
-			Reason:     "Refractor Ban Synchronization",
-		}, domain.InfractionCommandCreate, serverID)
-		if err != nil {
-			s.logger.Error("Could not run player join ban sync infraction commands",
-				zap.Error(err))
-		}
-
-		// Run commands
-		if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
-			s.logger.Error("Could not run ban sync commands",
 				zap.String("Player ID", playerID),
-				zap.String("Platform", platform),
+				zap.Int64("Server ID", serverID),
 				zap.Error(err))
 		}
 	}
 
 	if settings.General.EnableBanSync {
-
+		if err := s.syncBan(ctx, platform, playerID, name, serverID); err != nil {
+			s.logger.Error("Could not synchronize bans",
+				zap.String("Platform", platform),
+				zap.String("Player ID", playerID),
+				zap.Int64("Server ID", serverID),
+				zap.Error(err))
+		}
 	}
+}
+
+func (s *infractionService) syncMute(ctx context.Context, platform, playerID, name string, serverID int64) error {
+	// Check if this player should be muted
+	isMuted, timeRemaining, err := s.PlayerIsMuted(ctx, platform, playerID)
+	if err != nil {
+		s.logger.Error("Could not check if player is muted",
+			zap.String("Player ID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return err
+	}
+
+	if !isMuted || timeRemaining < 2 {
+		// timeRemaining < 2 because if the mute is almost done, there's no need to reset it. The minimum timeRemaining
+		// value can be 1, so if a muted player continuously rejoined with less than 1 minute remaining in their mute,
+		// they would be re-muted for a minute. Very minor problem, but worth preventing to improve player experience.
+		s.logger.Info("Not running mute sync commands for player",
+			zap.String("Platform", platform),
+			zap.String("Player ID", playerID),
+			zap.String("Reason", "< 2 minutes remaining"))
+		return nil
+	}
+
+	// Prepare mute sync commands using infraction sync commands
+	preparedCommands, err := s.commandExecutor.PrepareInfractionCommands(ctx, &domain.CustomInfractionPayload{
+		PlayerID:   playerID,
+		Platform:   platform,
+		PlayerName: name,
+		Type:       domain.InfractionTypeMute,
+		Duration:   timeRemaining,
+		Reason:     "Refractor Mute Sync",
+	}, domain.InfractionCommandSync, serverID)
+	if err != nil {
+		s.logger.Error("Could not run player join mute sync infraction commands",
+			zap.Error(err))
+		return err
+	}
+
+	// Run commands
+	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+		s.logger.Error("Could not run mute sync commands",
+			zap.String("Player ID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+func (s *infractionService) syncBan(ctx context.Context, platform, playerID, name string, serverID int64) error {
+	// Check if this player should be banned
+	isBanned, timeRemaining, err := s.PlayerIsBanned(ctx, platform, playerID)
+	if err != nil {
+		s.logger.Error("Could not check if player is banned",
+			zap.String("Player ID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return err
+	}
+
+	if !isBanned || timeRemaining < 2 {
+		// timeRemaining < 2 because if the ban is almost done, there's no need to reset it. The minimum timeRemaining
+		// value can be 1, so if a banned player continuously rejoined with less than 1 minute remaining in their ban,
+		// they would be re-banned for a minute. Very minor problem, but worth preventing to improve player experience.
+		s.logger.Info("Not running ban sync commands for player",
+			zap.String("Platform", platform),
+			zap.String("Player ID", playerID),
+			zap.String("Reason", "< 2 minutes remaining"))
+
+		return nil
+	}
+
+	// Prepare ban sync commands using infraction sync commands
+	preparedCommands, err := s.commandExecutor.PrepareInfractionCommands(ctx, &domain.CustomInfractionPayload{
+		PlayerID:   playerID,
+		Platform:   platform,
+		PlayerName: name,
+		Type:       domain.InfractionTypeBan,
+		Duration:   timeRemaining,
+		Reason:     "Refractor Ban Sync",
+	}, domain.InfractionCommandSync, serverID)
+	if err != nil {
+		s.logger.Error("Could not run player join ban sync infraction commands",
+			zap.Error(err))
+		return err
+	}
+
+	// Run commands
+	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+		s.logger.Error("Could not run ban sync commands",
+			zap.String("Player ID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return err
+	}
+
+	return nil
 }
 
 func (s *infractionService) HandleModerationAction(fields broadcast.Fields, serverID int64, game domain.Game) {
