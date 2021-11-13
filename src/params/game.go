@@ -19,6 +19,8 @@ package params
 
 import (
 	"Refractor/domain"
+	validation "github.com/go-ozzo/ozzo-validation"
+	"math"
 	"net/http"
 )
 
@@ -27,6 +29,7 @@ type SetGameCommandSettingsParams struct {
 	InfractionUpdate *domain.InfractionCommands `json:"update"`
 	InfractionDelete *domain.InfractionCommands `json:"delete"`
 	InfractionRepeal *domain.InfractionCommands `json:"repeal"`
+	InfractionSync   *domain.InfractionCommands `json:"sync"`
 }
 
 type cmdFieldErrBody struct {
@@ -76,6 +79,10 @@ func (body SetGameCommandSettingsParams) Validate() error {
 		return buildManualError("repeal", "", "this field is required")
 	}
 
+	if body.InfractionSync == nil {
+		return buildManualError("sync", "", "this field is required")
+	}
+
 	// Validate commands
 	if err := validateActCmds(body.InfractionCreate, "create"); err != nil {
 		return err
@@ -93,6 +100,17 @@ func (body SetGameCommandSettingsParams) Validate() error {
 		return err
 	}
 
+	// Ensure that warn and kick sync commands are nil since we don't support warn/kick syncing
+	body.InfractionSync.Warn = nil
+	body.InfractionSync.Kick = nil
+	// Validate sync manually since it's treated specially
+	if err := validateCmdArr(body.InfractionSync.Ban, "sync", "ban"); err != nil {
+		return err
+	}
+	if err := validateCmdArr(body.InfractionSync.Mute, "sync", "mute"); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -100,13 +118,13 @@ func validateActCmds(cmds *domain.InfractionCommands, act string) error {
 	if err := validateCmdArr(cmds.Warn, act, "warn"); err != nil {
 		return err
 	}
-	if err := validateCmdArr(cmds.Mute, act, "warn"); err != nil {
+	if err := validateCmdArr(cmds.Mute, act, "mute"); err != nil {
 		return err
 	}
-	if err := validateCmdArr(cmds.Kick, act, "warn"); err != nil {
+	if err := validateCmdArr(cmds.Kick, act, "kick"); err != nil {
 		return err
 	}
-	if err := validateCmdArr(cmds.Ban, act, "warn"); err != nil {
+	if err := validateCmdArr(cmds.Ban, act, "ban"); err != nil {
 		return err
 	}
 
@@ -127,9 +145,15 @@ func validateCmdArr(arr []string, act, infr string) error {
 }
 
 type SetGameGeneralSettingsParams struct {
-	EnableBanSync bool `json:"enable_ban_sync"`
+	EnableBanSync             bool `json:"enable_ban_sync"`
+	EnableMuteSync            bool `json:"enable_mute_sync"`
+	PlayerInfractionThreshold int  `json:"player_infraction_threshold"`
+	PlayerInfractionTimespan  int  `json:"player_infraction_timespan"`
 }
 
 func (body SetGameGeneralSettingsParams) Validate() error {
-	return nil
+	return ValidateStruct(&body,
+		validation.Field(&body.PlayerInfractionThreshold, validation.Required, validation.Min(0), validation.Max(math.MaxInt32)),
+		validation.Field(&body.PlayerInfractionTimespan, validation.Required, validation.Min(0), validation.Max(math.MaxInt32)),
+	)
 }

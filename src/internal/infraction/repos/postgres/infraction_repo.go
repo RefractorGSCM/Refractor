@@ -27,6 +27,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"time"
 )
 
 const opTag = "InfractionRepo.Postgres."
@@ -419,6 +420,42 @@ func (r *infractionRepo) PlayerIsBanned(ctx context.Context, platform, playerID 
 	return isBanned, minutesRemaining.ValueOrZero(), nil
 }
 
+func (r *infractionRepo) PlayerIsMuted(ctx context.Context, platform, playerID string) (bool, int64, error) {
+	const op = opTag + "PlayerIsMuted"
+
+	query := `
+		select exists(
+			select 1 from infractions 
+			where
+				platform = $1 and
+				playerid = $2 and
+				type = 'MUTE' and
+				(extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp)
+			) as IsBanned, (
+			select
+				ROUND(((extract(epoch from createdat) + (duration * 60)) - extract(epoch from current_timestamp)) / 60) as TimeRemaining
+			from infractions
+			where
+				platform = $1 and
+				playerid = $2 and
+				type = 'MUTE' and
+				(extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp)
+		);
+	`
+
+	row := r.db.QueryRowContext(ctx, query, platform, playerID)
+
+	isMuted := false
+	minutesRemaining := null.Int{}
+
+	if err := row.Scan(&isMuted, &minutesRemaining); err != nil {
+		r.logger.Error("Could not scan IsMuted and TimeRemaining from player mute infractions query", zap.Error(err))
+		return false, 0, errors.Wrap(err, op)
+	}
+
+	return isMuted, minutesRemaining.ValueOrZero(), nil
+}
+
 func (r *infractionRepo) GetPlayerTotalInfractions(ctx context.Context, platform, playerID string) (int, error) {
 	const op = opTag + "GetPlayerTotalInfractions"
 
@@ -431,6 +468,29 @@ func (r *infractionRepo) GetPlayerTotalInfractions(ctx context.Context, platform
 		r.logger.Error("Could not scan player infraction count",
 			zap.String("Platform", platform),
 			zap.String("Player ID", platform),
+			zap.Error(err))
+		return 0, errors.Wrap(err, op)
+	}
+
+	return count, nil
+}
+
+func (r *infractionRepo) GetPlayerInfractionCountSince(ctx context.Context, platform, playerID string, since time.Time) (int, error) {
+	const op = opTag + "GetPlayerInfractionCountSince"
+
+	query := `SELECT COUNT(1) FROM Infractions WHERE
+                                       Platform = $1 AND
+                                       PlayerID = $2 AND
+                                       CreatedAt >= TO_TIMESTAMP($3);`
+
+	row := r.db.QueryRowContext(ctx, query, platform, playerID, since.Unix())
+
+	var count int
+	if err := row.Scan(&count); err != nil {
+		r.logger.Error("Could not scan player infraction count since time",
+			zap.String("Platform", platform),
+			zap.String("Player ID", platform),
+			zap.Int64("Since Time", since.Unix()),
 			zap.Error(err))
 		return 0, errors.Wrap(err, op)
 	}
