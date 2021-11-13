@@ -174,7 +174,7 @@ func main() {
 
 	authorizer := _authorizer.NewAuthorizer(groupRepo, serverRepo, logger)
 
-	gameRepo := _gameRepo.NewGameRepo()
+	gameRepo := _gameRepo.NewGameRepo(logger)
 	gameService := _gameService.NewGameService(gameRepo, time.Second*2)
 	registerGames(gameService)
 	_gameHandler.ApplyGameHandler(apiGroup, gameService, middlewareBundle, authorizer, logger)
@@ -185,7 +185,7 @@ func main() {
 	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)
 	playerStatsService := _playerStatsService.NewPlayerStatsService(infractionRepo, time.Second*2, logger)
 
-	serverService := _serverService.NewServerService(serverRepo, playerRepo, playerStatsService, authorizer, time.Second*2, logger)
+	serverService := _serverService.NewServerService(serverRepo, playerRepo, playerStatsService, gameService, authorizer, time.Second*2, logger)
 
 	userService := _userService.NewUserService(userMetaRepo, authRepo, groupRepo, playerRepo, playerNameRepo,
 		authorizer, time.Second*2, logger)
@@ -200,7 +200,7 @@ func main() {
 	_serverHandler.ApplyServerHandler(apiGroup, serverService, rconService, gameService, authorizer, middlewareBundle, logger)
 
 	websocketService := _websocketService.NewWebsocketService(playerRepo, userMetaRepo, playerStatsService,
-		authorizer, time.Second*2, logger)
+		gameService, authorizer, time.Second*2, logger)
 	go websocketService.StartPool()
 	_websocketHandler.ApplyWebsocketHandler(apiServer, websocketService, middlewareBundle, logger)
 

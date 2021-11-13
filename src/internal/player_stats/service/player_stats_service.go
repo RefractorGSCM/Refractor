@@ -44,3 +44,12 @@ func (s *pStatService) GetInfractionCount(c context.Context, platform, playerID 
 
 	return s.infractionRepo.GetPlayerTotalInfractions(ctx, platform, playerID)
 }
+
+func (s *pStatService) GetInfractionCountSince(c context.Context, platform, playerID string, sinceMinutes int) (int, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	sinceDate := time.Now().Add(time.Duration(-sinceMinutes) * time.Minute)
+
+	return s.infractionRepo.GetPlayerInfractionCountSince(ctx, platform, playerID, sinceDate)
+}
