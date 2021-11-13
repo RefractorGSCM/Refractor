@@ -17,8 +17,11 @@
 
 package domain
 
-import "context"
+import (
+	"context"
+)
 
 type PlayerStatsService interface {
 	GetInfractionCount(c context.Context, platform, playerID string) (int, error)
+	GetInfractionCountSince(c context.Context, platform, playerID string, sinceMinutes int) (int, error)
 }

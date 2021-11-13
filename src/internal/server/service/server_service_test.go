@@ -40,6 +40,7 @@ func Test(t *testing.T) {
 		var authorizer *mocks.Authorizer
 		var playerRepo *mocks.PlayerRepo
 		var playerStatsService *mocks.PlayerStatsService
+		var gameService *mocks.GameService
 		var service domain.ServerService
 		var ctx context.Context
 
@@ -48,7 +49,8 @@ func Test(t *testing.T) {
 			authorizer = new(mocks.Authorizer)
 			playerRepo = new(mocks.PlayerRepo)
 			playerStatsService = new(mocks.PlayerStatsService)
-			service = NewServerService(mockRepo, playerRepo, playerStatsService, authorizer, time.Second*2, zap.NewNop())
+			gameService = new(mocks.GameService)
+			service = NewServerService(mockRepo, playerRepo, playerStatsService, gameService, authorizer, time.Second*2, zap.NewNop())
 			ctx = context.TODO()
 		})
 

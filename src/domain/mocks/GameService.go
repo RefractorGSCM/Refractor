@@ -94,6 +94,29 @@ func (_m *GameService) GetGameSettings(game domain.Game) (*domain.GameSettings, 
 	return r0, r1
 }
 
+// GetGameSettingsByName provides a mock function with given fields: gameName
+func (_m *GameService) GetGameSettingsByName(gameName string) (*domain.GameSettings, error) {
+	ret := _m.Called(gameName)
+
+	var r0 *domain.GameSettings
+	if rf, ok := ret.Get(0).(func(string) *domain.GameSettings); ok {
+		r0 = rf(gameName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.GameSettings)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(gameName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // SetGameSettings provides a mock function with given fields: game, settings
 func (_m *GameService) SetGameSettings(game domain.Game, settings *domain.GameSettings) error {
 	ret := _m.Called(game, settings)

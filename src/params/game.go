@@ -19,6 +19,8 @@ package params
 
 import (
 	"Refractor/domain"
+	validation "github.com/go-ozzo/ozzo-validation"
+	"math"
 	"net/http"
 )
 
@@ -143,10 +145,15 @@ func validateCmdArr(arr []string, act, infr string) error {
 }
 
 type SetGameGeneralSettingsParams struct {
-	EnableBanSync  bool `json:"enable_ban_sync"`
-	EnableMuteSync bool `json:"enable_mute_sync"`
+	EnableBanSync             bool `json:"enable_ban_sync"`
+	EnableMuteSync            bool `json:"enable_mute_sync"`
+	PlayerInfractionThreshold int  `json:"player_infraction_threshold"`
+	PlayerInfractionTimespan  int  `json:"player_infraction_timespan"`
 }
 
 func (body SetGameGeneralSettingsParams) Validate() error {
-	return nil
+	return ValidateStruct(&body,
+		validation.Field(&body.PlayerInfractionThreshold, validation.Required, validation.Min(0), validation.Max(math.MaxInt32)),
+		validation.Field(&body.PlayerInfractionTimespan, validation.Required, validation.Min(0), validation.Max(math.MaxInt32)),
+	)
 }
