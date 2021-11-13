@@ -126,6 +126,7 @@ type GameService interface {
 	GameExists(name string) bool
 	GetGame(name string) (Game, error)
 	GetGameSettings(game Game) (*GameSettings, error)
+	GetGameSettingsByName(gameName string) (*GameSettings, error)
 	SetGameSettings(game Game, settings *GameSettings) error
 }
 
@@ -138,8 +139,10 @@ type GameCommandSettings struct {
 }
 
 type GeneralSettings struct {
-	EnableBanSync  bool `json:"enable_ban_sync"`
-	EnableMuteSync bool `json:"enable_mute_sync"`
+	EnableBanSync             bool `json:"enable_ban_sync"`
+	EnableMuteSync            bool `json:"enable_mute_sync"`
+	PlayerInfractionThreshold int  `json:"player_infraction_threshold"`
+	PlayerInfractionTimespan  int  `json:"player_infraction_timespan"`
 }
 
 type GameSettings struct {
