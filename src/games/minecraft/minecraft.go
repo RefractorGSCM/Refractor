@@ -104,8 +104,10 @@ func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 			},
 		},
 		General: &domain.GeneralSettings{
-			EnableBanSync:  true,
-			EnableMuteSync: true,
+			EnableBanSync:             true,
+			EnableMuteSync:            true,
+			PlayerInfractionThreshold: 10,
+			PlayerInfractionTimespan:  4320, // 3 days
 		},
 	}
 }

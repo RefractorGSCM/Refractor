@@ -21,6 +21,7 @@ import (
 	"Refractor/pkg/broadcast"
 	"context"
 	"github.com/guregu/null"
+	"time"
 )
 
 type InfractionType interface {
@@ -65,6 +66,7 @@ type InfractionRepo interface {
 	PlayerIsBanned(ctx context.Context, platform, playerID string) (bool, int64, error)
 	PlayerIsMuted(ctx context.Context, platform, playerID string) (bool, int64, error)
 	GetPlayerTotalInfractions(ctx context.Context, platform, playerID string) (int, error)
+	GetPlayerInfractionCountSince(ctx context.Context, platform, playerID string, since time.Time) (int, error)
 }
 
 type InfractionService interface {

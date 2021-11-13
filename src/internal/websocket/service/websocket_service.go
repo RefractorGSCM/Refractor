@@ -33,19 +33,21 @@ type websocketService struct {
 	playerRepo         domain.PlayerRepo
 	userMetaRepo       domain.UserMetaRepo
 	playerStatsService domain.PlayerStatsService
+	gameService        domain.GameService
 	authorizer         domain.Authorizer
 	timeout            time.Duration
 	logger             *zap.Logger
 	chatSendSubs       []domain.ChatSendSubscriber
 }
 
-func NewWebsocketService(pr domain.PlayerRepo, umr domain.UserMetaRepo, pss domain.PlayerStatsService, a domain.Authorizer,
-	to time.Duration, log *zap.Logger) domain.WebsocketService {
+func NewWebsocketService(pr domain.PlayerRepo, umr domain.UserMetaRepo, pss domain.PlayerStatsService, gs domain.GameService,
+	a domain.Authorizer, to time.Duration, log *zap.Logger) domain.WebsocketService {
 	return &websocketService{
 		pool:               websocket.NewPool(log),
 		playerRepo:         pr,
 		userMetaRepo:       umr,
 		playerStatsService: pss,
+		gameService:        gs,
 		authorizer:         a,
 		timeout:            to,
 		logger:             log,
@@ -124,12 +126,13 @@ func (s *websocketService) SendDirectMessage(message *domain.WebsocketMessage, u
 }
 
 type playerJoinQuitData struct {
-	ServerID        int64  `json:"serverId"`
-	PlayerID        string `json:"id"`
-	Platform        string `json:"platform"`
-	Name            string `json:"name"`
-	Watched         bool   `json:"watched"`
-	InfractionCount int    `json:"infraction_count"`
+	ServerID                     int64  `json:"serverId"`
+	PlayerID                     string `json:"id"`
+	Platform                     string `json:"platform"`
+	Name                         string `json:"name"`
+	Watched                      bool   `json:"watched"`
+	InfractionCount              int    `json:"infraction_count"`
+	InfractionCountSinceTimespan int    `json:"infraction_count_since_timespan"`
 }
 
 func (s *websocketService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
@@ -157,15 +160,29 @@ func (s *websocketService) HandlePlayerJoin(fields broadcast.Fields, serverID in
 			zap.Error(err))
 	}
 
+	// Get player infraction count in timespan
+	var infractionCountSinceTimespan = 0
+	settings, err := s.gameService.GetGameSettings(game)
+	if err != nil {
+		s.logger.Error("Could not get game settings", zap.String("Game", game.GetName()))
+	} else {
+		infractionCountSinceTimespan, err = s.playerStatsService.
+			GetInfractionCountSince(ctx, platform, playerID, settings.General.PlayerInfractionTimespan)
+		if err != nil {
+			s.logger.Error("Could not get player infractions since configured timespan", zap.Error(err))
+		}
+	}
+
 	if err := s.BroadcastServerMessage(&domain.WebsocketMessage{
 		Type: "player-join",
 		Body: playerJoinQuitData{
-			ServerID:        serverID,
-			PlayerID:        playerID,
-			Platform:        platform,
-			Name:            foundPlayer.CurrentName,
-			Watched:         foundPlayer.Watched,
-			InfractionCount: count,
+			ServerID:                     serverID,
+			PlayerID:                     playerID,
+			Platform:                     platform,
+			Name:                         foundPlayer.CurrentName,
+			Watched:                      foundPlayer.Watched,
+			InfractionCount:              count,
+			InfractionCountSinceTimespan: infractionCountSinceTimespan,
 		},
 	}, serverID, authcheckers.CanViewServer); err != nil {
 		s.logger.Warn("Could not broadcast player join message",

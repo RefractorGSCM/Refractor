@@ -25,16 +25,21 @@ import (
 )
 
 type Server struct {
-	ID           int64     `json:"id"`
-	Game         string    `json:"game"`
-	Name         string    `json:"name"`
-	Address      string    `json:"address"`
-	RCONPort     string    `json:"rcon_port"`
-	RCONPassword string    `json:"-"`
-	Deactivated  bool      `json:"deactivated"`
-	CreatedAt    time.Time `json:"created_at"`
-	ModifiedAt   time.Time `json:"modified_at"`
-	IsFragment   bool      `json:"-"` // not a database field
+	ID           int64       `json:"id"`
+	Game         string      `json:"game"`
+	Name         string      `json:"name"`
+	Address      string      `json:"address"`
+	RCONPort     string      `json:"rcon_port"`
+	RCONPassword string      `json:"-"`
+	Deactivated  bool        `json:"deactivated"`
+	CreatedAt    time.Time   `json:"created_at"`
+	ModifiedAt   time.Time   `json:"modified_at"`
+	IsFragment   bool        `json:"-"`    // not a database field
+	Meta         *ServerMeta `json:"meta"` // not a database field
+}
+
+type ServerMeta struct {
+	PlayerInfractionThreshold int `json:"player_infraction_threshold"`
 }
 
 type DBServer struct {

@@ -54,10 +54,16 @@ func ApplyGameHandler(apiGroup *echo.Group, s domain.GameService, mware domain.M
 	gameGroup.GET("/settings/:game/default", handler.GetDefaultGameSettings, enforcer.CheckAuth(authcheckers.DenyAll))    // super admin only
 }
 
+type publicGameSettings struct {
+	// non-private game settings should be populated here
+	PlayerInfractionThreshold int `json:"player_infraction_threshold"`
+}
+
 type resGame struct {
-	Name        string `json:"name"`
-	Platform    string `json:"platform"`
-	ChatEnabled bool   `json:"chat_enabled"`
+	Name        string             `json:"name"`
+	Platform    string             `json:"platform"`
+	ChatEnabled bool               `json:"chat_enabled"`
+	Settings    publicGameSettings `json:"settings"`
 }
 
 func (h *gameHandler) GetGames(c echo.Context) error {
@@ -65,10 +71,18 @@ func (h *gameHandler) GetGames(c echo.Context) error {
 
 	var res []*resGame
 	for _, g := range allGames {
+		settings, err := h.service.GetGameSettings(g)
+		if err != nil {
+			return err
+		}
+
 		res = append(res, &resGame{
 			Name:        g.GetName(),
 			Platform:    g.GetPlatform().GetName(),
 			ChatEnabled: g.GetConfig().EnableChat,
+			Settings: publicGameSettings{
+				PlayerInfractionThreshold: settings.General.PlayerInfractionThreshold,
+			},
 		})
 	}
 
@@ -190,8 +204,10 @@ func (h *gameHandler) SetGeneralSettings(c echo.Context) error {
 
 	// Set game command settings
 	gs.General = &domain.GeneralSettings{
-		EnableBanSync:  body.EnableBanSync,
-		EnableMuteSync: body.EnableMuteSync,
+		EnableBanSync:             body.EnableBanSync,
+		EnableMuteSync:            body.EnableMuteSync,
+		PlayerInfractionThreshold: body.PlayerInfractionThreshold,
+		PlayerInfractionTimespan:  body.PlayerInfractionTimespan,
 	}
 
 	if err := h.service.SetGameSettings(game, gs); err != nil {

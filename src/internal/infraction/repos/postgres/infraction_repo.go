@@ -27,6 +27,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"time"
 )
 
 const opTag = "InfractionRepo.Postgres."
@@ -467,6 +468,29 @@ func (r *infractionRepo) GetPlayerTotalInfractions(ctx context.Context, platform
 		r.logger.Error("Could not scan player infraction count",
 			zap.String("Platform", platform),
 			zap.String("Player ID", platform),
+			zap.Error(err))
+		return 0, errors.Wrap(err, op)
+	}
+
+	return count, nil
+}
+
+func (r *infractionRepo) GetPlayerInfractionCountSince(ctx context.Context, platform, playerID string, since time.Time) (int, error) {
+	const op = opTag + "GetPlayerInfractionCountSince"
+
+	query := `SELECT COUNT(1) FROM Infractions WHERE
+                                       Platform = $1 AND
+                                       PlayerID = $2 AND
+                                       CreatedAt >= TO_TIMESTAMP($3);`
+
+	row := r.db.QueryRowContext(ctx, query, platform, playerID, since.Unix())
+
+	var count int
+	if err := row.Scan(&count); err != nil {
+		r.logger.Error("Could not scan player infraction count since time",
+			zap.String("Platform", platform),
+			zap.String("Player ID", platform),
+			zap.Int64("Since Time", since.Unix()),
 			zap.Error(err))
 		return 0, errors.Wrap(err, op)
 	}

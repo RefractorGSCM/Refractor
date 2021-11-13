@@ -34,6 +34,7 @@ type serverService struct {
 	repo               domain.ServerRepo
 	playerRepo         domain.PlayerRepo
 	playerStatsService domain.PlayerStatsService
+	gameService        domain.GameService
 	authorizer         domain.Authorizer
 	timeout            time.Duration
 	logger             *zap.Logger
@@ -42,11 +43,12 @@ type serverService struct {
 }
 
 func NewServerService(repo domain.ServerRepo, pr domain.PlayerRepo, pss domain.PlayerStatsService,
-	a domain.Authorizer, timeout time.Duration, log *zap.Logger) domain.ServerService {
+	gs domain.GameService, a domain.Authorizer, timeout time.Duration, log *zap.Logger) domain.ServerService {
 	return &serverService{
 		repo:               repo,
 		playerRepo:         pr,
 		playerStatsService: pss,
+		gameService:        gs,
 		authorizer:         a,
 		timeout:            timeout,
 		logger:             log,
@@ -249,6 +251,19 @@ func (s *serverService) GetAllServerData() ([]*domain.ServerData, error) {
 
 func (s *serverService) GetServerData(id int64) (*domain.ServerData, error) {
 	data := s.serverData[id]
+	server, err := s.GetByID(context.TODO(), id)
+	if err != nil {
+		s.logger.Error("Could not get server by id", zap.Int64("Server ID", id), zap.Error(err))
+		return nil, err
+	}
+	settings, err := s.gameService.GetGameSettingsByName(server.Game)
+	if err != nil {
+		s.logger.Error("Could not get server game settings",
+			zap.Int64("Server ID", id),
+			zap.String("Game", server.Game),
+			zap.Error(err))
+		return nil, err
+	}
 
 	if data == nil {
 		return nil, fmt.Errorf("server data not found")
@@ -265,7 +280,18 @@ func (s *serverService) GetServerData(id int64) (*domain.ServerData, error) {
 			continue
 		}
 
+		countSinceTimespan, err := s.playerStatsService.GetInfractionCountSince(context.TODO(), p.Platform, p.PlayerID,
+			settings.General.PlayerInfractionTimespan)
+		if err != nil {
+			s.logger.Error("Could not get player infraction count since timespan",
+				zap.String("Platform", p.Platform),
+				zap.String("Player ID", p.PlayerID),
+				zap.Error(err))
+			continue
+		}
+
 		p.InfractionCount = count
+		p.InfractionCountSinceTimespan = countSinceTimespan
 	}
 
 	return data, nil
