@@ -20,10 +20,12 @@ require (
 	github.com/ory/kratos-client-go v0.7.0-alpha.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/refractorgscm/rcon v1.1.1
+	github.com/refractorgscm/rcon v1.1.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.18.1
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df // indirect
 )
+
+//replace github.com/refractorgscm/rcon v1.1.1 => ../../RCON2

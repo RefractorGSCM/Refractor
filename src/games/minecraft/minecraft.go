@@ -19,7 +19,7 @@ package minecraft
 
 import (
 	"Refractor/domain"
-	"github.com/refractorgscm/rcon/endian"
+	"encoding/binary"
 	"regexp"
 	"time"
 )
@@ -117,6 +117,6 @@ func (g *minecraft) GetRCONSettings() *domain.GameRCONSettings {
 	return &domain.GameRCONSettings{
 		RestrictedPacketIDs: nil, // nil since minecraft has no relevant restricted RCON packet IDs.
 		BroadcastChecker:    nil, // nil since minecraft doesn't support broadcasts.
-		EndianMode:          endian.Little,
+		EndianMode:          binary.LittleEndian,
 	}
 }
