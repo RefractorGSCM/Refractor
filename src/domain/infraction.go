@@ -56,6 +56,10 @@ type Infraction struct {
 	PlayerName   string      `json:"player_name,omitempty"` // PlayerName is not a DB field. It does not get scanned. It is populated manually.
 }
 
+func (i *Infraction) IsPermanent() bool {
+	return i.Duration.Valid && i.Duration.ValueOrZero() == -1
+}
+
 type InfractionRepo interface {
 	Store(ctx context.Context, infraction *Infraction) (*Infraction, error)
 	GetByID(ctx context.Context, id int64) (*Infraction, error)
