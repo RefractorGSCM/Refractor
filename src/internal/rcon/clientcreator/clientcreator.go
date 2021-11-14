@@ -21,7 +21,6 @@ import (
 	"Refractor/domain"
 	"encoding/binary"
 	"github.com/refractorgscm/rcon"
-	"github.com/refractorgscm/rcon/presets"
 	"strconv"
 )
 
@@ -57,7 +56,7 @@ func (c *clientCreator) GetClientFromConfig(game domain.Game, server *domain.Ser
 		EndianMode:          binary.LittleEndian,
 		BroadcastChecker:    rconSettings.BroadcastChecker,
 		RestrictedPacketIDs: rconSettings.RestrictedPacketIDs,
-	}, &presets.DebugLogger{})
+	}, nil)
 
 	return &Client{
 		game:   game,
