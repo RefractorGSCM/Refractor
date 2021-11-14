@@ -19,9 +19,10 @@ package clientcreator
 
 import (
 	"Refractor/domain"
+	"encoding/binary"
 	"github.com/refractorgscm/rcon"
+	"github.com/refractorgscm/rcon/presets"
 	"strconv"
-	"time"
 )
 
 type clientCreator struct{}
@@ -53,11 +54,10 @@ func (c *clientCreator) GetClientFromConfig(game domain.Game, server *domain.Ser
 		Host:                server.Address,
 		Port:                uint16(port),
 		Password:            server.RCONPassword,
-		EndianMode:          rconSettings.EndianMode,
+		EndianMode:          binary.LittleEndian,
 		BroadcastChecker:    rconSettings.BroadcastChecker,
 		RestrictedPacketIDs: rconSettings.RestrictedPacketIDs,
-		QueueReadTimeout:    time.Second,
-	}, nil)
+	}, &presets.DebugLogger{})
 
 	return &Client{
 		game:   game,

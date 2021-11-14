@@ -34,6 +34,9 @@ const (
 	InfractionTypeMute    = "MUTE"
 	InfractionTypeKick    = "KICK"
 	InfractionTypeBan     = "BAN"
+
+	// PermanentInfractionValue will be used as a duration to mark an infraction as permanent
+	PermanentInfractionValue = -1
 )
 
 type Infraction struct {
@@ -51,6 +54,10 @@ type Infraction struct {
 	Repealed     bool        `json:"repealed"`
 	IssuerName   string      `json:"issuer_name,omitempty"` // IssuerName is not a DB field. It does not get scanned. It is populated manually.
 	PlayerName   string      `json:"player_name,omitempty"` // PlayerName is not a DB field. It does not get scanned. It is populated manually.
+}
+
+func (i *Infraction) IsPermanent() bool {
+	return i.Duration.Valid && i.Duration.ValueOrZero() == -1
 }
 
 type InfractionRepo interface {

@@ -260,6 +260,9 @@ func main() {
 		}
 	}()
 
+	// Start command executor runner routine
+	go commandExecutor.StartRunner(nil)
+
 	// Setup complete. Begin serving requests.
 	logger.Info("Setup complete!")
 

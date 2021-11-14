@@ -32,6 +32,12 @@ type executor struct {
 	serverRepo     domain.ServerRepo
 	playerNameRepo domain.PlayerNameRepo
 	logger         *zap.Logger
+	queue          chan *queuedCommand
+}
+
+type queuedCommand struct {
+	cmd      string
+	serverID int64
 }
 
 func NewCommandExecutor(rs domain.RCONService, gs domain.GameService, sr domain.ServerRepo, pnr domain.PlayerNameRepo,
@@ -42,6 +48,7 @@ func NewCommandExecutor(rs domain.RCONService, gs domain.GameService, sr domain.
 		serverRepo:     sr,
 		playerNameRepo: pnr,
 		logger:         log,
+		queue:          make(chan *queuedCommand, 100),
 	}
 }
 
@@ -123,29 +130,50 @@ func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction dom
 
 func (e *executor) RunCommands(payload domain.CommandPayload) error {
 	for _, serverID := range payload.GetServerIDs() {
-		client := e.rconService.GetServerClient(serverID)
-		if client == nil {
-			e.logger.Warn("Could not run commands on server. RCON client was nil.", zap.Int64("Server ID", serverID))
-			continue
-		}
-
 		// TODO: Implement command queue or similar mechanism which can record commands which could not be executed
 		// TODO: (e.g because client was nil) to be executed at a later time.
 
-		for _, cmd := range payload.GetCommands() {
-			if err := client.ExecCommandNoResponse(cmd); err != nil {
-				e.logger.Error("Could not execute command on server",
-					zap.String("Command", cmd),
-					zap.Int64("Server ID", serverID),
-					zap.Error(err))
-				return err
+		cmds := payload.GetCommands()
+		for _, cmd := range cmds {
+			// Add command to queue
+			e.queue <- &queuedCommand{
+				cmd:      cmd,
+				serverID: serverID,
 			}
-
-			e.logger.Info("Executed command on server",
-				zap.String("Command", cmd),
-				zap.Int64("Server ID", serverID))
 		}
 	}
 
 	return nil
+}
+
+// StartRunner is a runner routine which reads from the command queue and executes the commands within
+// it on the correct server. This should only be used when the command response doesn't matter because
+// the response is not returned out of the runner.
+func (e *executor) StartRunner(terminate chan uint8) {
+	for {
+		select {
+		case <-terminate:
+			e.logger.Info("Terminating command runner routine")
+			break
+		case queuedCmd := <-e.queue:
+			client := e.rconService.GetServerClient(queuedCmd.serverID)
+			if client == nil {
+				e.logger.Warn("Could not run commands on server. RCON client was nil.", zap.Int64("Server ID", queuedCmd.serverID))
+				break
+			}
+
+			e.logger.Info("Running command", zap.String("cmd", queuedCmd.cmd))
+			if _, err := client.ExecCommand(queuedCmd.cmd); err != nil {
+				e.logger.Error("Could not execute command on server",
+					zap.String("Command", queuedCmd.cmd),
+					zap.Int64("Server ID", queuedCmd.serverID),
+					zap.Error(err))
+				break
+			}
+
+			e.logger.Info("Executed command on server",
+				zap.String("Command", queuedCmd.cmd),
+				zap.Int64("Server ID", queuedCmd.serverID))
+		}
+	}
 }

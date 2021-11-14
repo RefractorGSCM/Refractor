@@ -3,5 +3,7 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/RCON-Client" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/pkg/rcon" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/pkg/rcontest" vcs="Git" />
   </component>
 </project>
