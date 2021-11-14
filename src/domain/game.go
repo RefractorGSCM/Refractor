@@ -18,8 +18,8 @@
 package domain
 
 import (
+	"encoding/binary"
 	"github.com/refractorgscm/rcon"
-	"github.com/refractorgscm/rcon/endian"
 	"regexp"
 	"time"
 )
@@ -57,7 +57,7 @@ type GameRCONSettings struct {
 	BroadcastChecker rcon.BroadcastMessageChecker
 
 	// EndianMode represents the byte order used by a game's RCON implementation.
-	EndianMode endian.Mode
+	EndianMode binary.ByteOrder
 }
 
 type CommandOutputPatterns struct {

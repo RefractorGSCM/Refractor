@@ -20,7 +20,7 @@ package mordhau
 import (
 	"Refractor/domain"
 	"Refractor/pkg/broadcast"
-	"github.com/refractorgscm/rcon/endian"
+	"encoding/binary"
 	"github.com/refractorgscm/rcon/presets"
 	"regexp"
 	"time"
@@ -129,6 +129,6 @@ func (g *mordhau) GetRCONSettings() *domain.GameRCONSettings {
 		// Mordhau has presets within the RefractorGSCM/RCON library so we can simply use those.
 		RestrictedPacketIDs: presets.MordhauRestrictedPacketIDs,
 		BroadcastChecker:    presets.MordhauBroadcastChecker,
-		EndianMode:          endian.Little,
+		EndianMode:          binary.LittleEndian,
 	}
 }
