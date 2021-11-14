@@ -36,10 +36,12 @@ var durationValidator = validation.By(func(val interface{}) error {
 	}
 
 	valInt := *valPtr
-	if valInt < 0 {
-		return errors.New("duration cannot be less than 0 (permanent)")
+	if valInt < -1 {
+		return errors.New("duration cannot be less than -1 (permanent)")
 	} else if valInt > math.MaxInt32 {
-		return errors.New("duration cannot be greater than the max value of a 32 but int")
+		return errors.New("duration cannot be greater than the max value of a 32 bit int")
+	} else if valInt == 0 {
+		return errors.New("duration cannot be 0")
 	}
 
 	return nil

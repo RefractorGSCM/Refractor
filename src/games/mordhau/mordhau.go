@@ -20,7 +20,7 @@ package mordhau
 import (
 	"Refractor/domain"
 	"Refractor/pkg/broadcast"
-	"github.com/refractorgscm/rcon/endian"
+	"encoding/binary"
 	"github.com/refractorgscm/rcon/presets"
 	"regexp"
 	"time"
@@ -50,6 +50,7 @@ func NewMordhauGame(platform domain.Platform) domain.Game {
 			IgnoredBroadcastPatterns: []*regexp.Regexp{
 				regexp.MustCompile("Keeping client alive for another [0-9]+ seconds"),
 			},
+			PermanentDurationValue: 99999999,
 		},
 		platform: platform,
 		cmdOutputPatterns: &domain.CommandOutputPatterns{
@@ -128,6 +129,6 @@ func (g *mordhau) GetRCONSettings() *domain.GameRCONSettings {
 		// Mordhau has presets within the RefractorGSCM/RCON library so we can simply use those.
 		RestrictedPacketIDs: presets.MordhauRestrictedPacketIDs,
 		BroadcastChecker:    presets.MordhauBroadcastChecker,
-		EndianMode:          endian.Little,
+		EndianMode:          binary.LittleEndian,
 	}
 }
