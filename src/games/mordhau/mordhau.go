@@ -50,6 +50,7 @@ func NewMordhauGame(platform domain.Platform) domain.Game {
 			IgnoredBroadcastPatterns: []*regexp.Regexp{
 				regexp.MustCompile("Keeping client alive for another [0-9]+ seconds"),
 			},
+			PermanentDurationValue: 0,
 		},
 		platform: platform,
 		cmdOutputPatterns: &domain.CommandOutputPatterns{

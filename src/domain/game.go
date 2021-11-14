@@ -101,6 +101,10 @@ type GameConfig struct {
 	// necessary services and clients. This should be enabled for all games to mitigate server desyncs, but is especially
 	// important for games which support broadcasts since desyncs are more likely.
 	PlayerListRefreshInterval time.Duration
+
+	// PermanentDurationValue is the value which will result in a permanent infraction when used on a server.
+	// e.g 0 would be used to ban permanently on a Mordhau server, so we would make this value 0
+	PermanentDurationValue int
 }
 
 func (gc GameConfig) AlivePingEnabled() bool {

@@ -39,6 +39,7 @@ func NewMinecraftGame(platform domain.Platform) domain.Game {
 			PlayerListPollingInterval: time.Second * 5,
 			PlayerListRefreshInterval: time.Minute * 40,
 			EnableChat:                false,
+			PermanentDurationValue:    999999999999,
 		},
 		platform: platform,
 		cmdOutputPatterns: &domain.CommandOutputPatterns{

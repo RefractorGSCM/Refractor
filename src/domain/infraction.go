@@ -34,6 +34,9 @@ const (
 	InfractionTypeMute    = "MUTE"
 	InfractionTypeKick    = "KICK"
 	InfractionTypeBan     = "BAN"
+
+	// PermanentInfractionValue will be used as a duration to mark an infraction as permanent
+	PermanentInfractionValue = -1
 )
 
 type Infraction struct {
