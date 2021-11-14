@@ -742,7 +742,7 @@ func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID i
 
 	// Synchronize ban and mute infractions
 	if settings.General.EnableMuteSync {
-		if err := s.syncMute(ctx, platform, playerID, name, serverID); err != nil {
+		if err := s.syncMute(ctx, platform, playerID, name, serverID, game); err != nil {
 			s.logger.Error("Could not synchronize mutes",
 				zap.String("Platform", platform),
 				zap.String("Player ID", playerID),
@@ -752,7 +752,7 @@ func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID i
 	}
 
 	if settings.General.EnableBanSync {
-		if err := s.syncBan(ctx, platform, playerID, name, serverID); err != nil {
+		if err := s.syncBan(ctx, platform, playerID, name, serverID, game); err != nil {
 			s.logger.Error("Could not synchronize bans",
 				zap.String("Platform", platform),
 				zap.String("Player ID", playerID),
@@ -762,9 +762,9 @@ func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID i
 	}
 }
 
-func (s *infractionService) syncMute(ctx context.Context, platform, playerID, name string, serverID int64) error {
+func (s *infractionService) syncMute(ctx context.Context, platform, playerID, name string, serverID int64, game domain.Game) error {
 	// Check if this player should be muted
-	isMuted, timeRemaining, err := s.PlayerIsMuted(ctx, platform, playerID)
+	isMuted, timeRemaining, err := s.repo.PlayerIsMuted(ctx, platform, playerID)
 	if err != nil {
 		s.logger.Error("Could not check if player is muted",
 			zap.String("Player ID", playerID),
@@ -773,7 +773,14 @@ func (s *infractionService) syncMute(ctx context.Context, platform, playerID, na
 		return err
 	}
 
-	if !isMuted || timeRemaining < 2 {
+	if !isMuted {
+		return nil
+	}
+
+	// If this mute was permanent
+	if timeRemaining == domain.PermanentInfractionValue {
+		timeRemaining = game.GetConfig().PermanentDurationValue
+	} else if timeRemaining < 2 {
 		// timeRemaining < 2 because if the mute is almost done, there's no need to reset it. The minimum timeRemaining
 		// value can be 1, so if a muted player continuously rejoined with less than 1 minute remaining in their mute,
 		// they would be re-muted for a minute. Very minor problem, but worth preventing to improve player experience.
@@ -811,9 +818,9 @@ func (s *infractionService) syncMute(ctx context.Context, platform, playerID, na
 	return nil
 }
 
-func (s *infractionService) syncBan(ctx context.Context, platform, playerID, name string, serverID int64) error {
+func (s *infractionService) syncBan(ctx context.Context, platform, playerID, name string, serverID int64, game domain.Game) error {
 	// Check if this player should be banned
-	isBanned, timeRemaining, err := s.PlayerIsBanned(ctx, platform, playerID)
+	isBanned, timeRemaining, err := s.repo.PlayerIsBanned(ctx, platform, playerID)
 	if err != nil {
 		s.logger.Error("Could not check if player is banned",
 			zap.String("Player ID", playerID),
@@ -822,7 +829,14 @@ func (s *infractionService) syncBan(ctx context.Context, platform, playerID, nam
 		return err
 	}
 
-	if !isBanned || timeRemaining < 2 {
+	if !isBanned {
+		return nil
+	}
+
+	// If this ban was permanent
+	if timeRemaining == domain.PermanentInfractionValue {
+		timeRemaining = game.GetConfig().PermanentDurationValue
+	} else if timeRemaining < 2 {
 		// timeRemaining < 2 because if the ban is almost done, there's no need to reset it. The minimum timeRemaining
 		// value can be 1, so if a banned player continuously rejoined with less than 1 minute remaining in their ban,
 		// they would be re-banned for a minute. Very minor problem, but worth preventing to improve player experience.
@@ -830,7 +844,6 @@ func (s *infractionService) syncBan(ctx context.Context, platform, playerID, nam
 			zap.String("Platform", platform),
 			zap.String("Player ID", playerID),
 			zap.String("Reason", "< 2 minutes remaining"))
-
 		return nil
 	}
 

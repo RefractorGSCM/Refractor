@@ -104,7 +104,7 @@ type GameConfig struct {
 
 	// PermanentDurationValue is the value which will result in a permanent infraction when used on a server.
 	// e.g 0 would be used to ban permanently on a Mordhau server, so we would make this value 0
-	PermanentDurationValue int
+	PermanentDurationValue int64
 }
 
 func (gc GameConfig) AlivePingEnabled() bool {

@@ -391,19 +391,22 @@ func (r *infractionRepo) PlayerIsBanned(ctx context.Context, platform, playerID 
 		select exists(
 			select 1 from infractions 
 			where
-				platform = $1 and
-				playerid = $2 and
-				type = 'BAN' and
-				(extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp)
+					repealed = false and
+				    platform = $1 and
+					playerid = $2 and
+					type = 'BAN' and
+					(duration = -1 or (extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp))
 			) as IsBanned, (
 			select
 				ROUND(((extract(epoch from createdat) + (duration * 60)) - extract(epoch from current_timestamp)) / 60) as TimeRemaining
 			from infractions
 			where
-				platform = $1 and
-				playerid = $2 and
-				type = 'BAN' and
-				(extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp)
+					repealed = false and
+					platform = $1 and
+					playerid = $2 and
+					type = 'BAN' and
+					(duration = -1 or (extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp))
+			limit 1
 		);
 	`
 
@@ -417,6 +420,12 @@ func (r *infractionRepo) PlayerIsBanned(ctx context.Context, platform, playerID 
 		return false, 0, errors.Wrap(err, op)
 	}
 
+	// if the duration of the active ban infraction was -1, the time remaining value is likely negative so adjust it to
+	// -1 to make it more clear that the infraction is permanent.
+	if minutesRemaining.ValueOrZero() < 0 {
+		minutesRemaining = null.NewInt(domain.PermanentInfractionValue, true)
+	}
+
 	return isBanned, minutesRemaining.ValueOrZero(), nil
 }
 
@@ -427,19 +436,22 @@ func (r *infractionRepo) PlayerIsMuted(ctx context.Context, platform, playerID s
 		select exists(
 			select 1 from infractions 
 			where
-				platform = $1 and
-				playerid = $2 and
-				type = 'MUTE' and
-				(extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp)
-			) as IsBanned, (
+					repealed = false and
+				    platform = $1 and
+					playerid = $2 and
+					type = 'MUTE' and
+					(duration = -1 or (extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp))
+			) as IsMuted, (
 			select
 				ROUND(((extract(epoch from createdat) + (duration * 60)) - extract(epoch from current_timestamp)) / 60) as TimeRemaining
 			from infractions
 			where
-				platform = $1 and
-				playerid = $2 and
-				type = 'MUTE' and
-				(extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp)
+					repealed = false and
+					platform = $1 and
+					playerid = $2 and
+					type = 'MUTE' and
+					(duration = -1 or (extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp))
+			limit 1
 		);
 	`
 
@@ -451,6 +463,12 @@ func (r *infractionRepo) PlayerIsMuted(ctx context.Context, platform, playerID s
 	if err := row.Scan(&isMuted, &minutesRemaining); err != nil {
 		r.logger.Error("Could not scan IsMuted and TimeRemaining from player mute infractions query", zap.Error(err))
 		return false, 0, errors.Wrap(err, op)
+	}
+
+	// if the duration of the active ban infraction was -1, the time remaining value is likely negative so adjust it to
+	// -1 to make it more clear that the infraction is permanent.
+	if minutesRemaining.ValueOrZero() < 0 {
+		minutesRemaining = null.NewInt(domain.PermanentInfractionValue, true)
 	}
 
 	return isMuted, minutesRemaining.ValueOrZero(), nil
