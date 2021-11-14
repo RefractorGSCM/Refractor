@@ -40,7 +40,7 @@ var InfractionReasonRules = RuleGroup{
 }
 
 var InfractionDurationRules = RuleGroup{
-	validation.Min(0),
+	validation.Min(-1),
 	validation.Max(math.MaxInt32),
 }
 
