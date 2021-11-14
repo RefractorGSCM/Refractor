@@ -27,6 +27,7 @@ type CommandPayload interface {
 type CommandExecutor interface {
 	PrepareInfractionCommands(ctx context.Context, infraction InfractionPayload, action string, serverID int64) (CommandPayload, error)
 	RunCommands(payload CommandPayload) error
+	StartRunner(terminate chan uint8)
 }
 
 type CustomInfractionPayload struct {
