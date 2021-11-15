@@ -14,13 +14,13 @@ require (
 	github.com/guregu/null v4.0.0+incompatible
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/joho/godotenv v1.3.0
-	github.com/labstack/echo/v4 v4.3.0
+	github.com/labstack/echo/v4 v4.6.1
 	github.com/lib/pq v1.8.0
 	github.com/onsi/gomega v1.16.0
 	github.com/ory/kratos-client-go v0.7.0-alpha.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/refractorgscm/rcon v1.1.1 // indirect
+	github.com/refractorgscm/rcon v1.1.1
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.18.1
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
