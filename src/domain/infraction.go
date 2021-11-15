@@ -101,14 +101,21 @@ const (
 )
 
 type InfractionCommands struct {
-	Warn []string `json:"warn"`
-	Mute []string `json:"mute"`
-	Kick []string `json:"kick"`
-	Ban  []string `json:"ban"`
+	Warn []*InfractionCommand `json:"warn"`
+	Mute []*InfractionCommand `json:"mute"`
+	Kick []*InfractionCommand `json:"kick"`
+	Ban  []*InfractionCommand `json:"ban"`
 }
 
-func (ic *InfractionCommands) Map() map[string][]string {
-	return map[string][]string{
+type InfractionCommand struct {
+	Command string `json:"command"`
+	// If RunOnAll is set to true, when triggered the command will be run on all servers with the same game as the
+	// server it was issued on. Otherwise, it will only be run on the server it was triggered on.
+	RunOnAll bool `json:"run_on_all"`
+}
+
+func (ic *InfractionCommands) Map() map[string][]*InfractionCommand {
+	return map[string][]*InfractionCommand{
 		InfractionTypeWarning: ic.Warn,
 		InfractionTypeMute:    ic.Mute,
 		InfractionTypeKick:    ic.Kick,
@@ -119,16 +126,16 @@ func (ic *InfractionCommands) Map() map[string][]string {
 // Prepare will replace all nil fields with empty arrays for a consistent experience on the frontend
 func (ic *InfractionCommands) Prepare() *InfractionCommands {
 	if ic.Warn == nil {
-		ic.Warn = make([]string, 0)
+		ic.Warn = make([]*InfractionCommand, 0)
 	}
 	if ic.Mute == nil {
-		ic.Mute = make([]string, 0)
+		ic.Mute = make([]*InfractionCommand, 0)
 	}
 	if ic.Kick == nil {
-		ic.Kick = make([]string, 0)
+		ic.Kick = make([]*InfractionCommand, 0)
 	}
 	if ic.Ban == nil {
-		ic.Ban = make([]string, 0)
+		ic.Ban = make([]*InfractionCommand, 0)
 	}
 
 	return ic

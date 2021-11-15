@@ -88,32 +88,87 @@ func (g *mordhau) GetDefaultSettings() *domain.GameSettings {
 	return &domain.GameSettings{
 		Commands: &domain.GameCommandSettings{
 			CreateInfractionCommands: &domain.InfractionCommands{
-				Warn: []string{"Say {{PLAYER_NAME}} has been warned for: {{REASON}}"},
-				Mute: []string{"Mute {{PLAYER_ID}} {{DURATION}}"},
-				Kick: []string{"Kick {{PLAYER_ID}} {{REASON}}"},
-				Ban:  []string{"Ban {{PLAYER_ID}} {{DURATION}} {{REASON}}"},
+				Warn: []*domain.InfractionCommand{},
+				Mute: []*domain.InfractionCommand{
+					{
+						Command:  "Mute {{PLAYER_ID}} {{DURATION}}",
+						RunOnAll: true,
+					},
+				},
+				Kick: []*domain.InfractionCommand{
+					{
+						Command:  "Kick {{PLAYER_ID}} {{REASON}}",
+						RunOnAll: false,
+					},
+				},
+				Ban: []*domain.InfractionCommand{
+					{
+						Command:  "Ban {{PLAYER_ID}} {{DURATION}} {{REASON}}",
+						RunOnAll: true,
+					},
+				},
 			},
 			UpdateInfractionCommands: &domain.InfractionCommands{
-				Warn: []string{},
-				Mute: []string{"Mute {{PLAYER_ID}} {{DURATION}}"},
-				Kick: []string{},
-				Ban:  []string{"Ban {{PLAYER_ID}} {{DURATION}} {{REASON}}"},
+				Warn: []*domain.InfractionCommand{},
+				Mute: []*domain.InfractionCommand{
+					{
+						Command:  "Mute {{PLAYER_ID}} {{DURATION}}",
+						RunOnAll: true,
+					},
+				},
+				Kick: []*domain.InfractionCommand{},
+				Ban: []*domain.InfractionCommand{
+					{
+						Command:  "Ban {{PLAYER_ID}} {{DURATION}} {{REASON}}",
+						RunOnAll: true,
+					},
+				},
 			},
 			DeleteInfractionCommands: &domain.InfractionCommands{
-				Warn: []string{},
-				Mute: []string{"Unmute {{PLAYER_ID}}"},
-				Kick: []string{},
-				Ban:  []string{"Unban {{PLAYER_ID}}"},
+				Warn: []*domain.InfractionCommand{},
+				Mute: []*domain.InfractionCommand{
+					{
+						Command:  "Unmute {{PLAYER_ID}}",
+						RunOnAll: true,
+					},
+				},
+				Kick: []*domain.InfractionCommand{},
+				Ban: []*domain.InfractionCommand{
+					{
+						Command:  "Unban {{PLAYER_ID}}",
+						RunOnAll: true,
+					},
+				},
 			},
 			RepealInfractionCommands: &domain.InfractionCommands{
-				Warn: []string{},
-				Mute: []string{"Unmute {{PLAYER_ID}}"},
-				Kick: []string{},
-				Ban:  []string{"Unban {{PLAYER_ID}}"},
+				Warn: []*domain.InfractionCommand{},
+				Mute: []*domain.InfractionCommand{
+					{
+						Command:  "Unmute {{PLAYER_ID}}",
+						RunOnAll: true,
+					},
+				},
+				Kick: []*domain.InfractionCommand{},
+				Ban: []*domain.InfractionCommand{
+					{
+						Command:  "Unban {{PLAYER_ID}}",
+						RunOnAll: true,
+					},
+				},
 			},
 			SyncInfractionCommands: &domain.InfractionCommands{
-				Mute: []string{"Mute {{PLAYER_ID}} {{DURATION}}"},
-				Ban:  []string{"Ban {{PLAYER_ID}} {{DURATION}} Refractor Ban Sync"},
+				Mute: []*domain.InfractionCommand{
+					{
+						Command:  "Mute {{PLAYER_ID}} {{DURATION}}",
+						RunOnAll: false,
+					},
+				},
+				Ban: []*domain.InfractionCommand{
+					{
+						Command:  "Ban {{PLAYER_ID}} {{DURATION}} Refractor Ban Sync",
+						RunOnAll: false,
+					},
+				},
 			},
 		},
 		General: &domain.GeneralSettings{
