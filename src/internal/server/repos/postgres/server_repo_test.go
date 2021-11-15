@@ -50,171 +50,9 @@ func Test(t *testing.T) {
 	encrypted, _ := aeshelper.Encrypt([]byte("password"), config.EncryptionKey)
 	passwordEncrypted = string(encrypted)
 
-	g.Describe("Store()", func() {
-		var repo domain.ServerRepo
-		var mock sqlmock.Sqlmock
-		var mockServer *domain.Server
-		var db *sql.DB
+	var cols = []string{"ServerID", "Game", "Name", "Address", "RCONPort", "RCONPassword", "Deactivated", "CreatedAt", "ModifiedAt"}
 
-		g.BeforeEach(func() {
-			var err error
-
-			db, mock, err = sqlmock.New()
-			if err != nil {
-				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
-			}
-
-			repo = NewServerRepo(db, zap.NewNop(), config)
-
-			mockServer = &domain.Server{
-				ID:           1,
-				Game:         "Mock",
-				Name:         "Mock Server",
-				Address:      "127.0.0.1",
-				RCONPort:     "25575",
-				RCONPassword: password,
-				Deactivated:  false,
-				CreatedAt:    time.Time{},
-				ModifiedAt:   time.Time{},
-			}
-		})
-
-		g.After(func() {
-			_ = db.Close()
-		})
-
-		g.Describe("Success", func() {
-			g.BeforeEach(func() {
-				// All tests will call Prepare so we can set this here to avoid duplication
-				mock.ExpectPrepare("INSERT INTO Servers")
-			})
-
-			g.It("Should not return an error", func() {
-				mock.ExpectQuery("INSERT INTO Servers").WillReturnRows(sqlmock.NewRows([]string{"ServerID"}).AddRow(int64(1)))
-
-				err := repo.Store(context.TODO(), mockServer)
-
-				Expect(err).To(BeNil())
-				Expect(mock.ExpectationsWereMet()).To(BeNil())
-			})
-
-			g.It("Should update the server to have the new ID", func() {
-				mock.ExpectQuery("INSERT INTO Servers").WillReturnRows(sqlmock.NewRows([]string{"ServerID"}).AddRow(int64(1)))
-
-				_ = repo.Store(context.TODO(), mockServer)
-
-				Expect(mockServer.ID).To(Equal(int64(1)))
-				Expect(mock.ExpectationsWereMet()).To(BeNil())
-			})
-		})
-
-		g.Describe("Fail", func() {
-			var repo domain.ServerRepo
-			var mock sqlmock.Sqlmock
-			var db *sql.DB
-
-			g.BeforeEach(func() {
-				var err error
-
-				db, mock, err = sqlmock.New()
-				if err != nil {
-					t.Fatalf("Could not create new sqlmocker. Error: %v", err)
-				}
-
-				repo = NewServerRepo(db, zap.NewNop(), config)
-
-				// All tests will call Prepare so we can set this here to avoid duplication
-				mock.ExpectPrepare("INSERT INTO Servers")
-			})
-
-			g.It("Should return an error on SQL error", func() {
-				mock.ExpectQuery("INSERT INTO Servers").WillReturnError(fmt.Errorf(""))
-
-				err := repo.Store(context.TODO(), mockServer)
-
-				Expect(err).ToNot(BeNil())
-				Expect(mock.ExpectationsWereMet()).To(BeNil())
-			})
-		})
-	})
-
-	g.Describe("GetByID()", func() {
-		var repo domain.ServerRepo
-		var mock sqlmock.Sqlmock
-		var mockServer *domain.Server
-		var db *sql.DB
-
-		g.BeforeEach(func() {
-			var err error
-
-			db, mock, err = sqlmock.New()
-			if err != nil {
-				t.Fatalf("Could not create new sqlmocker. Error: %v", err)
-			}
-
-			repo = NewServerRepo(db, zap.NewNop(), config)
-
-			mockServer = &domain.Server{
-				ID:           1,
-				Game:         "Mock",
-				Name:         "Mock Server",
-				Address:      "127.0.0.1",
-				RCONPort:     "25575",
-				RCONPassword: password,
-				Deactivated:  false,
-				CreatedAt:    time.Time{},
-				ModifiedAt:   time.Time{},
-			}
-		})
-
-		g.After(func() {
-			_ = db.Close()
-		})
-
-		g.Describe("A result was found", func() {
-			var mockRows *sqlmock.Rows
-
-			g.BeforeEach(func() {
-				mockRows = sqlmock.NewRows(
-					[]string{"ServerID", "Game", "Name", "Address", "RCONPort", "RCONPassword", "Deactivated", "CreatedAt", "ModifiedAt"}).
-					AddRow(mockServer.ID, mockServer.Game, mockServer.Name, mockServer.Address, mockServer.RCONPort,
-						passwordEncrypted, mockServer.Deactivated, mockServer.CreatedAt, mockServer.ModifiedAt)
-			})
-
-			g.It("Should not return an error", func() {
-				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers")).WillReturnRows(mockRows)
-
-				_, err := repo.GetByID(context.TODO(), 1)
-
-				Expect(err).To(BeNil())
-			})
-
-			g.It("Should return the correct rows scanned to a server object", func() {
-				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers")).WillReturnRows(mockRows)
-
-				server, err := repo.GetByID(context.TODO(), mockServer.ID)
-
-				Expect(err).To(BeNil())
-				Expect(server).ToNot(BeNil())
-				Expect(server).To(Equal(mockServer))
-				Expect(mock.ExpectationsWereMet()).To(BeNil())
-			})
-		})
-
-		g.Describe("No result found", func() {
-			g.It("Should return domain.ErrNotFound if no results were found", func() {
-				mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers")).WillReturnRows(sqlmock.NewRows(
-					[]string{"ServerID", "Game", "Name", "Address", "RCONPort", "RCONPassword", "Deactivated", "CreatedAt", "ModifiedAt"}))
-
-				_, err := repo.GetByID(context.TODO(), 1)
-
-				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
-				Expect(mock.ExpectationsWereMet()).To(BeNil())
-			})
-		})
-	})
-
-	g.Describe("Deactivate()", func() {
+	g.Describe("Server Repo", func() {
 		var repo domain.ServerRepo
 		var mock sqlmock.Sqlmock
 		var db *sql.DB
@@ -230,58 +68,14 @@ func Test(t *testing.T) {
 			repo = NewServerRepo(db, zap.NewNop(), config)
 		})
 
-		g.Describe("Target server exists", func() {
-			g.BeforeEach(func() {
-				mock.ExpectExec("UPDATE Servers SET Deactivated = TRUE").WillReturnResult(sqlmock.NewResult(0, 1))
-			})
-
-			g.It("Should not return an error", func() {
-				err := repo.Deactivate(context.TODO(), 1)
-
-				Expect(err).To(BeNil())
-			})
-		})
-
-		g.Describe("Target server does not exist", func() {
-			g.BeforeEach(func() {
-				mock.ExpectExec("UPDATE Servers SET Deactivated = TRUE").WillReturnResult(sqlmock.NewResult(0, 0))
-			})
-
-			g.It("Should return the error domain.ErrNotFound", func() {
-				err := repo.Deactivate(context.TODO(), 1)
-
-				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
-			})
-		})
-	})
-
-	g.Describe("Update()", func() {
-		var repo domain.ServerRepo
-		var mock sqlmock.Sqlmock
-		var db *sql.DB
-
-		g.BeforeEach(func() {
-			var err error
-
-			db, mock, err = sqlmock.New()
-			if err != nil {
-				t.Fatalf("Could not create new sqlmock instance. Error: %v", err)
-			}
-
-			repo = NewServerRepo(db, zap.NewNop(), config)
-
-			mock.ExpectPrepare("UPDATE Servers SET")
-		})
-
-		g.Describe("Target row found", func() {
-			var updatedServer *domain.Server
-			var updateArgs domain.UpdateArgs
+		g.Describe("Store()", func() {
+			var mockServer *domain.Server
 
 			g.BeforeEach(func() {
-				us := &domain.Server{
+				mockServer = &domain.Server{
 					ID:           1,
 					Game:         "Mock",
-					Name:         "Updated Name",
+					Name:         "Mock Server",
 					Address:      "127.0.0.1",
 					RCONPort:     "25575",
 					RCONPassword: password,
@@ -290,59 +84,305 @@ func Test(t *testing.T) {
 					ModifiedAt:   time.Time{},
 				}
 
-				updateArgs = domain.UpdateArgs{
-					"Name": "Updated Name",
-				}
-
-				updatedServer = us
-
-				mockRows := sqlmock.NewRows(
-					[]string{"ServerID", "Game", "Name", "Address", "RCONPort", "RCONPassword", "Deactivated", "CreatedAt", "ModifiedAt"}).
-					AddRow(us.ID, us.Game, us.Name, us.Address, us.RCONPort,
-						passwordEncrypted, us.Deactivated, us.CreatedAt, us.ModifiedAt)
-
-				mock.ExpectQuery("UPDATE Servers SET").WillReturnRows(mockRows)
+				mock.ExpectPrepare("INSERT INTO Servers")
 			})
 
-			g.It("Should not return an error", func() {
-				_, err := repo.Update(context.TODO(), updatedServer.ID, updateArgs)
+			g.Describe("Success", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery("INSERT INTO Servers").WillReturnRows(sqlmock.NewRows([]string{"ServerID"}).AddRow(int64(1)))
 
-				Expect(err).To(BeNil())
-				Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should not return an error", func() {
+					err := repo.Store(context.TODO(), mockServer)
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should update the server to have the new ID", func() {
+					_ = repo.Store(context.TODO(), mockServer)
+
+					Expect(mockServer.ID).To(Equal(int64(1)))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
 			})
 
-			g.It("Should scan and return the correct server", func() {
-				updated, err := repo.Update(context.TODO(), updatedServer.ID, updateArgs)
+			g.Describe("Fail", func() {
+				g.It("Should return an error on SQL error", func() {
+					mock.ExpectQuery("INSERT INTO Servers").WillReturnError(fmt.Errorf(""))
 
-				Expect(err).To(BeNil())
-				Expect(updated).To(Equal(updatedServer))
-				Expect(mock.ExpectationsWereMet()).To(BeNil())
+					err := repo.Store(context.TODO(), mockServer)
+
+					Expect(err).ToNot(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
 			})
 		})
 
-		g.Describe("Target row not found", func() {
-			var updateArgs domain.UpdateArgs
+		g.Describe("GetByID()", func() {
+			var mockServer *domain.Server
 
 			g.BeforeEach(func() {
-				updateArgs = domain.UpdateArgs{
-					"Name": "todo: name",
+				mockServer = &domain.Server{
+					ID:           1,
+					Game:         "Mock",
+					Name:         "Mock Server",
+					Address:      "127.0.0.1",
+					RCONPort:     "25575",
+					RCONPassword: password,
+					Deactivated:  false,
+					CreatedAt:    time.Time{},
+					ModifiedAt:   time.Time{},
 				}
-
-				mock.ExpectQuery("UPDATE Servers SET").WillReturnError(sql.ErrNoRows)
 			})
 
-			g.It("Should return a domain.ErrNotFound error", func() {
-				_, err := repo.Update(context.TODO(), 5, updateArgs)
+			g.Describe("A result was found", func() {
+				var mockRows *sqlmock.Rows
 
-				Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
-				Expect(mock.ExpectationsWereMet()).To(BeNil())
+				g.BeforeEach(func() {
+					mockRows = sqlmock.NewRows(cols).
+						AddRow(mockServer.ID, mockServer.Game, mockServer.Name, mockServer.Address, mockServer.RCONPort,
+							passwordEncrypted, mockServer.Deactivated, mockServer.CreatedAt, mockServer.ModifiedAt)
+				})
+
+				g.It("Should not return an error", func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers")).WillReturnRows(mockRows)
+
+					_, err := repo.GetByID(context.TODO(), 1)
+
+					Expect(err).To(BeNil())
+				})
+
+				g.It("Should return the correct rows scanned to a server object", func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers")).WillReturnRows(mockRows)
+
+					server, err := repo.GetByID(context.TODO(), mockServer.ID)
+
+					Expect(err).To(BeNil())
+					Expect(server).ToNot(BeNil())
+					Expect(server).To(Equal(mockServer))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
 			})
 
-			g.It("Should return a nil server", func() {
-				g, _ := repo.Update(context.TODO(), 5, updateArgs)
+			g.Describe("No result found", func() {
+				g.It("Should return domain.ErrNotFound if no results were found", func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers")).WillReturnRows(sqlmock.NewRows(cols))
 
-				Expect(g).To(BeNil())
-				Expect(mock.ExpectationsWereMet()).To(BeNil())
+					_, err := repo.GetByID(context.TODO(), 1)
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
+
+		g.Describe("Deactivate()", func() {
+			g.Describe("Target server exists", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec(regexp.QuoteMeta("UPDATE Servers SET Deactivated = TRUE")).
+						WillReturnResult(sqlmock.NewResult(0, 1))
+				})
+
+				g.It("Should not return an error", func() {
+					err := repo.Deactivate(context.TODO(), 1)
+
+					Expect(err).To(BeNil())
+				})
+			})
+
+			g.Describe("Target server does not exist", func() {
+				g.BeforeEach(func() {
+					mock.ExpectExec(regexp.QuoteMeta("UPDATE Servers SET Deactivated = TRUE")).
+						WillReturnResult(sqlmock.NewResult(0, 0))
+				})
+
+				g.It("Should return the error domain.ErrNotFound", func() {
+					err := repo.Deactivate(context.TODO(), 1)
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+				})
+			})
+		})
+
+		g.Describe("Update()", func() {
+			g.BeforeEach(func() {
+				mock.ExpectPrepare("UPDATE Servers SET")
+			})
+
+			g.Describe("Target row found", func() {
+				var updatedServer *domain.Server
+				var updateArgs domain.UpdateArgs
+
+				g.BeforeEach(func() {
+					us := &domain.Server{
+						ID:           1,
+						Game:         "Mock",
+						Name:         "Updated Name",
+						Address:      "127.0.0.1",
+						RCONPort:     "25575",
+						RCONPassword: password,
+						Deactivated:  false,
+						CreatedAt:    time.Time{},
+						ModifiedAt:   time.Time{},
+					}
+
+					updateArgs = domain.UpdateArgs{
+						"Name": "Updated Name",
+					}
+
+					updatedServer = us
+
+					mockRows := sqlmock.NewRows(cols).
+						AddRow(us.ID, us.Game, us.Name, us.Address, us.RCONPort,
+							passwordEncrypted, us.Deactivated, us.CreatedAt, us.ModifiedAt)
+
+					mock.ExpectQuery("UPDATE Servers SET").WillReturnRows(mockRows)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.Update(context.TODO(), updatedServer.ID, updateArgs)
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should scan and return the correct server", func() {
+					updated, err := repo.Update(context.TODO(), updatedServer.ID, updateArgs)
+
+					Expect(err).To(BeNil())
+					Expect(updated).To(Equal(updatedServer))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Target row not found", func() {
+				var updateArgs domain.UpdateArgs
+
+				g.BeforeEach(func() {
+					updateArgs = domain.UpdateArgs{
+						"Name": "todo: name",
+					}
+
+					mock.ExpectQuery("UPDATE Servers SET").WillReturnError(sql.ErrNoRows)
+				})
+
+				g.It("Should return a domain.ErrNotFound error", func() {
+					_, err := repo.Update(context.TODO(), 5, updateArgs)
+
+					Expect(errors.Cause(err)).To(Equal(domain.ErrNotFound))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return a nil server", func() {
+					g, _ := repo.Update(context.TODO(), 5, updateArgs)
+
+					Expect(g).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+		})
+
+		g.Describe("GetByGame()", func() {
+
+			g.Describe("Results found", func() {
+				var expected []*domain.Server
+
+				g.BeforeEach(func() {
+					expected = []*domain.Server{
+						{
+							ID:           1,
+							Game:         "game1",
+							Name:         "server 1",
+							Address:      "127.0.0.1",
+							RCONPort:     "1234",
+							RCONPassword: password,
+							Deactivated:  false,
+							CreatedAt:    time.Time{},
+							ModifiedAt:   time.Time{},
+						},
+						{
+							ID:           2,
+							Game:         "game1",
+							Name:         "server 2",
+							Address:      "127.0.0.1",
+							RCONPort:     "1235",
+							RCONPassword: password,
+							Deactivated:  false,
+							CreatedAt:    time.Time{},
+							ModifiedAt:   time.Time{},
+						},
+						{
+							ID:           3,
+							Game:         "game1",
+							Name:         "server 3",
+							Address:      "127.0.0.1",
+							RCONPort:     "1236",
+							RCONPassword: password,
+							Deactivated:  false,
+							CreatedAt:    time.Time{},
+							ModifiedAt:   time.Time{},
+						},
+					}
+
+					rows := sqlmock.NewRows(cols)
+
+					for _, s := range expected {
+						rows.AddRow(s.ID, s.Game, s.Name, s.Address, s.RCONPort, passwordEncrypted, s.Deactivated,
+							s.CreatedAt, s.ModifiedAt)
+					}
+
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers WHERE")).WillReturnRows(rows)
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.GetByGame(context.TODO(), "game1")
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return the correct results", func() {
+					got, err := repo.GetByGame(context.TODO(), "game1")
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal(expected))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("No results found", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers WHERE")).WillReturnRows(sqlmock.NewRows(cols))
+				})
+
+				g.It("Should not return an error", func() {
+					_, err := repo.GetByGame(context.TODO(), "game1")
+
+					Expect(err).To(BeNil())
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+
+				g.It("Should return an empty slice", func() {
+					got, err := repo.GetByGame(context.TODO(), "game1")
+
+					Expect(err).To(BeNil())
+					Expect(got).To(Equal([]*domain.Server{}))
+					Expect(mock.ExpectationsWereMet()).To(BeNil())
+				})
+			})
+
+			g.Describe("Database error", func() {
+				g.BeforeEach(func() {
+					mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM Servers WHERE")).WillReturnError(fmt.Errorf("err"))
+				})
+
+				g.It("Should return an error", func() {
+					_, err := repo.GetByGame(context.TODO(), "game1")
+
+					Expect(err).ToNot(BeNil())
+				})
 			})
 		})
 	})

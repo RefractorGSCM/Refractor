@@ -93,18 +93,28 @@ func Test(t *testing.T) {
 					gameService.On("GetGameSettings", mock.Anything).Return(&domain.GameSettings{
 						Commands: &domain.GameCommandSettings{
 							CreateInfractionCommands: &domain.InfractionCommands{
-								Warn: []string{},
-								Mute: []string{},
-								Kick: []string{},
-								Ban:  []string{"Ban {{PLAYER_NAME}} {{DURATION}} {{REASON}}"},
+								Warn: []*domain.InfractionCommand{},
+								Mute: []*domain.InfractionCommand{},
+								Kick: []*domain.InfractionCommand{},
+								Ban: []*domain.InfractionCommand{
+									{
+										Command:  "Ban {{PLAYER_NAME}} {{DURATION}} {{REASON}}",
+										RunOnAll: true,
+									},
+								},
 							},
 							UpdateInfractionCommands: nil,
 							DeleteInfractionCommands: nil,
 							RepealInfractionCommands: &domain.InfractionCommands{
-								Warn: []string{},
-								Mute: []string{},
-								Kick: []string{},
-								Ban:  []string{"Test {{PLAYER_NAME}} {{PLAYER_ID}} {{PLATFORM}} {{DURATION}} {{REASON}}"},
+								Warn: []*domain.InfractionCommand{},
+								Mute: []*domain.InfractionCommand{},
+								Kick: []*domain.InfractionCommand{},
+								Ban: []*domain.InfractionCommand{
+									{
+										Command:  "Test {{PLAYER_NAME}} {{PLAYER_ID}} {{PLATFORM}} {{DURATION}} {{REASON}}",
+										RunOnAll: true,
+									},
+								},
 							},
 						},
 					}, nil)
