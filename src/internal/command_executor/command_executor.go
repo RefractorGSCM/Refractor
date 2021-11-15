@@ -116,7 +116,7 @@ func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction dom
 	// Parse and run the commands
 	for _, cmd := range cmds {
 		// Replace placeholders inside command with payload data
-		runCmd := strings.ReplaceAll(cmd, "{{PLAYER_ID}}", infraction.GetPlayerID())
+		runCmd := strings.ReplaceAll(cmd.Command, "{{PLAYER_ID}}", infraction.GetPlayerID())
 		runCmd = strings.ReplaceAll(runCmd, "{{PLATFORM}}", infraction.GetPlatform())
 		runCmd = strings.ReplaceAll(runCmd, "{{PLAYER_NAME}}", playerName)
 		runCmd = strings.ReplaceAll(runCmd, "{{DURATION}}", strconv.FormatInt(infraction.GetDuration(), 10))

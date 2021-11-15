@@ -131,9 +131,9 @@ func validateActCmds(cmds *domain.InfractionCommands, act string) error {
 	return nil
 }
 
-func validateCmdArr(arr []string, act, infr string) error {
+func validateCmdArr(arr []*domain.InfractionCommand, act, infr string) error {
 	for idx, cmd := range arr {
-		if len(cmd) < 1 || len(cmd) > 256 {
+		if len(cmd.Command) < 1 || len(cmd.Command) > 256 {
 			return buildManualError(act, infr, &cmdFieldErrBody{
 				Index:   idx,
 				Message: "length must be between 1 and 256",
