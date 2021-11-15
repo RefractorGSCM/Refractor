@@ -93,6 +93,7 @@ type ServerRepo interface {
 	Deactivate(ctx context.Context, id int64) error
 	Update(ctx context.Context, id int64, args UpdateArgs) (*Server, error)
 	Exists(ctx context.Context, args FindArgs) (bool, error)
+	GetByGame(ctx context.Context, gameName string) ([]*Server, error)
 }
 
 type ServerUpdateSubscriber func(server *Server)
