@@ -35,11 +35,12 @@ type mordhau struct {
 func NewMordhauGame(platform domain.Platform) domain.Game {
 	return &mordhau{
 		config: &domain.GameConfig{
-			UseRCON:                   true,
-			AlivePingInterval:         time.Second * 30,
-			EnableBroadcasts:          true,
-			RCONInitCommands:          []string{"listen login", "listen chat"},
-			PlayerListRefreshInterval: time.Minute * 10,
+			UseRCON:           true,
+			AlivePingInterval: time.Second * 10,
+			EnableBroadcasts:  true,
+			RCONInitCommands:  []string{"listen login", "listen chat"},
+			//PlayerListRefreshInterval: time.Minute * 10,
+			PlayerListRefreshInterval: time.Second * 20,
 			EnableChat:                true,
 			BroadcastPatterns: map[string]*regexp.Regexp{
 				broadcast.TypeJoin: regexp.MustCompile("^Login: (?P<Date>[0-9\\.-]+): (?P<Name>.+) \\((?P<PlayerID>[0-9a-fA-F]+)\\) logged in$"),

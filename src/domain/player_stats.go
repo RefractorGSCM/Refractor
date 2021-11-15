@@ -24,4 +24,5 @@ import (
 type PlayerStatsService interface {
 	GetInfractionCount(c context.Context, platform, playerID string) (int, error)
 	GetInfractionCountSince(c context.Context, platform, playerID string, sinceMinutes int) (int, error)
+	GetPlayerPayload(c context.Context, platform, playerID string, game Game) (*PlayerPayload, error)
 }

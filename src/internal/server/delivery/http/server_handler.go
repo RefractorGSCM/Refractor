@@ -151,7 +151,7 @@ type resServer struct {
 	Deactivated   bool             `json:"deactivated"`
 	CreatedAt     time.Time        `json:"created_at"`
 	ModifiedAt    time.Time        `json:"modified_at"`
-	OnlinePlayers []*domain.Player `json:"online_players"`
+	OnlinePlayers []domain.IPlayer `json:"online_players"`
 	Status        string           `json:"status"`
 	IsFragment    bool             `json:"is_fragment"`
 }
@@ -194,7 +194,7 @@ func (h *serverHandler) GetServers(c echo.Context) error {
 			}
 
 			if len(resServer.OnlinePlayers) < 1 {
-				resServer.OnlinePlayers = []*domain.Player{}
+				resServer.OnlinePlayers = []domain.IPlayer{}
 			}
 
 			resServer.Status = data.Status

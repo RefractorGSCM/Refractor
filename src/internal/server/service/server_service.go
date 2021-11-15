@@ -65,16 +65,11 @@ func (s *serverService) Store(c context.Context, server *domain.Server) error {
 		return err
 	}
 
-	if err := s.CreateServerData(server.ID); err != nil {
+	if err := s.CreateServerData(server.ID, server.Game); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-type serverResponse struct {
-	Data domain.ServerData `json:"data"`
-	*domain.Server
 }
 
 func (s *serverService) GetByID(c context.Context, id int64) (*domain.Server, error) {
@@ -213,12 +208,13 @@ func (s *serverService) Update(c context.Context, id int64, args domain.UpdateAr
 	return updated, nil
 }
 
-func (s *serverService) CreateServerData(id int64) error {
+func (s *serverService) CreateServerData(id int64, gameName string) error {
 	s.serverData[id] = &domain.ServerData{
 		NeedsUpdate:   true,
+		GameName:      gameName,
 		ServerID:      id,
 		PlayerCount:   0,
-		OnlinePlayers: map[string]*domain.Player{},
+		OnlinePlayers: map[string]domain.IPlayer{},
 		Status:        "Unknown",
 	}
 
@@ -229,18 +225,26 @@ func (s *serverService) GetAllServerData() ([]*domain.ServerData, error) {
 	var allData []*domain.ServerData
 
 	for _, data := range s.serverData {
+		game, err := s.gameService.GetGame(data.GameName)
+		if err != nil {
+			s.logger.Error("Could not get game by name in server data",
+				zap.Int64("Server ID", data.ServerID),
+				zap.String("Game Name", data.GameName))
+			continue
+		}
+
 		// Get infraction counts for each player
-		for _, p := range data.OnlinePlayers {
-			count, err := s.playerStatsService.GetInfractionCount(context.TODO(), p.Platform, p.PlayerID)
+		for id, p := range data.OnlinePlayers {
+			playerPayload, err := s.playerStatsService.GetPlayerPayload(context.TODO(), p.GetPlatform(), p.GetPlayerID(), game)
 			if err != nil {
-				s.logger.Error("Could not get player infraction count for online player",
-					zap.String("Platform", p.Platform),
-					zap.String("Player ID", p.PlayerID),
+				s.logger.Error("Could not get player payload for player in server data",
+					zap.String("Platform", p.GetPlatform()),
+					zap.String("Player ID", p.GetPlayerID()),
 					zap.Error(err))
 				continue
 			}
 
-			p.InfractionCount = count
+			data.OnlinePlayers[id] = playerPayload
 		}
 
 		allData = append(allData, data)
@@ -256,12 +260,9 @@ func (s *serverService) GetServerData(id int64) (*domain.ServerData, error) {
 		s.logger.Error("Could not get server by id", zap.Int64("Server ID", id), zap.Error(err))
 		return nil, err
 	}
-	settings, err := s.gameService.GetGameSettingsByName(server.Game)
+
+	game, err := s.gameService.GetGame(server.Game)
 	if err != nil {
-		s.logger.Error("Could not get server game settings",
-			zap.Int64("Server ID", id),
-			zap.String("Game", server.Game),
-			zap.Error(err))
 		return nil, err
 	}
 
@@ -270,28 +271,17 @@ func (s *serverService) GetServerData(id int64) (*domain.ServerData, error) {
 	}
 
 	// Get infraction counts for each player
-	for _, p := range data.OnlinePlayers {
-		count, err := s.playerStatsService.GetInfractionCount(context.TODO(), p.Platform, p.PlayerID)
+	for id, p := range data.OnlinePlayers {
+		playerPayload, err := s.playerStatsService.GetPlayerPayload(context.TODO(), p.GetPlatform(), p.GetPlayerID(), game)
 		if err != nil {
-			s.logger.Error("Could not get player infraction count for online player",
-				zap.String("Platform", p.Platform),
-				zap.String("Player ID", p.PlayerID),
+			s.logger.Error("Could not get player payload for player in server data",
+				zap.String("Platform", p.GetPlatform()),
+				zap.String("Player ID", p.GetPlayerID()),
 				zap.Error(err))
 			continue
 		}
 
-		countSinceTimespan, err := s.playerStatsService.GetInfractionCountSince(context.TODO(), p.Platform, p.PlayerID,
-			settings.General.PlayerInfractionTimespan)
-		if err != nil {
-			s.logger.Error("Could not get player infraction count since timespan",
-				zap.String("Platform", p.Platform),
-				zap.String("Player ID", p.PlayerID),
-				zap.Error(err))
-			continue
-		}
-
-		p.InfractionCount = count
-		p.InfractionCountSinceTimespan = countSinceTimespan
+		data.OnlinePlayers[id] = playerPayload
 	}
 
 	return data, nil
@@ -340,21 +330,21 @@ func (s *serverService) HandlePlayerListUpdate(serverID int64, onlinePlayers []*
 	platform := game.GetPlatform().GetName()
 
 	// Clear server players
-	s.serverData[serverID].OnlinePlayers = map[string]*domain.Player{}
+	s.serverData[serverID].OnlinePlayers = map[string]domain.IPlayer{}
 
 	// Get player data
 	for _, op := range onlinePlayers {
-		p, err := s.playerRepo.GetByID(ctx, platform, op.PlayerID)
+		playerPayload, err := s.playerStatsService.GetPlayerPayload(ctx, platform, op.PlayerID, game)
 		if err != nil {
-			s.logger.Error("HandlePlayerListUpdate: could not get player by ID",
+			s.logger.Error("Could not get player payload during player list update",
 				zap.String("Platform", platform),
-				zap.String("Player ID", op.PlayerID),
+				zap.String("PlayerID", op.PlayerID),
 				zap.Error(err))
 			continue
 		}
 
 		// Update player in server data
-		s.serverData[serverID].OnlinePlayers[p.PlayerID] = p
+		s.serverData[serverID].OnlinePlayers[playerPayload.PlayerID] = playerPayload
 	}
 }
 
