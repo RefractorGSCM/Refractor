@@ -25,14 +25,19 @@ import (
 )
 
 type pStatService struct {
+	playerRepo     domain.PlayerRepo
 	infractionRepo domain.InfractionRepo
+	gameService    domain.GameService
 	timeout        time.Duration
 	logger         *zap.Logger
 }
 
-func NewPlayerStatsService(ir domain.InfractionRepo, to time.Duration, log *zap.Logger) domain.PlayerStatsService {
+func NewPlayerStatsService(pr domain.PlayerRepo, ir domain.InfractionRepo, gs domain.GameService, to time.Duration,
+	log *zap.Logger) domain.PlayerStatsService {
 	return &pStatService{
+		playerRepo:     pr,
 		infractionRepo: ir,
+		gameService:    gs,
 		timeout:        to,
 		logger:         log,
 	}
@@ -52,4 +57,47 @@ func (s *pStatService) GetInfractionCountSince(c context.Context, platform, play
 	sinceDate := time.Now().Add(time.Duration(-sinceMinutes) * time.Minute)
 
 	return s.infractionRepo.GetPlayerInfractionCountSince(ctx, platform, playerID, sinceDate)
+}
+
+func (s *pStatService) GetPlayerPayload(c context.Context, platform, playerID string, game domain.Game) (*domain.PlayerPayload, error) {
+	ctx, cancel := context.WithTimeout(c, s.timeout)
+	defer cancel()
+
+	settings, err := s.gameService.GetGameSettings(game)
+	if err != nil {
+		return nil, err
+	}
+
+	foundPlayer, err := s.playerRepo.GetByID(ctx, platform, playerID)
+	if err != nil {
+		s.logger.Error("Could not get player by ID",
+			zap.String("PlayerID", playerID),
+			zap.String("Platform", platform),
+			zap.Error(err))
+		return nil, err
+	}
+
+	// Get player infraction count
+	infractionCount, err := s.infractionRepo.GetPlayerTotalInfractions(ctx, foundPlayer.Platform, foundPlayer.PlayerID)
+	if err != nil {
+		s.logger.Error("Could not get player infraction count",
+			zap.String("Platform", foundPlayer.Platform),
+			zap.String("Player ID", foundPlayer.PlayerID),
+			zap.Error(err))
+		return nil, err
+	}
+
+	// Get player infraction count in timespan
+	infractionCountSinceTimespan, err := s.GetInfractionCountSince(ctx, platform, playerID,
+		settings.General.PlayerInfractionTimespan)
+	if err != nil {
+		s.logger.Error("Could not get player infractions since configured timespan", zap.Error(err))
+		return nil, err
+	}
+
+	return &domain.PlayerPayload{
+		Player:                       foundPlayer,
+		InfractionCount:              infractionCount,
+		InfractionCountSinceTimespan: infractionCountSinceTimespan,
+	}, nil
 }

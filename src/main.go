@@ -183,7 +183,7 @@ func main() {
 	playerRepo := _playerRepo.NewPlayerRepo(db, playerNameRepo, logger)
 
 	infractionRepo := _infractionRepo.NewInfractionRepo(db, logger)
-	playerStatsService := _playerStatsService.NewPlayerStatsService(infractionRepo, time.Second*2, logger)
+	playerStatsService := _playerStatsService.NewPlayerStatsService(playerRepo, infractionRepo, gameService, time.Second*2, logger)
 
 	serverService := _serverService.NewServerService(serverRepo, playerRepo, playerStatsService, gameService, authorizer, time.Second*2, logger)
 
@@ -465,7 +465,7 @@ func SetupServerClients(rconService domain.RCONService, serverService domain.Ser
 			continue
 		}
 
-		if err := serverService.CreateServerData(server.ID); err != nil {
+		if err := serverService.CreateServerData(server.ID, server.Game); err != nil {
 			log.Error("Could not create server data", zap.Int64("Server", server.ID), zap.Error(err))
 			continue
 		}
