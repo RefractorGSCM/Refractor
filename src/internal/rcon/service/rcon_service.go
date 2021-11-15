@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -43,6 +44,9 @@ type rconService struct {
 	statusSubs     []domain.ServerStatusSubscriber
 	chatSubs       []domain.ChatReceiveSubscriber
 	prevPlayers    map[int64]map[string]*domain.OnlinePlayer
+
+	clientsLock sync.Mutex
+	prevPlayersLock sync.Mutex
 }
 
 func NewRCONService(log *zap.Logger, gs domain.GameService, sr domain.ServerRepo) domain.RCONService {
@@ -67,12 +71,14 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 	}
 
 	// Check if a client already exists. If one does, close the associated connections and delete it.
+	s.clientsLock.Lock()
 	currentClient := s.clients[server.ID]
 	if currentClient != nil {
 		_ = currentClient.Close()
 		currentClient.WaitGroup().Wait() // wait for the client to disconnect
 		delete(s.clients, server.ID)
 	}
+	s.clientsLock.Unlock()
 
 	// Get the server's game
 	game, err := s.gameService.GetGame(server.Game)
@@ -115,7 +121,9 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 	}
 
 	// Add to list of clients
+	s.clientsLock.Lock()
 	s.clients[server.ID] = client
+	s.clientsLock.Unlock()
 
 	// Get currently online players
 	onlinePlayers, err := s.getOnlinePlayers(server.ID, game)
@@ -142,7 +150,9 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 
 func (s *rconService) startPlayerListPolling(serverID int64, game domain.Game) {
 	// Set up prevPlayers map for this server
+	s.prevPlayersLock.Lock()
 	s.prevPlayers[serverID] = map[string]*domain.OnlinePlayer{}
+	s.prevPlayersLock.Unlock()
 
 	for {
 		time.Sleep(game.GetConfig().PlayerListPollingInterval)
@@ -166,6 +176,7 @@ func (s *rconService) startPlayerListPolling(serverID int64, game domain.Game) {
 			onlinePlayers[player.PlayerID] = player
 		}
 
+		s.prevPlayersLock.Lock()
 		prevPlayers := s.prevPlayers[serverID]
 
 		// Check for new player joins
@@ -200,6 +211,7 @@ func (s *rconService) startPlayerListPolling(serverID int64, game domain.Game) {
 
 		// Update prevPlayers for this server
 		s.prevPlayers[serverID] = prevPlayers
+		s.prevPlayersLock.Unlock()
 	}
 }
 
@@ -242,15 +254,21 @@ func (s *rconService) RefreshPlayerList(serverID int64, game domain.Game) error 
 }
 
 func (s *rconService) GetClients() map[int64]domain.RCONClient {
+	s.clientsLock.Lock()
+	defer s.clientsLock.Unlock()
 	return s.clients
 }
 
 func (s *rconService) GetServerClient(serverID int64) domain.RCONClient {
+	s.clientsLock.Lock()
+	defer s.clientsLock.Unlock()
 	return s.clients[serverID]
 }
 
 func (s *rconService) DeleteClient(serverID int64) {
+	s.clientsLock.Lock()
 	delete(s.clients, serverID)
+	s.clientsLock.Unlock()
 }
 
 func (s *rconService) getBroadcastHandler(serverID int64, game domain.Game) func(string) {
@@ -428,7 +446,6 @@ func (s *rconService) SendChatMessage(body *domain.ChatSendBody) {
 
 	// If RCON and chat is enabled, then send the message
 	command := fmt.Sprintf(client.GetGame().GetBroadcastCommand(), fmt.Sprintf("[%s]: %s", body.Sender, body.Message))
-
 	if _, err := client.ExecCommand(command); err != nil {
 		s.logger.Error("Could not send user chat message over RCON",
 			zap.String("Message", body.Message),
