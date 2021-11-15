@@ -79,9 +79,10 @@ func (dbs DBServer) Server() *Server {
 type ServerData struct {
 	NeedsUpdate         bool
 	ServerID            int64
+	GameName            string
 	Status              string
 	PlayerCount         int
-	OnlinePlayers       map[string]*Player
+	OnlinePlayers       map[string]IPlayer
 	ReconnectInProgress bool
 }
 
@@ -103,7 +104,7 @@ type ServerService interface {
 	// GetAllAccessible returns all servers on which the requesting user has the permission flag ViewServers set.
 	GetAllAccessible(c context.Context) ([]*Server, error)
 	Deactivate(c context.Context, id int64) error
-	CreateServerData(id int64) error
+	CreateServerData(id int64, gameName string) error
 	GetAllServerData() ([]*ServerData, error)
 	GetServerData(id int64) (*ServerData, error)
 	Update(c context.Context, id int64, args UpdateArgs) (*Server, error)

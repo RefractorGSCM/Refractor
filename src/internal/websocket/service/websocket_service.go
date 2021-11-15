@@ -126,13 +126,8 @@ func (s *websocketService) SendDirectMessage(message *domain.WebsocketMessage, u
 }
 
 type playerJoinQuitData struct {
-	ServerID                     int64  `json:"serverId"`
-	PlayerID                     string `json:"id"`
-	Platform                     string `json:"platform"`
-	Name                         string `json:"name"`
-	Watched                      bool   `json:"watched"`
-	InfractionCount              int    `json:"infraction_count"`
-	InfractionCountSinceTimespan int    `json:"infraction_count_since_timespan"`
+	ServerID int64 `json:"serverId"`
+	*domain.PlayerPayload
 }
 
 func (s *websocketService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
@@ -142,47 +137,20 @@ func (s *websocketService) HandlePlayerJoin(fields broadcast.Fields, serverID in
 	platform := game.GetPlatform().GetName()
 	playerID := fields["PlayerID"]
 
-	foundPlayer, err := s.playerRepo.GetByID(ctx, game.GetPlatform().GetName(), fields["PlayerID"])
+	playerPayload, err := s.playerStatsService.GetPlayerPayload(ctx, platform, playerID, game)
 	if err != nil {
-		s.logger.Error("Could not get player by ID",
-			zap.String("PlayerID", playerID),
+		s.logger.Error("Could not get player payload",
 			zap.String("Platform", platform),
+			zap.String("Player ID", playerID),
 			zap.Error(err))
 		return
-	}
-
-	// Get player infraction count
-	count, err := s.playerStatsService.GetInfractionCount(ctx, foundPlayer.Platform, foundPlayer.PlayerID)
-	if err != nil {
-		s.logger.Error("Could not get player infraction count",
-			zap.String("Platform", foundPlayer.Platform),
-			zap.String("Player ID", foundPlayer.PlayerID),
-			zap.Error(err))
-	}
-
-	// Get player infraction count in timespan
-	var infractionCountSinceTimespan = 0
-	settings, err := s.gameService.GetGameSettings(game)
-	if err != nil {
-		s.logger.Error("Could not get game settings", zap.String("Game", game.GetName()))
-	} else {
-		infractionCountSinceTimespan, err = s.playerStatsService.
-			GetInfractionCountSince(ctx, platform, playerID, settings.General.PlayerInfractionTimespan)
-		if err != nil {
-			s.logger.Error("Could not get player infractions since configured timespan", zap.Error(err))
-		}
 	}
 
 	if err := s.BroadcastServerMessage(&domain.WebsocketMessage{
 		Type: "player-join",
 		Body: playerJoinQuitData{
-			ServerID:                     serverID,
-			PlayerID:                     playerID,
-			Platform:                     platform,
-			Name:                         foundPlayer.CurrentName,
-			Watched:                      foundPlayer.Watched,
-			InfractionCount:              count,
-			InfractionCountSinceTimespan: infractionCountSinceTimespan,
+			ServerID:      serverID,
+			PlayerPayload: playerPayload,
 		},
 	}, serverID, authcheckers.CanViewServer); err != nil {
 		s.logger.Warn("Could not broadcast player join message",
@@ -211,9 +179,13 @@ func (s *websocketService) HandlePlayerQuit(fields broadcast.Fields, serverID in
 		Type: "player-quit",
 		Body: playerJoinQuitData{
 			ServerID: serverID,
-			PlayerID: playerID,
-			Platform: platform,
-			Name:     foundPlayer.CurrentName,
+			PlayerPayload: &domain.PlayerPayload{
+				Player: &domain.Player{
+					PlayerID:    playerID,
+					Platform:    platform,
+					CurrentName: foundPlayer.CurrentName,
+				},
+			},
 		},
 	}, serverID, authcheckers.CanViewServer); err != nil {
 		s.logger.Warn("Could not broadcast player quit message",
@@ -253,22 +225,18 @@ func (s *websocketService) HandlePlayerListUpdate(serverID int64, players []*dom
 	playerData := make([]*playerJoinQuitData, 0)
 
 	for _, op := range players {
-		// Get player infraction count
-		count, err := s.playerStatsService.GetInfractionCount(ctx, platform, op.PlayerID)
+		playerPayload, err := s.playerStatsService.GetPlayerPayload(ctx, platform, op.PlayerID, game)
 		if err != nil {
-			s.logger.Error("Could not get player infraction count",
+			s.logger.Error("Could not get player payload",
 				zap.String("Platform", platform),
 				zap.String("Player ID", op.PlayerID),
 				zap.Error(err))
-			// not a critical error so do not skip player
+			return
 		}
 
 		playerData = append(playerData, &playerJoinQuitData{
-			ServerID:        serverID,
-			PlayerID:        op.PlayerID,
-			Platform:        platform,
-			Name:            op.Name,
-			InfractionCount: count,
+			ServerID:      serverID,
+			PlayerPayload: playerPayload,
 		})
 	}
 
