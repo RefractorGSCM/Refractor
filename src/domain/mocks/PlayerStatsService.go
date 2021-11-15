@@ -3,6 +3,7 @@
 package mocks
 
 import (
+	domain "Refractor/domain"
 	context "context"
 
 	mock "github.com/stretchr/testify/mock"
@@ -48,6 +49,29 @@ func (_m *PlayerStatsService) GetInfractionCountSince(c context.Context, platfor
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, string, string, int) error); ok {
 		r1 = rf(c, platform, playerID, sinceMinutes)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetPlayerPayload provides a mock function with given fields: c, platform, playerID, game
+func (_m *PlayerStatsService) GetPlayerPayload(c context.Context, platform string, playerID string, game domain.Game) (*domain.PlayerPayload, error) {
+	ret := _m.Called(c, platform, playerID, game)
+
+	var r0 *domain.PlayerPayload
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, domain.Game) *domain.PlayerPayload); ok {
+		r0 = rf(c, platform, playerID, game)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.PlayerPayload)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, domain.Game) error); ok {
+		r1 = rf(c, platform, playerID, game)
 	} else {
 		r1 = ret.Error(1)
 	}

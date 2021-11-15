@@ -16,13 +16,13 @@ type ServerService struct {
 	mock.Mock
 }
 
-// CreateServerData provides a mock function with given fields: id
-func (_m *ServerService) CreateServerData(id int64) error {
-	ret := _m.Called(id)
+// CreateServerData provides a mock function with given fields: id, gameName
+func (_m *ServerService) CreateServerData(id int64, gameName string) error {
+	ret := _m.Called(id, gameName)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(int64) error); ok {
-		r0 = rf(id)
+	if rf, ok := ret.Get(0).(func(int64, string) error); ok {
+		r0 = rf(id, gameName)
 	} else {
 		r0 = ret.Error(0)
 	}
