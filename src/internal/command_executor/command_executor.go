@@ -111,34 +111,61 @@ func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction dom
 	}
 
 	// Prepare the commands
-	commands := make([]string, 0)
+	commands := make([]domain.Command, 0)
 
 	// Parse and run the commands
 	for _, cmd := range cmds {
 		// Replace placeholders inside command with payload data
-		runCmd := strings.ReplaceAll(cmd, "{{PLAYER_ID}}", infraction.GetPlayerID())
+		runCmd := strings.ReplaceAll(cmd.Command, "{{PLAYER_ID}}", infraction.GetPlayerID())
 		runCmd = strings.ReplaceAll(runCmd, "{{PLATFORM}}", infraction.GetPlatform())
 		runCmd = strings.ReplaceAll(runCmd, "{{PLAYER_NAME}}", playerName)
 		runCmd = strings.ReplaceAll(runCmd, "{{DURATION}}", strconv.FormatInt(infraction.GetDuration(), 10))
 		runCmd = strings.ReplaceAll(runCmd, "{{REASON}}", infraction.GetReason())
 
-		commands = append(commands, runCmd)
+		commands = append(commands, &infractionCommand{
+			Command:  runCmd,
+			RunOnAll: cmd.RunOnAll,
+			ServerID: serverID,
+		})
 	}
 
-	return newInfractionCommand(commands, []int64{serverID}), nil
+	return newInfractionCommandPayload(commands, game), nil
 }
 
-func (e *executor) RunCommands(payload domain.CommandPayload) error {
-	for _, serverID := range payload.GetServerIDs() {
-		// TODO: Implement command queue or similar mechanism which can record commands which could not be executed
-		// TODO: (e.g because client was nil) to be executed at a later time.
+func (e *executor) QueueCommands(payload domain.CommandPayload) error {
+	game := payload.GetGame()
+	cmds := payload.GetCommands()
 
-		cmds := payload.GetCommands()
-		for _, cmd := range cmds {
+	// Get servers of this game
+	serversOfGame, err := e.serverRepo.GetByGame(context.TODO(), game.GetName())
+	if err != nil {
+		e.logger.Error("Command executor could not get servers by game", zap.String("Game",
+			game.GetName()),
+			zap.Error(err))
+		return err
+	}
+
+	for _, cmd := range cmds {
+		if !cmd.ShouldRunOnAll() {
+			// Only run on the specified server
+			e.queue <- &queuedCommand{
+				cmd:      cmd.GetCommand(),
+				serverID: cmd.GetServerID(),
+			}
+			continue
+		}
+
+		// Queue on all servers running this game
+		for _, server := range serversOfGame {
+			if server.Deactivated {
+				// do not run on deactivated servers
+				continue
+			}
+
 			// Add command to queue
 			e.queue <- &queuedCommand{
-				cmd:      cmd,
-				serverID: serverID,
+				cmd:      cmd.GetCommand(),
+				serverID: server.ID,
 			}
 		}
 	}

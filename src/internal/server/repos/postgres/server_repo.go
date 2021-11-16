@@ -148,6 +148,23 @@ func (r *serverRepo) GetAll(ctx context.Context) ([]*domain.Server, error) {
 	return results, nil
 }
 
+func (r *serverRepo) GetByGame(ctx context.Context, gameName string) ([]*domain.Server, error) {
+	const op = opTag + "GetByGame"
+
+	query := "SELECT * FROM Servers WHERE Game = $1;"
+
+	results, err := r.fetch(ctx, query, gameName)
+	if err != nil {
+		return nil, errors.Wrap(err, op)
+	}
+
+	if len(results) < 1 {
+		return make([]*domain.Server, 0), nil
+	}
+
+	return results, nil
+}
+
 func (r *serverRepo) Deactivate(ctx context.Context, id int64) error {
 	const op = opTag + "Deactivate"
 
