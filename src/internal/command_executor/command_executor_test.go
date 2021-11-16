@@ -127,20 +127,36 @@ func Test(t *testing.T) {
 				})
 
 				g.It("Should return a command payload with the correct values", func() {
-					expectedCreateCommands := []string{fmt.Sprintf("Ban %s %d %s", infraction.PlayerName,
-						infraction.Duration.ValueOrZero(), infraction.Reason.ValueOrZero())}
-					expectedRepealCommands := []string{fmt.Sprintf("Test %s %s %s %d %s", infraction.PlayerName,
-						infraction.PlayerID, infraction.Platform, infraction.Duration.ValueOrZero(), infraction.Reason.ValueOrZero())}
+					expectedCreateCommands := []*infractionCommand{
+						{
+							Command: fmt.Sprintf("Ban %s %d %s", infraction.PlayerName,
+								infraction.Duration.ValueOrZero(), infraction.Reason.ValueOrZero()),
+							RunOnAll: true,
+							ServerID: serverID,
+						},
+					}
+					expectedRepealCommands := []*infractionCommand{
+						{
+							Command: fmt.Sprintf("Test %s %s %s %d %s", infraction.PlayerName, infraction.PlayerID,
+								infraction.Platform, infraction.Duration.ValueOrZero(), infraction.Reason.ValueOrZero()),
+							RunOnAll: true,
+							ServerID: serverID,
+						},
+					}
 
 					createPayload, err := cmdexec.PrepareInfractionCommands(ctx, infraction, domain.InfractionCommandCreate, serverID)
 					Expect(err).To(BeNil())
-					Expect(createPayload.GetCommands()).To(Equal(expectedCreateCommands))
-					Expect(createPayload.GetServerIDs()).To(Equal([]int64{serverID}))
+					for i, cmd := range createPayload.GetCommands() {
+						Expect(cmd.GetServerID()).To(Equal(expectedCreateCommands[i].GetServerID()))
+						Expect(cmd.GetCommand()).To(Equal(expectedCreateCommands[i].GetCommand()))
+					}
 
 					repealPayload, err := cmdexec.PrepareInfractionCommands(ctx, infraction, domain.InfractionCommandRepeal, serverID)
 					Expect(err).To(BeNil())
-					Expect(repealPayload.GetCommands()).To(Equal(expectedRepealCommands))
-					Expect(repealPayload.GetServerIDs()).To(Equal([]int64{serverID}))
+					for i, cmd := range repealPayload.GetCommands() {
+						Expect(cmd.GetServerID()).To(Equal(expectedRepealCommands[i].GetServerID()))
+						Expect(cmd.GetCommand()).To(Equal(expectedRepealCommands[i].GetCommand()))
+					}
 				})
 
 				g.Describe("Player was not set", func() {

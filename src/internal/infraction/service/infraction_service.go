@@ -157,7 +157,7 @@ func (s *infractionService) Store(c context.Context, infraction *domain.Infracti
 	}
 
 	// Run commands
-	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+	if err := s.commandExecutor.QueueCommands(preparedCommands); err != nil {
 		s.logger.Error("Could not run infraction create commands",
 			zap.Error(err))
 	}
@@ -352,7 +352,7 @@ func (s *infractionService) Update(c context.Context, id int64, args domain.Upda
 	}
 
 	// Run commands
-	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+	if err := s.commandExecutor.QueueCommands(preparedCommands); err != nil {
 		s.logger.Error("Could not run infraction update commands",
 			zap.Error(err))
 	}
@@ -390,7 +390,7 @@ func (s *infractionService) SetRepealed(c context.Context, id int64, isRepealed 
 		}
 
 		// Run commands
-		if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+		if err := s.commandExecutor.QueueCommands(preparedCommands); err != nil {
 			s.logger.Error("Could not run infraction repeal commands",
 				zap.Error(err))
 		}
@@ -542,7 +542,7 @@ func (s *infractionService) Delete(c context.Context, id int64) error {
 	}
 
 	// Run commands
-	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+	if err := s.commandExecutor.QueueCommands(preparedCommands); err != nil {
 		s.logger.Error("Could not run infraction delete commands",
 			zap.Error(err))
 	}
@@ -807,7 +807,7 @@ func (s *infractionService) syncMute(ctx context.Context, platform, playerID, na
 	}
 
 	// Run commands
-	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+	if err := s.commandExecutor.QueueCommands(preparedCommands); err != nil {
 		s.logger.Error("Could not run mute sync commands",
 			zap.String("Player ID", playerID),
 			zap.String("Platform", platform),
@@ -863,7 +863,7 @@ func (s *infractionService) syncBan(ctx context.Context, platform, playerID, nam
 	}
 
 	// Run commands
-	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
+	if err := s.commandExecutor.QueueCommands(preparedCommands); err != nil {
 		s.logger.Error("Could not run ban sync commands",
 			zap.String("Player ID", playerID),
 			zap.String("Platform", platform),
