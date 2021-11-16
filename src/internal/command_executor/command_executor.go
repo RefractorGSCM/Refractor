@@ -163,7 +163,7 @@ func (e *executor) StartRunner(terminate chan uint8) {
 			}
 
 			e.logger.Info("Running command", zap.String("cmd", queuedCmd.cmd))
-			if _, err := client.ExecCommand(queuedCmd.cmd); err != nil {
+			if _, err := client.RunCommand(queuedCmd.cmd); err != nil {
 				e.logger.Error("Could not execute command on server",
 					zap.String("Command", queuedCmd.cmd),
 					zap.Int64("Server ID", queuedCmd.serverID),

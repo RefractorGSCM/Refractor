@@ -246,6 +246,7 @@ func main() {
 	websocketService.SubscribeChatSend(rconService.SendChatMessage)
 	websocketService.SubscribeChatSend(chatService.HandleUserSendChat)
 	serverService.SubscribeServerUpdate(rconService.HandleServerUpdate)
+	infractionService.SubscribeInfractionCreate(websocketService.HandleInfractionCreate)
 
 	// Connect RCON clients for all existing servers
 	if err := SetupServerClients(rconService, serverService, logger); err != nil {
