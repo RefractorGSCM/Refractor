@@ -102,18 +102,8 @@ func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 			UpdateInfractionCommands: &domain.InfractionCommands{
 				Warn: []*domain.InfractionCommand{},
 				Mute: []*domain.InfractionCommand{},
-				Kick: []*domain.InfractionCommand{
-					{
-						Command:  "kick {{PLAYER_NAME}} {{REASON}}",
-						RunOnAll: false,
-					},
-				},
-				Ban: []*domain.InfractionCommand{
-					{
-						Command:  "ban {{PLAYER_NAME}} {{REASON}}",
-						RunOnAll: true,
-					},
-				},
+				Kick: []*domain.InfractionCommand{},
+				Ban:  []*domain.InfractionCommand{},
 			},
 			DeleteInfractionCommands: &domain.InfractionCommands{
 				Warn: []*domain.InfractionCommand{},
