@@ -232,6 +232,11 @@ func (_m *InfractionService) Store(c context.Context, infraction *domain.Infract
 	return r0, r1
 }
 
+// SubscribeInfractionCreate provides a mock function with given fields: sub
+func (_m *InfractionService) SubscribeInfractionCreate(sub domain.InfractionSubscriber) {
+	_m.Called(sub)
+}
+
 // UnlinkChatMessages provides a mock function with given fields: c, id, messageIDs
 func (_m *InfractionService) UnlinkChatMessages(c context.Context, id int64, messageIDs ...int64) error {
 	_va := make([]interface{}, len(messageIDs))

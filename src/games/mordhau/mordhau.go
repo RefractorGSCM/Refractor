@@ -35,10 +35,10 @@ type mordhau struct {
 func NewMordhauGame(platform domain.Platform) domain.Game {
 	return &mordhau{
 		config: &domain.GameConfig{
-			UseRCON:           true,
-			AlivePingInterval: time.Second * 10,
-			EnableBroadcasts:  true,
-			RCONInitCommands:  []string{"listen login", "listen chat"},
+			UseRCON:                   true,
+			AlivePingInterval:         time.Second * 10,
+			EnableBroadcasts:          true,
+			RCONInitCommands:          []string{"listen login", "listen chat"},
 			PlayerListRefreshInterval: time.Minute * 10,
 			EnableChat:                true,
 			BroadcastPatterns: map[string]*regexp.Regexp{

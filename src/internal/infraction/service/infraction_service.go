@@ -44,6 +44,8 @@ type infractionService struct {
 	timeout         time.Duration
 	logger          *zap.Logger
 	infractionTypes map[string]domain.InfractionType
+
+	createSubs []domain.InfractionSubscriber
 }
 
 func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, pnr domain.PlayerNameRepo, sr domain.ServerRepo,
@@ -62,6 +64,7 @@ func NewInfractionService(repo domain.InfractionRepo, pr domain.PlayerRepo, pnr 
 		timeout:         to,
 		logger:          log,
 		infractionTypes: getInfractionTypes(),
+		createSubs:      []domain.InfractionSubscriber{},
 	}
 }
 
@@ -160,6 +163,11 @@ func (s *infractionService) Store(c context.Context, infraction *domain.Infracti
 	if err := s.commandExecutor.RunCommands(preparedCommands); err != nil {
 		s.logger.Error("Could not run infraction create commands",
 			zap.Error(err))
+	}
+
+	// Notify subscribers
+	for _, sub := range s.createSubs {
+		sub(infraction)
 	}
 
 	return infraction, nil
@@ -885,4 +893,8 @@ func (s *infractionService) HandleModerationAction(fields broadcast.Fields, serv
 	//reason := fields["Reason"]
 
 	// NOTE: Functionality paused for now. See issue #3 in RefractorGSCM/Refractor.
+}
+
+func (s *infractionService) SubscribeInfractionCreate(sub domain.InfractionSubscriber) {
+	s.createSubs = append(s.createSubs, sub)
 }

@@ -76,6 +76,8 @@ type InfractionRepo interface {
 	GetPlayerInfractionCountSince(ctx context.Context, platform, playerID string, since time.Time) (int, error)
 }
 
+type InfractionSubscriber func(infraction *Infraction)
+
 type InfractionService interface {
 	Store(c context.Context, infraction *Infraction, attachments []*Attachment, linkedMessages []int64) (*Infraction, error)
 	GetByID(c context.Context, id int64) (*Infraction, error)
@@ -90,6 +92,7 @@ type InfractionService interface {
 	PlayerIsMuted(c context.Context, platform, playerID string) (bool, int64, error)
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 	HandleModerationAction(fields broadcast.Fields, serverID int64, game Game)
+	SubscribeInfractionCreate(sub InfractionSubscriber)
 }
 
 const (

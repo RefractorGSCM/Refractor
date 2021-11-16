@@ -253,6 +253,31 @@ func (s *websocketService) HandlePlayerListUpdate(serverID int64, players []*dom
 	}
 }
 
+type infractionBody struct {
+	InfractionID int64  `json:"id"`
+	ServerID     int64  `json:"server_id"`
+	Platform     string `json:"platform"`
+	PlayerID     string `json:"player_id"`
+	Type         string `json:"type"`
+	Reason       string `json:"reason,omitempty"`
+	Duration     int64  `json:"duration,omitempty"`
+}
+
+func (s *websocketService) HandleInfractionCreate(infraction *domain.Infraction) {
+	s.Broadcast(&domain.WebsocketMessage{
+		Type: "infraction-create",
+		Body: &infractionBody{
+			InfractionID: infraction.InfractionID,
+			ServerID:     infraction.ServerID,
+			Platform:     infraction.Platform,
+			PlayerID:     infraction.PlayerID,
+			Type:         infraction.Type,
+			Reason:       infraction.Reason.ValueOrZero(),
+			Duration:     infraction.Duration.ValueOrZero(),
+		},
+	})
+}
+
 func (s *websocketService) SubscribeChatSend(sub domain.ChatSendSubscriber) {
 	s.chatSendSubs = append(s.chatSendSubs, sub)
 }
