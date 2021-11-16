@@ -20,13 +20,19 @@ package domain
 import "context"
 
 type CommandPayload interface {
-	GetCommands() []string
-	GetServerIDs() []int64
+	GetCommands() []Command
+	GetGame() Game
+}
+
+type Command interface {
+	GetCommand() string
+	ShouldRunOnAll() bool
+	GetServerID() int64
 }
 
 type CommandExecutor interface {
 	PrepareInfractionCommands(ctx context.Context, infraction InfractionPayload, action string, serverID int64) (CommandPayload, error)
-	RunCommands(payload CommandPayload) error
+	QueueCommands(payload CommandPayload) error
 	StartRunner(terminate chan uint8)
 }
 
