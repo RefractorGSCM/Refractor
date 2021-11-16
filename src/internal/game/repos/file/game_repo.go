@@ -76,6 +76,7 @@ func (r *gameRepo) GetSettings(game domain.Game) (*domain.GameSettings, error) {
 
 	decodedSettings := &domain.GameSettings{}
 	if err := decoder.Decode(decodedSettings); err != nil {
+		r.logger.Error("Could not decode data into GameSettings struct", zap.Error(err))
 		return nil, errors.Wrap(err, op)
 	}
 
