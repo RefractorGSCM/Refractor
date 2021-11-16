@@ -105,7 +105,7 @@ func Test(t *testing.T) {
 					rconClient.On("SetDisconnectHandler", mock.Anything)
 					rconClient.On("Connect").Return(nil)
 					rconClient.On("ListenForBroadcasts", mock.Anything, mock.Anything)
-					rconClient.On("ExecCommand", mock.Anything).Return("", nil)
+					rconClient.On("RunCommand", mock.Anything).Return("", nil)
 					rconClient.On("Close").Return(nil)
 					rconClient.On("WaitGroup").Return(&sync.WaitGroup{})
 				})
@@ -182,7 +182,7 @@ func Test(t *testing.T) {
 						},
 					}
 
-					rconClient.On("ExecCommand", mock.Anything).Return(rawOutput, nil)
+					rconClient.On("RunCommand", mock.Anything).Return(rawOutput, nil)
 				})
 
 				g.It("Should not return an error", func() {
@@ -198,9 +198,9 @@ func Test(t *testing.T) {
 				})
 			})
 
-			g.Describe("ExecCommand error", func() {
+			g.Describe("RunCommand error", func() {
 				g.BeforeEach(func() {
-					rconClient.On("ExecCommand", mock.Anything).Return("", fmt.Errorf("err"))
+					rconClient.On("RunCommand", mock.Anything).Return("", fmt.Errorf("err"))
 				})
 
 				g.It("Should return an error", func() {
