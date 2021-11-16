@@ -44,8 +44,24 @@ func (_m *RCONClient) Connect() error {
 	return r0
 }
 
-// ExecCommand provides a mock function with given fields: _a0
-func (_m *RCONClient) ExecCommand(_a0 string) (string, error) {
+// GetGame provides a mock function with given fields:
+func (_m *RCONClient) GetGame() domain.Game {
+	ret := _m.Called()
+
+	var r0 domain.Game
+	if rf, ok := ret.Get(0).(func() domain.Game); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(domain.Game)
+		}
+	}
+
+	return r0
+}
+
+// RunCommand provides a mock function with given fields: _a0
+func (_m *RCONClient) RunCommand(_a0 string) (string, error) {
 	ret := _m.Called(_a0)
 
 	var r0 string
@@ -63,36 +79,6 @@ func (_m *RCONClient) ExecCommand(_a0 string) (string, error) {
 	}
 
 	return r0, r1
-}
-
-// ExecCommandNoResponse provides a mock function with given fields: _a0
-func (_m *RCONClient) ExecCommandNoResponse(_a0 string) error {
-	ret := _m.Called(_a0)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(_a0)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// GetGame provides a mock function with given fields:
-func (_m *RCONClient) GetGame() domain.Game {
-	ret := _m.Called()
-
-	var r0 domain.Game
-	if rf, ok := ret.Get(0).(func() domain.Game); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(domain.Game)
-		}
-	}
-
-	return r0
 }
 
 // SetBroadcastChecker provides a mock function with given fields: handlerFunc

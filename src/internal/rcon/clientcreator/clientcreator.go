@@ -22,14 +22,23 @@ import (
 	"encoding/binary"
 	"github.com/refractorgscm/rcon"
 	"strconv"
+	"sync"
 )
 
 type clientCreator struct{}
 
 type Client struct {
 	game   domain.Game
+	lock   sync.Mutex
 	Server *domain.Server
 	*rcon.Client
+}
+
+func (c *Client) RunCommand(cmd string) (string, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	return c.ExecCommand(cmd)
 }
 
 func (c *Client) GetGame() domain.Game {

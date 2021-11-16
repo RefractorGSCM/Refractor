@@ -45,7 +45,7 @@ type rconService struct {
 	chatSubs       []domain.ChatReceiveSubscriber
 	prevPlayers    map[int64]map[string]*domain.OnlinePlayer
 
-	clientsLock sync.Mutex
+	clientsLock     sync.Mutex
 	prevPlayersLock sync.Mutex
 }
 
@@ -103,7 +103,7 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 
 	// Run init commands
 	for _, cmd := range game.GetConfig().RCONInitCommands {
-		if _, err := client.ExecCommand(cmd); err != nil {
+		if _, err := client.RunCommand(cmd); err != nil {
 			s.logger.Error("Could not execute RCON init command",
 				zap.Int64("Server ID", server.ID),
 				zap.String("Command", cmd),
@@ -330,7 +330,7 @@ func (s *rconService) getDisconnectHandler(serverID int64) func(error, bool) {
 func (s *rconService) getOnlinePlayers(serverID int64, game domain.Game) ([]*domain.OnlinePlayer, error) {
 	playerListCommand := game.GetPlayerListCommand()
 
-	res, err := s.GetServerClient(serverID).ExecCommand(playerListCommand)
+	res, err := s.GetServerClient(serverID).RunCommand(playerListCommand)
 	if err != nil {
 		s.logger.Error(
 			"Could not execute RCON player list command",
@@ -446,7 +446,7 @@ func (s *rconService) SendChatMessage(body *domain.ChatSendBody) {
 
 	// If RCON and chat is enabled, then send the message
 	command := fmt.Sprintf(client.GetGame().GetBroadcastCommand(), fmt.Sprintf("[%s]: %s", body.Sender, body.Message))
-	if _, err := client.ExecCommand(command); err != nil {
+	if _, err := client.RunCommand(command); err != nil {
 		s.logger.Error("Could not send user chat message over RCON",
 			zap.String("Message", body.Message),
 			zap.Int64("Server ID", body.ServerID),
