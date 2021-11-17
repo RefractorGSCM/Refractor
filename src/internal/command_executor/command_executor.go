@@ -120,6 +120,7 @@ func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction dom
 		runCmd = strings.ReplaceAll(runCmd, "{{PLATFORM}}", infraction.GetPlatform())
 		runCmd = strings.ReplaceAll(runCmd, "{{PLAYER_NAME}}", playerName)
 		runCmd = strings.ReplaceAll(runCmd, "{{DURATION}}", strconv.FormatInt(infraction.GetDuration(), 10))
+		runCmd = strings.ReplaceAll(runCmd, "{{DURATION_REMAINING}}", strconv.FormatInt(infraction.GetDurationRemaining(), 10))
 		runCmd = strings.ReplaceAll(runCmd, "{{REASON}}", infraction.GetReason())
 
 		commands = append(commands, &infractionCommand{
