@@ -113,6 +113,11 @@ func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction dom
 	// Prepare the commands
 	commands := make([]domain.Command, 0)
 
+	durationRemaining := infraction.GetDurationRemaining()
+	if durationRemaining < 0 {
+		durationRemaining = 0
+	}
+
 	// Parse and run the commands
 	for _, cmd := range cmds {
 		// Replace placeholders inside command with payload data
@@ -120,7 +125,7 @@ func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction dom
 		runCmd = strings.ReplaceAll(runCmd, "{{PLATFORM}}", infraction.GetPlatform())
 		runCmd = strings.ReplaceAll(runCmd, "{{PLAYER_NAME}}", playerName)
 		runCmd = strings.ReplaceAll(runCmd, "{{DURATION}}", strconv.FormatInt(infraction.GetDuration(), 10))
-		runCmd = strings.ReplaceAll(runCmd, "{{DURATION_REMAINING}}", strconv.FormatInt(infraction.GetDurationRemaining(), 10))
+		runCmd = strings.ReplaceAll(runCmd, "{{DURATION_REMAINING}}", strconv.FormatInt(durationRemaining, 10))
 		runCmd = strings.ReplaceAll(runCmd, "{{REASON}}", infraction.GetReason())
 
 		commands = append(commands, &infractionCommand{
