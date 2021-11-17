@@ -21,6 +21,7 @@ import (
 	"Refractor/pkg/broadcast"
 	"context"
 	"github.com/guregu/null"
+	"math"
 	"time"
 )
 
@@ -60,6 +61,19 @@ func (i *Infraction) IsPermanent() bool {
 	return i.Duration.Valid && i.Duration.ValueOrZero() == -1
 }
 
+func (i *Infraction) MinutesRemaining() int64 {
+	if !i.CreatedAt.Valid {
+		return 0
+	}
+
+	if !i.Duration.Valid {
+		return 0
+	}
+
+	expiresAt := i.CreatedAt.ValueOrZero().Add(time.Duration(i.Duration.ValueOrZero() * int64(time.Minute)))
+	return int64(math.Round(expiresAt.Sub(time.Now()).Minutes()))
+}
+
 type InfractionRepo interface {
 	Store(ctx context.Context, infraction *Infraction) (*Infraction, error)
 	GetByID(ctx context.Context, id int64) (*Infraction, error)
@@ -70,11 +84,15 @@ type InfractionRepo interface {
 	GetLinkedChatMessages(ctx context.Context, id int64) ([]*ChatMessage, error)
 	LinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error
 	UnlinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error
-	PlayerIsBanned(ctx context.Context, platform, playerID string) (bool, int64, error)
-	PlayerIsMuted(ctx context.Context, platform, playerID string) (bool, int64, error)
+
+	// GetMostSignificantInfraction should return the non-expired, non-repealed infraction of the
+	// specified type with the highest duration.
+	GetMostSignificantInfraction(ctx context.Context, infrType, platform, playerID string) (*Infraction, error)
 	GetPlayerTotalInfractions(ctx context.Context, platform, playerID string) (int, error)
 	GetPlayerInfractionCountSince(ctx context.Context, platform, playerID string, since time.Time) (int, error)
 }
+
+type InfractionSubscriber func(infraction *Infraction)
 
 type InfractionService interface {
 	Store(c context.Context, infraction *Infraction, attachments []*Attachment, linkedMessages []int64) (*Infraction, error)
@@ -86,10 +104,11 @@ type InfractionService interface {
 	GetLinkedChatMessages(c context.Context, id int64) ([]*ChatMessage, error)
 	LinkChatMessages(c context.Context, id int64, messageIDs ...int64) error
 	UnlinkChatMessages(c context.Context, id int64, messageIDs ...int64) error
-	PlayerIsBanned(c context.Context, platform, playerID string) (bool, int64, error)
-	PlayerIsMuted(c context.Context, platform, playerID string) (bool, int64, error)
+	GetCurrentBan(c context.Context, platform, playerID string) (*Infraction, error)
+	GetCurrentMute(c context.Context, platform, playerID string) (*Infraction, error)
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 	HandleModerationAction(fields broadcast.Fields, serverID int64, game Game)
+	SubscribeInfractionCreate(sub InfractionSubscriber)
 }
 
 const (
@@ -101,14 +120,21 @@ const (
 )
 
 type InfractionCommands struct {
-	Warn []string `json:"warn"`
-	Mute []string `json:"mute"`
-	Kick []string `json:"kick"`
-	Ban  []string `json:"ban"`
+	Warn []*InfractionCommand `json:"warn"`
+	Mute []*InfractionCommand `json:"mute"`
+	Kick []*InfractionCommand `json:"kick"`
+	Ban  []*InfractionCommand `json:"ban"`
 }
 
-func (ic *InfractionCommands) Map() map[string][]string {
-	return map[string][]string{
+type InfractionCommand struct {
+	Command string `json:"command"`
+	// If RunOnAll is set to true, when triggered the command will be run on all servers with the same game as the
+	// server it was issued on. Otherwise, it will only be run on the server it was triggered on.
+	RunOnAll bool `json:"run_on_all"`
+}
+
+func (ic *InfractionCommands) Map() map[string][]*InfractionCommand {
+	return map[string][]*InfractionCommand{
 		InfractionTypeWarning: ic.Warn,
 		InfractionTypeMute:    ic.Mute,
 		InfractionTypeKick:    ic.Kick,
@@ -119,16 +145,16 @@ func (ic *InfractionCommands) Map() map[string][]string {
 // Prepare will replace all nil fields with empty arrays for a consistent experience on the frontend
 func (ic *InfractionCommands) Prepare() *InfractionCommands {
 	if ic.Warn == nil {
-		ic.Warn = make([]string, 0)
+		ic.Warn = make([]*InfractionCommand, 0)
 	}
 	if ic.Mute == nil {
-		ic.Mute = make([]string, 0)
+		ic.Mute = make([]*InfractionCommand, 0)
 	}
 	if ic.Kick == nil {
-		ic.Kick = make([]string, 0)
+		ic.Kick = make([]*InfractionCommand, 0)
 	}
 	if ic.Ban == nil {
-		ic.Ban = make([]string, 0)
+		ic.Ban = make([]*InfractionCommand, 0)
 	}
 
 	return ic
@@ -140,6 +166,7 @@ type InfractionPayload interface {
 	GetPlayerName() string
 	GetType() string
 	GetDuration() int64
+	GetDurationRemaining() int64
 	GetReason() string
 }
 
@@ -161,6 +188,10 @@ func (i *Infraction) GetType() string {
 
 func (i *Infraction) GetDuration() int64 {
 	return i.Duration.ValueOrZero()
+}
+
+func (i *Infraction) GetDurationRemaining() int64 {
+	return i.MinutesRemaining()
 }
 
 func (i *Infraction) GetReason() string {

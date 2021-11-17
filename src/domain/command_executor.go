@@ -17,26 +17,35 @@
 
 package domain
 
-import "context"
+import (
+	"context"
+)
 
 type CommandPayload interface {
-	GetCommands() []string
-	GetServerIDs() []int64
+	GetCommands() []Command
+	GetGame() Game
+}
+
+type Command interface {
+	GetCommand() string
+	ShouldRunOnAll() bool
+	GetServerID() int64
 }
 
 type CommandExecutor interface {
 	PrepareInfractionCommands(ctx context.Context, infraction InfractionPayload, action string, serverID int64) (CommandPayload, error)
-	RunCommands(payload CommandPayload) error
+	QueueCommands(payload CommandPayload) error
 	StartRunner(terminate chan uint8)
 }
 
 type CustomInfractionPayload struct {
-	PlayerID   string
-	Platform   string
-	PlayerName string
-	Type       string
-	Duration   int64
-	Reason     string
+	PlayerID          string
+	Platform          string
+	PlayerName        string
+	Type              string
+	Duration          int64
+	DurationRemaining int64
+	Reason            string
 }
 
 func (p *CustomInfractionPayload) GetPlayerID() string {
@@ -57,6 +66,10 @@ func (p *CustomInfractionPayload) GetType() string {
 
 func (p *CustomInfractionPayload) GetDuration() int64 {
 	return p.Duration
+}
+
+func (p *CustomInfractionPayload) GetDurationRemaining() int64 {
+	return p.DurationRemaining
 }
 
 func (p *CustomInfractionPayload) GetReason() string {

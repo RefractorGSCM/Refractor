@@ -158,29 +158,39 @@ func Test(t *testing.T) {
 					expected = &domain.GameSettings{
 						Commands: &domain.GameCommandSettings{
 							CreateInfractionCommands: &domain.InfractionCommands{
-								Warn: []string{"test1"},
-								Mute: []string{"test2"},
-								Kick: []string{"test3"},
-								Ban:  []string{"test4"},
+								Warn: []*domain.InfractionCommand{{"test1", false}},
+								Mute: []*domain.InfractionCommand{{"test2", false}},
+								Kick: []*domain.InfractionCommand{{"test3", false}},
+								Ban:  []*domain.InfractionCommand{{"test4", true}},
 							},
 							UpdateInfractionCommands: &domain.InfractionCommands{
-								Warn: []string{"test1"},
-								Mute: []string{"test2"},
-								Kick: []string{"test3"},
-								Ban:  []string{"test4"},
+								Warn: []*domain.InfractionCommand{{"test1", true}},
+								Mute: []*domain.InfractionCommand{{"test2", false}},
+								Kick: []*domain.InfractionCommand{{"test3", false}},
+								Ban:  []*domain.InfractionCommand{{"test4", false}},
 							},
 							DeleteInfractionCommands: &domain.InfractionCommands{
-								Warn: []string{"test1"},
-								Mute: []string{"test2"},
-								Kick: []string{"test3"},
-								Ban:  []string{"test4"},
+								Warn: []*domain.InfractionCommand{{"test1", false}},
+								Mute: []*domain.InfractionCommand{{"test2", true}},
+								Kick: []*domain.InfractionCommand{{"test3", false}},
+								Ban:  []*domain.InfractionCommand{{"test4", false}},
 							},
 							RepealInfractionCommands: &domain.InfractionCommands{
-								Warn: []string{"test1"},
-								Mute: []string{"test2"},
-								Kick: []string{"test3"},
-								Ban:  []string{"test4"},
+								Warn: []*domain.InfractionCommand{{"test1", false}},
+								Mute: []*domain.InfractionCommand{{"test2", false}},
+								Kick: []*domain.InfractionCommand{{"test3", true}},
+								Ban:  []*domain.InfractionCommand{{"test4", false}},
 							},
+							SyncInfractionCommands: &domain.InfractionCommands{
+								Mute: []*domain.InfractionCommand{{"test1", false}},
+								Ban:  []*domain.InfractionCommand{{"test2", false}},
+							},
+						},
+						General: &domain.GeneralSettings{
+							EnableBanSync:             true,
+							EnableMuteSync:            false,
+							PlayerInfractionThreshold: 10,
+							PlayerInfractionTimespan:  1440,
 						},
 					}
 

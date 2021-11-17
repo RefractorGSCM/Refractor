@@ -715,151 +715,107 @@ func Test(t *testing.T) {
 			})
 		})
 
-		g.Describe("PlayerIsBanned()", func() {
-			g.Describe("Player is banned", func() {
+		g.Describe("GetMostSignificantInfraction()", func() {
+			g.Describe("Results found", func() {
+				var results []*domain.Infraction
+
 				g.BeforeEach(func() {
-					mock.ExpectQuery(regexp.QuoteMeta("select exists(")).WillReturnRows(sqlmock.NewRows([]string{"IsBanned", "TimeRemaining"}).
-						AddRow(true, 172531))
+					results = []*domain.Infraction{
+						{
+							InfractionID: 1,
+							PlayerID:     "playerid1",
+							Platform:     "testplatform",
+							UserID:       null.String{},
+							ServerID:     1,
+							Type:         domain.InfractionTypeBan,
+							Reason:       null.NewString("test reason", true),
+							Duration:     null.NewInt(1440, true),
+							SystemAction: false,
+							CreatedAt:    null.Time{},
+							ModifiedAt:   null.Time{},
+							Repealed:     false,
+						},
+						{
+							InfractionID: 2,
+							PlayerID:     "playerid1",
+							Platform:     "testplatform",
+							UserID:       null.String{},
+							ServerID:     2,
+							Type:         domain.InfractionTypeBan,
+							Reason:       null.NewString("test reason", true),
+							Duration:     null.NewInt(1000, true),
+							SystemAction: false,
+							CreatedAt:    null.Time{},
+							ModifiedAt:   null.Time{},
+							Repealed:     false,
+						},
+					}
+
+					rows := sqlmock.NewRows(cols)
+
+					for _, i := range results {
+						rows.AddRow(i.InfractionID, i.PlayerID, i.Platform, i.UserID, i.ServerID, i.Type, i.Reason,
+							i.Duration, i.SystemAction, i.CreatedAt, i.ModifiedAt, i.Repealed)
+					}
+
+					mock.ExpectQuery(regexp.QuoteMeta("select * from infractions")).WillReturnRows(rows)
 				})
 
 				g.It("Should not return an error", func() {
-					_, _, err := repo.PlayerIsBanned(ctx, "", "")
+					_, err := repo.GetMostSignificantInfraction(ctx, domain.InfractionTypeBan, "testplatform", "playerid1")
 
 					Expect(err).To(BeNil())
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
 				})
 
-				g.It("Should return true", func() {
-					isBanned, _, err := repo.PlayerIsBanned(ctx, "", "")
+				g.It("Should return the correct infraction", func() {
+					expected := results[0]
+					got, err := repo.GetMostSignificantInfraction(ctx, domain.InfractionTypeBan, "testplatform", "playerid1")
 
 					Expect(err).To(BeNil())
-					Expect(isBanned).To(BeTrue())
-					Expect(mock.ExpectationsWereMet()).To(BeNil())
-				})
-
-				g.It("Should return the correct time remaining", func() {
-					_, timeRemaining, err := repo.PlayerIsBanned(ctx, "", "")
-
-					Expect(err).To(BeNil())
-					Expect(timeRemaining).To(Equal(int64(172531)))
+					Expect(got).To(Equal(expected))
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
 				})
 			})
 
-			g.Describe("Player is not banned", func() {
+			g.Describe("No results found", func() {
 				g.BeforeEach(func() {
-					mock.ExpectQuery(regexp.QuoteMeta("select exists(")).WillReturnRows(sqlmock.NewRows([]string{"IsBanned", "TimeRemaining"}).
-						AddRow(false, nil))
+					mock.ExpectQuery(regexp.QuoteMeta("select * from infractions")).WillReturnRows(sqlmock.NewRows(cols))
 				})
 
 				g.It("Should not return an error", func() {
-					_, _, err := repo.PlayerIsBanned(ctx, "", "")
+					_, err := repo.GetMostSignificantInfraction(ctx, domain.InfractionTypeBan, "testplatform", "playerid1")
 
 					Expect(err).To(BeNil())
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
 				})
 
-				g.It("Should return false", func() {
-					isBanned, _, err := repo.PlayerIsBanned(ctx, "", "")
+				g.It("Should return nil", func() {
+					got, err := repo.GetMostSignificantInfraction(ctx, domain.InfractionTypeBan, "testplatform", "playerid1")
 
 					Expect(err).To(BeNil())
-					Expect(isBanned).To(BeFalse())
-					Expect(mock.ExpectationsWereMet()).To(BeNil())
-				})
-
-				g.It("Should return 0 for the time remaining", func() {
-					_, timeRemaining, err := repo.PlayerIsBanned(ctx, "", "")
-
-					Expect(err).To(BeNil())
-					Expect(timeRemaining).To(Equal(int64(0)))
+					Expect(got).To(BeNil())
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
 				})
 			})
 
 			g.Describe("Database error", func() {
 				g.BeforeEach(func() {
-					mock.ExpectQuery(regexp.QuoteMeta("select exists(")).WillReturnError(fmt.Errorf("err"))
+					mock.ExpectQuery(regexp.QuoteMeta("select * from infractions")).WillReturnError(fmt.Errorf("err"))
 				})
 
 				g.It("Should return an error", func() {
-					_, _, err := repo.PlayerIsBanned(ctx, "", "")
+					_, err := repo.GetMostSignificantInfraction(ctx, domain.InfractionTypeBan, "testplatform", "playerid1")
 
 					Expect(err).ToNot(BeNil())
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
 				})
-			})
-		})
 
-		g.Describe("PlayerIsMuted()", func() {
-			g.Describe("Player is muted", func() {
-				g.BeforeEach(func() {
-					mock.ExpectQuery(regexp.QuoteMeta("select exists(")).WillReturnRows(sqlmock.NewRows([]string{"IsMuted", "TimeRemaining"}).
-						AddRow(true, 43242))
-				})
-
-				g.It("Should not return an error", func() {
-					_, _, err := repo.PlayerIsMuted(ctx, "", "")
-
-					Expect(err).To(BeNil())
-					Expect(mock.ExpectationsWereMet()).To(BeNil())
-				})
-
-				g.It("Should return true", func() {
-					isBanned, _, err := repo.PlayerIsMuted(ctx, "", "")
-
-					Expect(err).To(BeNil())
-					Expect(isBanned).To(BeTrue())
-					Expect(mock.ExpectationsWereMet()).To(BeNil())
-				})
-
-				g.It("Should return the correct time remaining", func() {
-					_, timeRemaining, err := repo.PlayerIsMuted(ctx, "", "")
-
-					Expect(err).To(BeNil())
-					Expect(timeRemaining).To(Equal(int64(43242)))
-					Expect(mock.ExpectationsWereMet()).To(BeNil())
-				})
-			})
-
-			g.Describe("Player is not muted", func() {
-				g.BeforeEach(func() {
-					mock.ExpectQuery(regexp.QuoteMeta("select exists(")).WillReturnRows(sqlmock.NewRows([]string{"IsMuted", "TimeRemaining"}).
-						AddRow(false, nil))
-				})
-
-				g.It("Should not return an error", func() {
-					_, _, err := repo.PlayerIsMuted(ctx, "", "")
-
-					Expect(err).To(BeNil())
-					Expect(mock.ExpectationsWereMet()).To(BeNil())
-				})
-
-				g.It("Should return false", func() {
-					isBanned, _, err := repo.PlayerIsMuted(ctx, "", "")
-
-					Expect(err).To(BeNil())
-					Expect(isBanned).To(BeFalse())
-					Expect(mock.ExpectationsWereMet()).To(BeNil())
-				})
-
-				g.It("Should return 0 for the time remaining", func() {
-					_, timeRemaining, err := repo.PlayerIsMuted(ctx, "", "")
-
-					Expect(err).To(BeNil())
-					Expect(timeRemaining).To(Equal(int64(0)))
-					Expect(mock.ExpectationsWereMet()).To(BeNil())
-				})
-			})
-
-			g.Describe("Database error", func() {
-				g.BeforeEach(func() {
-					mock.ExpectQuery(regexp.QuoteMeta("select exists(")).WillReturnError(fmt.Errorf("err"))
-				})
-
-				g.It("Should return an error", func() {
-					_, _, err := repo.PlayerIsMuted(ctx, "", "")
+				g.It("Should return nil", func() {
+					got, err := repo.GetMostSignificantInfraction(ctx, domain.InfractionTypeBan, "testplatform", "playerid1")
 
 					Expect(err).ToNot(BeNil())
+					Expect(got).To(BeNil())
 					Expect(mock.ExpectationsWereMet()).To(BeNil())
 				})
 			})
