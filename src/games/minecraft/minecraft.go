@@ -94,7 +94,7 @@ func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 				},
 				Ban: []*domain.InfractionCommand{
 					{
-						Command:  "ban {{PLAYER_NAME}} {{REASON}}",
+						Command:  "tempban {{PLAYER_NAME}} {{DURATION}}m {{REASON}}",
 						RunOnAll: true,
 					},
 				},
@@ -111,7 +111,7 @@ func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 				Kick: []*domain.InfractionCommand{},
 				Ban: []*domain.InfractionCommand{
 					{
-						Command:  "pardon {{PLAYER_NAME}}",
+						Command:  "unban {{PLAYER_NAME}}",
 						RunOnAll: true,
 					},
 				},
@@ -122,7 +122,7 @@ func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 				Kick: []*domain.InfractionCommand{},
 				Ban: []*domain.InfractionCommand{
 					{
-						Command:  "pardon {{PLAYER_NAME}}",
+						Command:  "unban {{PLAYER_NAME}}",
 						RunOnAll: true,
 					},
 				},
@@ -130,7 +130,7 @@ func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 			SyncInfractionCommands: &domain.InfractionCommands{
 				Ban: []*domain.InfractionCommand{
 					{
-						Command:  "ban {{PLAYER_NAME}} Refractor Ban Sync",
+						Command:  "tempban {{PLAYER_NAME}} {{DURATION_REMAINING}}m Refractor Ban Sync",
 						RunOnAll: false,
 					},
 				},
