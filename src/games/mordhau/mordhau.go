@@ -111,14 +111,14 @@ func (g *mordhau) GetDefaultSettings() *domain.GameSettings {
 				Warn: []*domain.InfractionCommand{},
 				Mute: []*domain.InfractionCommand{
 					{
-						Command:  "Mute {{PLAYER_ID}} {{DURATION}}",
+						Command:  "Mute {{PLAYER_ID}} {{DURATION_REMAINING}}",
 						RunOnAll: true,
 					},
 				},
 				Kick: []*domain.InfractionCommand{},
 				Ban: []*domain.InfractionCommand{
 					{
-						Command:  "Ban {{PLAYER_ID}} {{DURATION}} {{REASON}}",
+						Command:  "Ban {{PLAYER_ID}} {{DURATION_REMAINING}} {{REASON}}",
 						RunOnAll: true,
 					},
 				},
@@ -158,13 +158,13 @@ func (g *mordhau) GetDefaultSettings() *domain.GameSettings {
 			SyncInfractionCommands: &domain.InfractionCommands{
 				Mute: []*domain.InfractionCommand{
 					{
-						Command:  "Mute {{PLAYER_ID}} {{DURATION}}",
+						Command:  "Mute {{PLAYER_ID}} {{DURATION_REMAINING}}",
 						RunOnAll: false,
 					},
 				},
 				Ban: []*domain.InfractionCommand{
 					{
-						Command:  "Ban {{PLAYER_ID}} {{DURATION}} Refractor Ban Sync",
+						Command:  "Ban {{PLAYER_ID}} {{DURATION_REMAINING}} Refractor Ban Sync",
 						RunOnAll: false,
 					},
 				},
