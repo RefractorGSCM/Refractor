@@ -23,7 +23,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/guregu/null"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -384,94 +383,58 @@ func (r *infractionRepo) UnlinkChatMessages(ctx context.Context, id int64, messa
 	return nil
 }
 
-func (r *infractionRepo) PlayerIsBanned(ctx context.Context, platform, playerID string) (bool, int64, error) {
-	const op = opTag + "PlayerIsBanned"
+func (r *infractionRepo) GetMostSignificantInfraction(ctx context.Context, infrType, platform, playerID string) (*domain.Infraction, error) {
+	const op = opTag + "GetMostSignificantInfraction"
 
+	// Note: this query checks all infractions belonging to a platform, not necessarily to a specific game.
+	// If a game check is required in the future, it could be done by joining to servers and checking if a provided
+	// game name variable is equal to the server's game.
+
+	// ugly short circuit incoming
 	query := `
-		select exists(
-			select 1 from infractions 
+		select * from infractions
+		where
+			platform = $1 and
+			playerid = $2 and
+			repealed = false and
+			"type" = $3 and
+			duration = -1
+		union
+		select * from infractions
+		where not exists (
+			select * from infractions
 			where
-					repealed = false and
-				    platform = $1 and
-					playerid = $2 and
-					type = 'BAN' and
-					(duration = -1 or (extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp))
-			) as IsBanned, (
-			select
-				ROUND(((extract(epoch from createdat) + (duration * 60)) - extract(epoch from current_timestamp)) / 60) as TimeRemaining
-			from infractions
-			where
-					repealed = false and
-					platform = $1 and
-					playerid = $2 and
-					type = 'BAN' and
-					(duration = -1 or (extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp))
-			limit 1
-		);
+				platform = $1 and
+				playerid = $2 and
+				repealed = false and
+				"type" = $3 and
+				duration = -1
+		)
+		and
+			platform = $1 and
+			playerid = $2 and
+			repealed = false and
+			"type" = $3 and
+			(extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp)
+		order by duration desc
+		limit 1;
 	`
 
-	row := r.db.QueryRowContext(ctx, query, platform, playerID)
-
-	isBanned := false
-	minutesRemaining := null.Int{}
-
-	if err := row.Scan(&isBanned, &minutesRemaining); err != nil {
-		r.logger.Error("Could not scan IsBanned and TimeRemaining from player ban infractions query", zap.Error(err))
-		return false, 0, errors.Wrap(err, op)
+	results, err := r.fetch(ctx, query, platform, playerID, infrType)
+	if err != nil {
+		r.logger.Error("Could not get most significant infraction of type",
+			zap.String("Platform", platform),
+			zap.String("Player ID", playerID),
+			zap.String("Type", infrType),
+			zap.Error(err))
+		return nil, errors.Wrap(err, op)
 	}
 
-	// if the duration of the active ban infraction was -1, the time remaining value is likely negative so adjust it to
-	// -1 to make it more clear that the infraction is permanent.
-	if minutesRemaining.ValueOrZero() < 0 {
-		minutesRemaining = null.NewInt(domain.PermanentInfractionValue, true)
+	if len(results) == 0 {
+		return nil, nil
 	}
 
-	return isBanned, minutesRemaining.ValueOrZero(), nil
-}
-
-func (r *infractionRepo) PlayerIsMuted(ctx context.Context, platform, playerID string) (bool, int64, error) {
-	const op = opTag + "PlayerIsMuted"
-
-	query := `
-		select exists(
-			select 1 from infractions 
-			where
-					repealed = false and
-				    platform = $1 and
-					playerid = $2 and
-					type = 'MUTE' and
-					(duration = -1 or (extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp))
-			) as IsMuted, (
-			select
-				ROUND(((extract(epoch from createdat) + (duration * 60)) - extract(epoch from current_timestamp)) / 60) as TimeRemaining
-			from infractions
-			where
-					repealed = false and
-					platform = $1 and
-					playerid = $2 and
-					type = 'MUTE' and
-					(duration = -1 or (extract(epoch from createdat) + (duration * 60)) >= extract(epoch from current_timestamp))
-			limit 1
-		);
-	`
-
-	row := r.db.QueryRowContext(ctx, query, platform, playerID)
-
-	isMuted := false
-	minutesRemaining := null.Int{}
-
-	if err := row.Scan(&isMuted, &minutesRemaining); err != nil {
-		r.logger.Error("Could not scan IsMuted and TimeRemaining from player mute infractions query", zap.Error(err))
-		return false, 0, errors.Wrap(err, op)
-	}
-
-	// if the duration of the active ban infraction was -1, the time remaining value is likely negative so adjust it to
-	// -1 to make it more clear that the infraction is permanent.
-	if minutesRemaining.ValueOrZero() < 0 {
-		minutesRemaining = null.NewInt(domain.PermanentInfractionValue, true)
-	}
-
-	return isMuted, minutesRemaining.ValueOrZero(), nil
+	return results[0], nil
 }
 
 func (r *infractionRepo) GetPlayerTotalInfractions(ctx context.Context, platform, playerID string) (int, error) {
