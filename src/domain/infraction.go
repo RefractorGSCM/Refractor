@@ -70,8 +70,10 @@ type InfractionRepo interface {
 	GetLinkedChatMessages(ctx context.Context, id int64) ([]*ChatMessage, error)
 	LinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error
 	UnlinkChatMessages(ctx context.Context, id int64, messageIDs ...int64) error
-	PlayerIsBanned(ctx context.Context, platform, playerID string) (bool, int64, error)
-	PlayerIsMuted(ctx context.Context, platform, playerID string) (bool, int64, error)
+
+	// GetMostSignificantInfraction should return the non-expired, non-repealed infraction of the
+	// specified type with the highest duration.
+	GetMostSignificantInfraction(ctx context.Context, infrType, platform, playerID string) (*Infraction, error)
 	GetPlayerTotalInfractions(ctx context.Context, platform, playerID string) (int, error)
 	GetPlayerInfractionCountSince(ctx context.Context, platform, playerID string, since time.Time) (int, error)
 }
