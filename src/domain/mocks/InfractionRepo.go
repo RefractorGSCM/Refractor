@@ -99,6 +99,29 @@ func (_m *InfractionRepo) GetLinkedChatMessages(ctx context.Context, id int64) (
 	return r0, r1
 }
 
+// GetMostSignificantInfraction provides a mock function with given fields: ctx, infrType, platform, playerID
+func (_m *InfractionRepo) GetMostSignificantInfraction(ctx context.Context, infrType string, platform string, playerID string) (*domain.Infraction, error) {
+	ret := _m.Called(ctx, infrType, platform, playerID)
+
+	var r0 *domain.Infraction
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) *domain.Infraction); ok {
+		r0 = rf(ctx, infrType, platform, playerID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Infraction)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = rf(ctx, infrType, platform, playerID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetPlayerInfractionCountSince provides a mock function with given fields: ctx, platform, playerID, since
 func (_m *InfractionRepo) GetPlayerInfractionCountSince(ctx context.Context, platform string, playerID string, since time.Time) (int, error) {
 	ret := _m.Called(ctx, platform, playerID, since)
@@ -160,62 +183,6 @@ func (_m *InfractionRepo) LinkChatMessages(ctx context.Context, id int64, messag
 	}
 
 	return r0
-}
-
-// PlayerIsBanned provides a mock function with given fields: ctx, platform, playerID
-func (_m *InfractionRepo) PlayerIsBanned(ctx context.Context, platform string, playerID string) (bool, int64, error) {
-	ret := _m.Called(ctx, platform, playerID)
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
-		r0 = rf(ctx, platform, playerID)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	var r1 int64
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) int64); ok {
-		r1 = rf(ctx, platform, playerID)
-	} else {
-		r1 = ret.Get(1).(int64)
-	}
-
-	var r2 error
-	if rf, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
-		r2 = rf(ctx, platform, playerID)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
-}
-
-// PlayerIsMuted provides a mock function with given fields: ctx, platform, playerID
-func (_m *InfractionRepo) PlayerIsMuted(ctx context.Context, platform string, playerID string) (bool, int64, error) {
-	ret := _m.Called(ctx, platform, playerID)
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
-		r0 = rf(ctx, platform, playerID)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	var r1 int64
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) int64); ok {
-		r1 = rf(ctx, platform, playerID)
-	} else {
-		r1 = ret.Get(1).(int64)
-	}
-
-	var r2 error
-	if rf, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
-		r2 = rf(ctx, platform, playerID)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
 }
 
 // Search provides a mock function with given fields: ctx, args, serverIDs, limit, offset

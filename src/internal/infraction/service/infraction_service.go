@@ -723,14 +723,26 @@ func (s *infractionService) PlayerIsBanned(c context.Context, platform, playerID
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.PlayerIsBanned(ctx, platform, playerID)
+	// Get most significant ban
+	ban, err := s.repo.GetMostSignificantInfraction(ctx, domain.InfractionTypeBan, platform, playerID)
+	if ban == nil {
+		return false, 0, err
+	}
+
+	return true, ban.MinutesRemaining(), nil
 }
 
 func (s *infractionService) PlayerIsMuted(c context.Context, platform, playerID string) (bool, int64, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	return s.repo.PlayerIsMuted(ctx, platform, playerID)
+	// Get most significant mute
+	mute, err := s.repo.GetMostSignificantInfraction(ctx, domain.InfractionTypeMute, platform, playerID)
+	if mute == nil {
+		return false, 0, err
+	}
+
+	return true, mute.MinutesRemaining(), nil
 }
 
 func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
@@ -772,7 +784,7 @@ func (s *infractionService) HandlePlayerJoin(fields broadcast.Fields, serverID i
 
 func (s *infractionService) syncMute(ctx context.Context, platform, playerID, name string, serverID int64, game domain.Game) error {
 	// Check if this player should be muted
-	isMuted, timeRemaining, err := s.repo.PlayerIsMuted(ctx, platform, playerID)
+	isMuted, timeRemaining, err := s.PlayerIsMuted(ctx, platform, playerID)
 	if err != nil {
 		s.logger.Error("Could not check if player is muted",
 			zap.String("Player ID", playerID),
@@ -828,7 +840,7 @@ func (s *infractionService) syncMute(ctx context.Context, platform, playerID, na
 
 func (s *infractionService) syncBan(ctx context.Context, platform, playerID, name string, serverID int64, game domain.Game) error {
 	// Check if this player should be banned
-	isBanned, timeRemaining, err := s.repo.PlayerIsBanned(ctx, platform, playerID)
+	isBanned, timeRemaining, err := s.PlayerIsBanned(ctx, platform, playerID)
 	if err != nil {
 		s.logger.Error("Could not check if player is banned",
 			zap.String("Player ID", playerID),
