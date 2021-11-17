@@ -17,7 +17,9 @@
 
 package domain
 
-import "context"
+import (
+	"context"
+)
 
 type CommandPayload interface {
 	GetCommands() []Command
@@ -37,12 +39,13 @@ type CommandExecutor interface {
 }
 
 type CustomInfractionPayload struct {
-	PlayerID   string
-	Platform   string
-	PlayerName string
-	Type       string
-	Duration   int64
-	Reason     string
+	PlayerID          string
+	Platform          string
+	PlayerName        string
+	Type              string
+	Duration          int64
+	DurationRemaining int64
+	Reason            string
 }
 
 func (p *CustomInfractionPayload) GetPlayerID() string {
@@ -63,6 +66,10 @@ func (p *CustomInfractionPayload) GetType() string {
 
 func (p *CustomInfractionPayload) GetDuration() int64 {
 	return p.Duration
+}
+
+func (p *CustomInfractionPayload) GetDurationRemaining() int64 {
+	return p.DurationRemaining
 }
 
 func (p *CustomInfractionPayload) GetReason() string {

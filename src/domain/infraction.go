@@ -62,6 +62,14 @@ func (i *Infraction) IsPermanent() bool {
 }
 
 func (i *Infraction) MinutesRemaining() int64 {
+	if !i.CreatedAt.Valid {
+		return 0
+	}
+
+	if !i.Duration.Valid {
+		return 0
+	}
+
 	expiresAt := i.CreatedAt.ValueOrZero().Add(time.Duration(i.Duration.ValueOrZero() * int64(time.Minute)))
 	return int64(math.Round(expiresAt.Sub(time.Now()).Minutes()))
 }
@@ -96,8 +104,8 @@ type InfractionService interface {
 	GetLinkedChatMessages(c context.Context, id int64) ([]*ChatMessage, error)
 	LinkChatMessages(c context.Context, id int64, messageIDs ...int64) error
 	UnlinkChatMessages(c context.Context, id int64, messageIDs ...int64) error
-	PlayerIsBanned(c context.Context, platform, playerID string) (bool, int64, error)
-	PlayerIsMuted(c context.Context, platform, playerID string) (bool, int64, error)
+	GetCurrentBan(c context.Context, platform, playerID string) (*Infraction, error)
+	GetCurrentMute(c context.Context, platform, playerID string) (*Infraction, error)
 	HandlePlayerJoin(fields broadcast.Fields, serverID int64, game Game)
 	HandleModerationAction(fields broadcast.Fields, serverID int64, game Game)
 	SubscribeInfractionCreate(sub InfractionSubscriber)
@@ -158,6 +166,7 @@ type InfractionPayload interface {
 	GetPlayerName() string
 	GetType() string
 	GetDuration() int64
+	GetDurationRemaining() int64
 	GetReason() string
 }
 
@@ -179,6 +188,10 @@ func (i *Infraction) GetType() string {
 
 func (i *Infraction) GetDuration() int64 {
 	return i.Duration.ValueOrZero()
+}
+
+func (i *Infraction) GetDurationRemaining() int64 {
+	return i.MinutesRemaining()
 }
 
 func (i *Infraction) GetReason() string {
