@@ -19,19 +19,37 @@ package command_executor
 
 import "Refractor/domain"
 
-type infractionCommand struct {
-	Commands []string
-	Servers  []int64
+type infractionCommandPayload struct {
+	Commands []domain.Command
+	Game     domain.Game
 }
 
-func newInfractionCommand(cmds []string, servers []int64) domain.CommandPayload {
-	return &infractionCommand{cmds, servers}
+func newInfractionCommandPayload(cmds []domain.Command, game domain.Game) domain.CommandPayload {
+	return &infractionCommandPayload{cmds, game}
 }
 
-func (ic *infractionCommand) GetCommands() []string {
+func (ic *infractionCommandPayload) GetCommands() []domain.Command {
 	return ic.Commands
 }
 
-func (ic *infractionCommand) GetServerIDs() []int64 {
-	return ic.Servers
+func (ic *infractionCommandPayload) GetGame() domain.Game {
+	return ic.Game
+}
+
+type infractionCommand struct {
+	Command  string
+	RunOnAll bool
+	ServerID int64
+}
+
+func (i *infractionCommand) GetCommand() string {
+	return i.Command
+}
+
+func (i *infractionCommand) ShouldRunOnAll() bool {
+	return i.RunOnAll
+}
+
+func (i *infractionCommand) GetServerID() int64 {
+	return i.ServerID
 }

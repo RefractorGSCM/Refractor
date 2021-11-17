@@ -72,36 +72,69 @@ func (g *minecraft) GetBroadcastCommand() string {
 	return "say %s"
 }
 
+func (g *minecraft) GetRCONSettings() *domain.GameRCONSettings {
+	return &domain.GameRCONSettings{
+		RestrictedPacketIDs: nil, // nil since minecraft has no relevant restricted RCON packet IDs.
+		BroadcastChecker:    nil, // nil since minecraft doesn't support broadcasts.
+		EndianMode:          binary.LittleEndian,
+	}
+}
+
 func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 	return &domain.GameSettings{
 		Commands: &domain.GameCommandSettings{
 			CreateInfractionCommands: &domain.InfractionCommands{
-				Warn: []string{},
-				Mute: []string{},
-				Kick: []string{"kick {{PLAYER_NAME}} {{REASON}}"},
-				Ban:  []string{"ban {{PLAYER_NAME}} {{REASON}}"},
+				Warn: []*domain.InfractionCommand{},
+				Mute: []*domain.InfractionCommand{},
+				Kick: []*domain.InfractionCommand{
+					{
+						Command:  "kick {{PLAYER_NAME}} {{REASON}}",
+						RunOnAll: false,
+					},
+				},
+				Ban: []*domain.InfractionCommand{
+					{
+						Command:  "tempban {{PLAYER_NAME}} {{DURATION}}m {{REASON}}",
+						RunOnAll: true,
+					},
+				},
 			},
 			UpdateInfractionCommands: &domain.InfractionCommands{
-				Warn: []string{},
-				Mute: []string{},
-				Kick: []string{"kick {{PLAYER_NAME}} {{REASON}}"},
-				Ban:  []string{"ban {{PLAYER_NAME}} {{REASON}}"},
+				Warn: []*domain.InfractionCommand{},
+				Mute: []*domain.InfractionCommand{},
+				Kick: []*domain.InfractionCommand{},
+				Ban:  []*domain.InfractionCommand{},
 			},
 			DeleteInfractionCommands: &domain.InfractionCommands{
-				Warn: []string{},
-				Mute: []string{},
-				Kick: []string{},
-				Ban:  []string{"pardon {{PLAYER_NAME}}"},
+				Warn: []*domain.InfractionCommand{},
+				Mute: []*domain.InfractionCommand{},
+				Kick: []*domain.InfractionCommand{},
+				Ban: []*domain.InfractionCommand{
+					{
+						Command:  "unban {{PLAYER_NAME}}",
+						RunOnAll: true,
+					},
+				},
 			},
 			RepealInfractionCommands: &domain.InfractionCommands{
-				Warn: []string{},
-				Mute: []string{},
-				Kick: []string{},
-				Ban:  []string{"pardon {{PLAYER_NAME}}"},
+				Warn: []*domain.InfractionCommand{},
+				Mute: []*domain.InfractionCommand{},
+				Kick: []*domain.InfractionCommand{},
+				Ban: []*domain.InfractionCommand{
+					{
+						Command:  "unban {{PLAYER_NAME}}",
+						RunOnAll: true,
+					},
+				},
 			},
 			SyncInfractionCommands: &domain.InfractionCommands{
-				Ban:  []string{"ban {{PLAYER_NAME}} Refractor Ban Sync"},
-				Mute: []string{},
+				Ban: []*domain.InfractionCommand{
+					{
+						Command:  "tempban {{PLAYER_NAME}} {{DURATION_REMAINING}}m Refractor Ban Sync",
+						RunOnAll: false,
+					},
+				},
+				Mute: []*domain.InfractionCommand{},
 			},
 		},
 		General: &domain.GeneralSettings{
@@ -110,13 +143,5 @@ func (g *minecraft) GetDefaultSettings() *domain.GameSettings {
 			PlayerInfractionThreshold: 10,
 			PlayerInfractionTimespan:  4320, // 3 days
 		},
-	}
-}
-
-func (g *minecraft) GetRCONSettings() *domain.GameRCONSettings {
-	return &domain.GameRCONSettings{
-		RestrictedPacketIDs: nil, // nil since minecraft has no relevant restricted RCON packet IDs.
-		BroadcastChecker:    nil, // nil since minecraft doesn't support broadcasts.
-		EndianMode:          binary.LittleEndian,
 	}
 }

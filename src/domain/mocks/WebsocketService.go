@@ -40,6 +40,11 @@ func (_m *WebsocketService) CreateClient(userID string, conn net.Conn) {
 	_m.Called(userID, conn)
 }
 
+// HandleInfractionCreate provides a mock function with given fields: infraction
+func (_m *WebsocketService) HandleInfractionCreate(infraction *domain.Infraction) {
+	_m.Called(infraction)
+}
+
 // HandlePlayerJoin provides a mock function with given fields: fields, serverID, game
 func (_m *WebsocketService) HandlePlayerJoin(fields broadcast.Fields, serverID int64, game domain.Game) {
 	_m.Called(fields, serverID, game)
