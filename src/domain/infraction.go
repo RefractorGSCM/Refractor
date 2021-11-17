@@ -21,6 +21,7 @@ import (
 	"Refractor/pkg/broadcast"
 	"context"
 	"github.com/guregu/null"
+	"math"
 	"time"
 )
 
@@ -58,6 +59,11 @@ type Infraction struct {
 
 func (i *Infraction) IsPermanent() bool {
 	return i.Duration.Valid && i.Duration.ValueOrZero() == -1
+}
+
+func (i *Infraction) MinutesRemaining() int64 {
+	expiresAt := i.CreatedAt.ValueOrZero().Add(time.Duration(i.Duration.ValueOrZero() * int64(time.Minute)))
+	return int64(math.Round(expiresAt.Sub(time.Now()).Minutes()))
 }
 
 type InfractionRepo interface {
