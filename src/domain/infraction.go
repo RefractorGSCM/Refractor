@@ -168,6 +168,7 @@ type InfractionPayload interface {
 	GetDuration() int64
 	GetDurationRemaining() int64
 	GetReason() string
+	GetUserID() string
 }
 
 func (i *Infraction) GetPlayerID() string {
@@ -196,4 +197,8 @@ func (i *Infraction) GetDurationRemaining() int64 {
 
 func (i *Infraction) GetReason() string {
 	return i.Reason.ValueOrZero()
+}
+
+func (i *Infraction) GetUserID() string {
+	return i.UserID.ValueOrZero()
 }
