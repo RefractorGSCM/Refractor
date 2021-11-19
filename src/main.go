@@ -195,7 +195,7 @@ func main() {
 	attachmentService := _attachmentService.NewAttachmentService(attachmentRepo, infractionRepo, authorizer, time.Second*2, logger)
 
 	rconService := _rconService.NewRCONService(logger, gameService, serverRepo)
-	commandExecutor := command_executor.NewCommandExecutor(rconService, gameService, serverRepo, playerNameRepo, logger)
+	commandExecutor := command_executor.NewCommandExecutor(rconService, gameService, serverRepo, userMetaRepo, playerNameRepo, logger)
 
 	_serverHandler.ApplyServerHandler(apiGroup, serverService, rconService, gameService, authorizer, middlewareBundle, logger)
 
