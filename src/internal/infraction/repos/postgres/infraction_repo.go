@@ -23,6 +23,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/guregu/null"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -209,7 +210,8 @@ func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, serve
 				($6::INT IS NULL OR i.ServerID = $6) AND
 				($7::VARCHAR IS NULL OR s.Game = $7)
 			) res
-		JOIN UserMeta um ON res.UserID = um.UserID
+		LEFT JOIN UserMeta um ON res.UserID IS NOT NULL AND res.UserID = um.UserID
+		ORDER BY res.CreatedAt DESC
 		LIMIT $8 OFFSET $9;
 	`
 
@@ -236,11 +238,15 @@ func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, serve
 	for rows.Next() {
 		res := &domain.Infraction{}
 
+		staffName := null.String{}
+
 		if err := rows.Scan(&res.InfractionID, &res.PlayerID, &res.Platform, &res.UserID, &res.ServerID, &res.Type,
-			&res.Reason, &res.Duration, &res.SystemAction, &res.CreatedAt, &res.ModifiedAt, &res.Repealed, &res.IssuerName); err != nil {
+			&res.Reason, &res.Duration, &res.SystemAction, &res.CreatedAt, &res.ModifiedAt, &res.Repealed, &staffName); err != nil {
 			r.logger.Error("Could not scan infraction search result", zap.Error(err))
 			return 0, nil, errors.Wrap(err, op)
 		}
+
+		res.IssuerName = staffName.ValueOrZero()
 
 		results = append(results, res)
 	}
@@ -259,7 +265,7 @@ func (r *infractionRepo) Search(ctx context.Context, args domain.FindArgs, serve
 			($2::InfractionType IS NULL OR i.Type = $2) AND
 			($3::VARCHAR IS NULL OR i.PlayerID = $3) AND
 		    ($4::VARCHAR IS NULL OR i.Platform = $4) AND
-			($5::VARCHAR IS NULL OR i.UserID = $5) AND
+			($5::VARCHAR = '' OR $5 IS NULL OR i.UserID = $5) AND
 			($6::INT IS NULL OR i.ServerID = $6) AND
 			($7::VARCHAR IS NULL OR s.Game = $7)
 	`
