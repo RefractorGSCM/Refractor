@@ -186,7 +186,7 @@ func (r *chatRepo) Search(ctx context.Context, args domain.FindArgs, serverIDs [
 			($5::VARCHAR IS NULL OR s.Game = $5) AND
 			(($6::BIGINT IS NULL OR $7::BIGINT IS NULL) OR cm.CreatedAt BETWEEN TO_TIMESTAMP($6) AND TO_TIMESTAMP($7)) AND
 			($8::VARCHAR IS NULL OR cm.MessageVectors @@ PLAINTO_TSQUERY($8))
-		ORDER BY CreatedAt ASC LIMIT $9 OFFSET $10;
+		ORDER BY CreatedAt DESC LIMIT $9 OFFSET $10;
 	`
 
 	var (
