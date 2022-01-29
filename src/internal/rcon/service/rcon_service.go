@@ -24,10 +24,11 @@ import (
 	"Refractor/pkg/regexutils"
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"net"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type rconService struct {
@@ -115,7 +116,6 @@ func (s *rconService) CreateClient(server *domain.Server) error {
 	if gameConfig.PlayerListPollingEnabled() {
 		go s.startPlayerListPolling(server.ID, game)
 	}
-
 	if gameConfig.PlayerListRefreshEnabled() {
 		go s.startPlayerListRefreshPolling(server.ID, game)
 	}
@@ -238,6 +238,8 @@ func (s *rconService) RefreshPlayerList(serverID int64, game domain.Game) error 
 	if s.clients[serverID] == nil {
 		return domain.ErrNotFound
 	}
+
+	s.logger.Info("Refreshing player list")
 
 	// Get currently online players
 	onlinePlayers, err := s.getOnlinePlayers(serverID, game)

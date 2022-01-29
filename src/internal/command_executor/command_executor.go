@@ -30,6 +30,7 @@ type executor struct {
 	rconService    domain.RCONService
 	gameService    domain.GameService
 	serverRepo     domain.ServerRepo
+	userRepo       domain.UserMetaRepo
 	playerNameRepo domain.PlayerNameRepo
 	logger         *zap.Logger
 	queue          chan *queuedCommand
@@ -40,12 +41,13 @@ type queuedCommand struct {
 	serverID int64
 }
 
-func NewCommandExecutor(rs domain.RCONService, gs domain.GameService, sr domain.ServerRepo, pnr domain.PlayerNameRepo,
+func NewCommandExecutor(rs domain.RCONService, gs domain.GameService, sr domain.ServerRepo, umr domain.UserMetaRepo, pnr domain.PlayerNameRepo,
 	log *zap.Logger) domain.CommandExecutor {
 	return &executor{
 		rconService:    rs,
 		gameService:    gs,
 		serverRepo:     sr,
+		userRepo:       umr,
 		playerNameRepo: pnr,
 		logger:         log,
 		queue:          make(chan *queuedCommand, 100),
@@ -80,6 +82,17 @@ func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction dom
 	game, err := e.gameService.GetGame(server.Game)
 	if err != nil {
 		return nil, err
+	}
+
+	// Get infraction creator's name
+	var creatorName = "[UNKNOWN]"
+	if infraction.GetUserID() != "" {
+		var err error
+		creatorName, err = e.userRepo.GetUsername(ctx, infraction.GetUserID())
+		if err != nil {
+			e.logger.Error("Could not get username of infraction creator", zap.Error(err))
+			return nil, err
+		}
 	}
 
 	// Get commands to run from game settings
@@ -124,6 +137,7 @@ func (e *executor) PrepareInfractionCommands(ctx context.Context, infraction dom
 		runCmd := strings.ReplaceAll(cmd.Command, "{{PLAYER_ID}}", infraction.GetPlayerID())
 		runCmd = strings.ReplaceAll(runCmd, "{{PLATFORM}}", infraction.GetPlatform())
 		runCmd = strings.ReplaceAll(runCmd, "{{PLAYER_NAME}}", playerName)
+		runCmd = strings.ReplaceAll(runCmd, "{{ISSUER}}", creatorName)
 		runCmd = strings.ReplaceAll(runCmd, "{{DURATION}}", strconv.FormatInt(infraction.GetDuration(), 10))
 		runCmd = strings.ReplaceAll(runCmd, "{{DURATION_REMAINING}}", strconv.FormatInt(durationRemaining, 10))
 		runCmd = strings.ReplaceAll(runCmd, "{{REASON}}", infraction.GetReason())
