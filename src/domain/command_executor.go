@@ -42,6 +42,7 @@ type CustomInfractionPayload struct {
 	PlayerID          string
 	Platform          string
 	PlayerName        string
+	UserID            string
 	Type              string
 	Duration          int64
 	DurationRemaining int64
@@ -74,4 +75,8 @@ func (p *CustomInfractionPayload) GetDurationRemaining() int64 {
 
 func (p *CustomInfractionPayload) GetReason() string {
 	return p.Reason
+}
+
+func (p *CustomInfractionPayload) GetUserID() string {
+	return p.UserID
 }
