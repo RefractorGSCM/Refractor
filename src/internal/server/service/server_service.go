@@ -82,13 +82,8 @@ func (s *serverService) GetByID(c context.Context, id int64) (*domain.Server, er
 func (s *serverService) GetAll(c context.Context) ([]*domain.Server, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
-
-	allServers, err := s.repo.GetAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return allServers, nil
+	
+	return s.repo.GetAll(ctx)
 }
 
 func (s *serverService) GetAllAccessible(c context.Context) ([]*domain.Server, error) {
