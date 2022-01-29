@@ -19,9 +19,10 @@ package domain
 
 import (
 	"encoding/binary"
-	"github.com/refractorgscm/rcon"
 	"regexp"
 	"time"
+
+	"github.com/refractorgscm/rcon"
 )
 
 var AllGames []string
@@ -116,7 +117,7 @@ func (gc GameConfig) PlayerListPollingEnabled() bool {
 }
 
 func (gc GameConfig) PlayerListRefreshEnabled() bool {
-	return gc.PlayerListPollingInterval != 0
+	return gc.PlayerListRefreshInterval != 0
 }
 
 // InfractionDetectionEnabled returns true if an infraction broadcast pattern is set and broadcasts are enabled.
